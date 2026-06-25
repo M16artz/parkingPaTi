@@ -5,6 +5,12 @@ import home01 from '../../assets/home01.png';
 import logoSimple from '../../assets/logoSimple.png';
 import quienesSomosImg from '../../assets/home01.png';
 
+// IMPORTACIÓN DE LAS IMÁGENES PARA "QUIÉNES SOMOS" Y NUEVOS SERVICIOS
+import quienesSomos1 from '../../assets/quienesSomos1.png';
+import quienesSomos2 from '../../assets/quienesSomos2.png';
+import quienesSomos3 from '../../assets/quienesSomos3.png';
+import nuestrosServiciosImg from '../../assets/nuestrosServicios.png'; // Nueva ruta agregada
+
 export const HomeView = () => {
   const navigate = useNavigate();
   const [isLeaving, setIsLeaving] = useState(false);
@@ -12,7 +18,7 @@ export const HomeView = () => {
   const handleComenzar = () => {
     setIsLeaving(true); 
     
-    // Bajamos a 400ms para que sea una transición rápida pero fluida
+    // Transición rápida y fluida
     setTimeout(() => {
       navigate('/login'); 
     }, 400); 
@@ -67,7 +73,7 @@ export const HomeView = () => {
           </header>
 
           {/* ========================================================= */}
-          {/* 2. SECCIÓN: QUIÉNES SOMOS (3 Columnas)                    */}
+          {/* 2. SECCIÓN: QUIÉNES SOMOS                                 */}
           {/* ========================================================= */}
           <section className="bg-white rounded-[32px] p-12 md:p-16 grid grid-cols-1 md:grid-cols-12 gap-10 items-center shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]">
             <div className="md:col-span-4 flex flex-col gap-6 text-center md:text-left items-center md:items-start">
@@ -87,15 +93,15 @@ export const HomeView = () => {
               </p>
             </div>
 
-            <div className="md:col-span-8 grid grid-cols-3 gap-5 w-full aspect-[32/9]">
-              <div className="rounded-[40px] overflow-hidden bg-[#248296] shadow-sm">
-                <img src={home01} alt="Servicio 1" className="w-full h-full object-cover pointer-events-none select-none" />
+            <div className="md:col-span-8 grid grid-cols-3 gap-5 w-full">
+              <div className="rounded-[24px] overflow-hidden border-4 border-sky-400 bg-white shadow-md aspect-square flex items-center justify-center p-2">
+                <img src={quienesSomos1} alt="Quienes Somos 1" className="max-w-full max-h-full object-contain pointer-events-none select-none" />
               </div>
-              <div className="rounded-[40px] overflow-hidden bg-[#248296] shadow-sm">
-                <img src={home01} alt="Servicio 2" className="w-full h-full object-cover pointer-events-none select-none" />
+              <div className="rounded-[24px] overflow-hidden border-4 border-sky-400 bg-white shadow-md aspect-square flex items-center justify-center p-2">
+                <img src={quienesSomos2} alt="Quienes Somos 2" className="max-w-full max-h-full object-contain pointer-events-none select-none" />
               </div>
-              <div className="rounded-[40px] overflow-hidden bg-[#248296] shadow-sm">
-                <img src={home01} alt="Servicio 3" className="w-full h-full object-cover pointer-events-none select-none" />
+              <div className="rounded-[24px] overflow-hidden border-4 border-sky-400 bg-white shadow-md aspect-square flex items-center justify-center p-2">
+                <img src={quienesSomos3} alt="Quienes Somos 3" className="max-w-full max-h-full object-contain pointer-events-none select-none" />
               </div>
             </div>
           </section>
@@ -152,9 +158,14 @@ export const HomeView = () => {
               </div>
             </div>
 
+            {/* TARJETA ACTUALIZADA CON TU NUEVA IMAGEN 'nuestrosServicios.png' */}
             <div className="md:col-span-5 text-white rounded-[32px] p-12 text-center flex flex-col items-center justify-center gap-6 shadow-xl relative overflow-hidden min-h-[450px]">
-              <img src={home01} alt="Nuestros Servicios" className="absolute inset-0 w-full h-full object-cover z-0" />
-              <div className="absolute inset-0 bg-slate-950/40 z-10" />
+              <img 
+                src={nuestrosServiciosImg} 
+                alt="Nuestros Servicios" 
+                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none" 
+              />
+              <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px] z-10" />
               <div className="relative z-20 flex flex-col items-center gap-4">
                 <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-black">Innovación Urbana</span>
                 <h4 className="text-3xl md:text-4xl font-extrabold">Tu escape seguro a la ciudad</h4>
