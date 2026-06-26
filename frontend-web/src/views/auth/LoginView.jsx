@@ -10,14 +10,12 @@ export const LoginView = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    
     setIsLoaded(true);
   }, []);
 
   return (
    
     <div className="w-full min-h-screen overflow-x-hidden bg-sky-100 flex items-center justify-center p-6 select-none">
-      
       
       <div 
         className={`relative bg-white w-full max-w-[1400px] h-[85vh] rounded-[32px] overflow-hidden border-none flex shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] transition-all duration-[400ms] ease-out ${
@@ -39,18 +37,18 @@ export const LoginView = () => {
             <span className="text-xl font-bold font-headline text-primary tracking-wide">ParkingPaTi</span>
           </div>
           
-          <h1 className="text-5xl font-bold font-body text-tertiary mb-10 tracking-tight text-center">Login account</h1>
+          <h1 className="text-5xl font-bold font-body text-tertiary mb-10 tracking-tight text-center">Iniciar Sesión</h1>
           
           <div className="w-full max-w-md flex flex-col items-center">
-            <Input placeholder="Email address" icon={User} />
-            <Input type="password" placeholder="Password" icon={Lock} />
+            <Input placeholder="Correo electrónico" icon={User} />
+            <Input type="password" placeholder="Contraseña" icon={Lock} />
             
             <Button variant="primary" className="w-full py-4 text-base font-bold rounded-2xl mt-4 shadow-md shadow-primary/10">
-              Login account
+              Iniciar Sesión
             </Button>
 
             <a href="#forgot" className="text-sm text-gray-400 hover:text-primary transition-colors mt-8 font-label">
-              Forgot Password?
+              ¿Olvidaste tu contraseña?
             </a>
           </div>
         </div>
@@ -69,19 +67,18 @@ export const LoginView = () => {
             <span className="text-xl font-bold font-headline text-primary tracking-wide">ParkingPaTi</span>
           </div>
           
-          <h1 className="text-5xl font-bold font-body text-tertiary mb-8 tracking-tight text-center">Create account</h1>
+          <h1 className="text-5xl font-bold font-body text-tertiary mb-8 tracking-tight text-center">Crear Cuenta</h1>
           
           <div className="w-full max-w-md flex flex-col items-center">
-            <Input placeholder="Full Name" icon={User} />
-            <Input type="email" placeholder="Email address" icon={Mail} />
-            <Input type="password" placeholder="Password" icon={Lock} />
+            <Input placeholder="Nombres " icon={User} />
+            <Input placeholder="Apellidos " icon={User} />
             
             <Button variant="primary" className="w-full py-4 text-base font-bold rounded-2xl mt-4 shadow-md shadow-primary/10">
-              Create account
+              Registrarse
             </Button>
 
             <p className="text-xs text-gray-400 text-center mt-8 max-w-xs leading-relaxed font-body">
-              By creating an account you agree to ParkingPaTi's <span className="text-primary cursor-pointer hover:underline">Terms of Service</span> and <span className="text-primary cursor-pointer hover:underline">Privacy Policy</span>.
+              Al crear una cuenta aceptas los <span className="text-primary cursor-pointer hover:underline">Términos de Servicio</span> y las <span className="text-primary cursor-pointer hover:underline">Políticas de Privacidad</span> de ParkingPaTi.
             </p>
           </div>
         </div>
@@ -113,27 +110,27 @@ export const LoginView = () => {
             {!isSignUp ? (
               <>
                 <h2 className="text-5xl font-bold font-headline leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
-                  Hello, Welcome!
+                  ¡Hola, Bienvenido!
                 </h2>
                 
                 <button 
                   onClick={() => setIsSignUp(true)}
                   className="mt-2 px-14 py-3.5 bg-transparent border-2 border-white text-white rounded-2xl text-base font-bold font-label outline-none focus:outline-none hover:bg-white hover:text-primary hover:scale-105 shadow-lg transition-all duration-200"
                 >
-                  REGISTER
+                  REGISTRARSE
                 </button>
               </>
             ) : (
               <>
                 <h2 className="text-5xl font-bold font-headline leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
-                  Welcome Back!
+                  ¡Te extrañamos!
                 </h2>
                 
                 <button 
                   onClick={() => setIsSignUp(false)}
                   className="mt-2 px-14 py-3.5 bg-transparent border-2 border-white text-white rounded-2xl text-base font-bold font-label outline-none focus:outline-none hover:bg-white hover:text-primary hover:scale-105 shadow-lg transition-all duration-200"
                 >
-                  LOGIN
+                  INGRESAR
                 </button>
               </>
             )}
