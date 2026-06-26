@@ -1,64 +1,84 @@
 from rest_framework import serializers
-from .models import Parqueadero, Espacio
+from .models import Parqueadero, Direccion, Ubicacion, Espacio
 
-# --- DTOs para Parqueadero ---
+class DireccionDTO(serializers.ModelSerializer):
+    class Meta:
+        model = Direccion
+        fields = ['calle_principal', 'calle_secundaria', 'numero_lote']
+
+
+class UbicacionDTO(serializers.ModelSerializer):
+    class Meta:
+        model = Ubicacion
+        fields = ['latitud', 'longitud']
+
+
+class EspacioDTO(serializers.ModelSerializer):
+    class Meta:
+        model = Espacio
+        fields = ['id', 'parqueadero', 'numero_espacio', 'estado']
+
 
 class ParqueaderoConductorDTO(serializers.ModelSerializer):
-    """
-    Serializer resumido para el conductor (solo lectura).
-    No expone datos administrativos como 'aprobado', 'activo' o el 'propietario'.
-    """
+    direccion = DireccionDTO(read_only=True)
+    ubicacion = UbicacionDTO(read_only=True)
+
     class Meta:
         model = Parqueadero
         fields = [
             'id', 
             'nombre', 
-            'descripcion', 
-            'calle_principal', 
-            'calle_secundaria', 
-            'referencia', 
-            'latitud', 
-            'longitud'
+            'tarifa', 
+            'disponibilidad', 
+            'direccion', 
+            'ubicacion'
         ]
         read_only_fields = fields
 
 
 class ParqueaderoPropietarioDTO(serializers.ModelSerializer):
-    """
-    Serializer completo para operaciones CRUD del propietario y administrador.
-    """
+    direccion = DireccionDTO(required=False)
+    ubicacion = UbicacionDTO(required=False)
+
     class Meta:
         model = Parqueadero
         fields = [
             'id',
             'propietario',
             'nombre',
-            'descripcion',
-            'calle_principal',
-            'calle_secundaria',
-            'referencia',
-            'latitud',
-            'longitud',
-            'aprobado',
-            'activo',
-            'fecha_registro'
+            'estado',
+            'validado',
+            'tarifa',
+            'disponibilidad',
+            'direccion',
+            'ubicacion'
         ]
-        # Para Admins
-        read_only_fields = ['id', 'aprobado', 'fecha_registro']
+        read_only_fields = ['id', 'validado']
 
+    def create(self, validated_data):
+        direccion_data = validated_data.pop('direccion', None)
+        ubicacion_data = validated_data.pop('ubicacion', None)
+        
+        parqueadero = Parqueadero.objects.create(**validated_data)
+        
+        if direccion_data:
+            Direccion.objects.create(parqueadero=parqueadero, **direccion_data)
+        if ubicacion_data:
+            Ubicacion.objects.create(parqueadero=parqueadero, **ubicacion_data)
+            
+        return parqueadero
 
-# --- DTOs para Espacio ---
+    def update(self, instance, validated_data):
+        direccion_data = validated_data.pop('direccion', None)
+        ubicacion_data = validated_data.pop('ubicacion', None)
 
-class EspacioDTO(serializers.ModelSerializer):
-    """
-    Serializer para la entidad Espacio.
-    Maneja el código y el estado (LIBRE, OCUPADO, INHABILITADO).
-    """
-    class Meta:
-        model = Espacio
-        fields = [
-            'id',
-            'parqueadero',
-            'codigo',
-            'estado'
-        ]
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if direccion_data:
+            Direccion.objects.update_or_create(parqueadero=instance, defaults=direccion_data)
+        if ubicacion_data:
+            Ubicacion.objects.update_or_create(parqueadero=instance, defaults=ubicacion_data)
+
+        return instance

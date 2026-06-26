@@ -2,9 +2,6 @@ from rest_framework import serializers
 from .models import HorarioAtencion
 
 class HorarioAtencionDTO(serializers.ModelSerializer):
-    """
-    Serializer unificado para las operaciones CRUD de HorarioAtencion.
-    """
     class Meta:
         model = HorarioAtencion
         fields = [

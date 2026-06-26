@@ -8,25 +8,17 @@ from .serializers_dto import (
 )
 
 class ParqueaderoViewSet(viewsets.ModelViewSet):
-    """
-    Controlador para gestionar la entidad Parqueadero.
-    """
     queryset = Parqueadero.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         """
-        Determina el DTO a usar según el rol del usuario y la acción.
+        `[Inferencia]` Filtra el DTO adecuado basándose en la acción y en el rol del usuario autenticado.
         """
-        # [Inferencia] Asumo que tu modelo 'Cuenta' tiene el atributo 'rol'.
-        # Si el usuario es un conductor (o no es admin/propietario), recibe el DTO público
-        usuario = self.request.user
-        
-        # Si es una petición de modificación (POST, PUT, PATCH), forzamos el DTO de escritura
         if self.action in ['create', 'update', 'partial_update']:
             return ParqueaderoPropietarioDTO
             
-        # Si es lectura, verificamos el rol
+        usuario = self.request.user
         if hasattr(usuario, 'rol') and usuario.rol in ['PROPIETARIO', 'ADMINISTRADOR']:
             return ParqueaderoPropietarioDTO
             
@@ -34,18 +26,11 @@ class ParqueaderoViewSet(viewsets.ModelViewSet):
 
 
 class EspacioViewSet(viewsets.ModelViewSet):
-    """
-    Controlador para gestionar los espacios individuales de cada parqueadero.
-    """
     queryset = Espacio.objects.all()
     serializer_class = EspacioDTO
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Permite filtrar los espacios pertenecientes a un parqueadero específico.
-        Ejemplo: GET /espacios/?parqueadero=1
-        """
         queryset = super().get_queryset()
         parqueadero_id = self.request.query_params.get('parqueadero')
         
