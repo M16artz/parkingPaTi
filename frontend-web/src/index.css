@@ -1,43 +1,86 @@
-/* 1. Inyectar los motores de Tailwind CSS */
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+/* ==========================================================================
+   1. MOTOR BASE DE TAILWIND CSS
+   Carga las capas fundamentales de Tailwind para estilos base y utilidades.
+   ========================================================================== */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
-/* 2. Cargar las fuentes oficiales desde Fontsource */
-@import "@fontsource/comfortaa/400.css";
-@import "@fontsource/comfortaa/700.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/public-sans/500.css";
-@import "@fontsource/public-sans/700.css";
+/* ==========================================================================
+   2. FUENTES OFICIALES DE PARKINGPATI (Self-hosted vía @fontsource)
+   - Comfortaa:   Títulos principales, logotipo y headings (font-headline).
+   - Inter:       Cuerpo de texto, párrafos y elementos de lectura (font-body).
+   - Public Sans: Etiquetas, badges, botones de acción y micro-copys (font-label).
+   ========================================================================== */
+@import '@fontsource/comfortaa/400.css';
+@import '@fontsource/comfortaa/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/public-sans/500.css';
+@import '@fontsource/public-sans/700.css';
 
-/* 3. Variables de diseño globales */
+/* ==========================================================================
+   3. VARIABLES DE DISEÑO GLOBALES (Paleta Alexandria - Actualizada)
+   ========================================================================== */
 :root {
-  --color-primary: #3366CC;
-  --color-secondary: #54595D;
-  --color-tertiary: #041333;
-  --color-success: #22C55E;
-  --color-danger: #EF4444;
-  --color-warning: #F59E0B;
+  /* --- Colores de Marca --- */
+  --color-primary: #0284c7;       /* El celeste de tus logos e iconos */
+  --color-primary-hover: #0369a1; 
+  --color-secondary: #334155;     
+  --color-tertiary: #0b1329;      
+
+  /* --- Estructura de Fondos de Pantalla --- */
+  
+  --color-bg: #e0f2fe;            /* El color exacto de bg-sky-100 */
+  
+  --color-bg-dash: #E4F0FC;     
+  --color-sidebar: #2E52B2;     
+
+  /* --- Estados en Tiempo Real --- */
+  --color-success: #22C55E;     
+  --color-danger: #EF4444;      
+  --color-warning: #F59E0B;     
+  --color-disabled: #94A3B8;    
+}
+/* ==========================================================================
+   4. COMPONENTES Y CAPAS CUSTOM / ANIMACIONES DE TRANSICIÓN
+   Extensiones globales y clases de utilidad para transiciones de pantalla.
+   ========================================================================== */
+@layer utilities {
+  /* Transición suave de salida para cambios de vista en la SPA */
+ 
+  .bg-bg {
+    background-color: var(--color-bg);
+  }
+
+  .view-exit-active {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+    transition: opacity 300ms ease-in, transform 300ms ease-in;
+  }
+
+  /* Target táctil mínimo recomendado para accesibilidad en dispositivos móviles */
+  .minimum-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
-/* 4. Configuración base del cuerpo de la web */
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: #F4F6FB; /* Fondo gris claro moderno */
-  color: #041333; /* Texto oscuro principal */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Ajustes globales del scrollbar para mejorar la UI general */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Estilo auxiliar para garantizar el tamaño de toque en móviles */
-.minimum-touch-target {
-  min-height: 44px;
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
 }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+
+::-webkit-scrollbar-thumb {
+  background: #C8D0E0;
+  border-radius: 9999px;
 }
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-out forwards;
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
 }
