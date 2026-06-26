@@ -8,20 +8,21 @@ class TipoIdentificacion(models.TextChoices):
     RUC = "RUC", "RUC"
 
 
-class Rol(models.TextChoices):
+class TipoRol(models.TextChoices):
     ADMINISTRADOR = "ADMINISTRADOR", "Administrador"
     PROPIETARIO = "PROPIETARIO", "Propietario"
 
 
 class Persona(models.Model):
-    nombres = models.CharField(max_length=100)
-    apellidos = models.CharField(max_length=100)
-    tipo_identificacion = models.CharField(max_length=20, choices=TipoIdentificacion.choices)
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    tipo_identificacion = models.CharField(
+        max_length=20,
+        choices=TipoIdentificacion.choices
+    )
+
     identificacion = models.CharField(max_length=20, unique=True)
-    telefono = models.CharField(max_length=20)
-    # Eliminamos email de aquí si Cuenta ya lo maneja por defecto, o lo dejamos aquí
-    # y hacemos que Cuenta use el email de Persona. Lo ideal es dejarlo en Persona:
-    email = models.EmailField(unique=True) 
+    estado = models.BooleanField(default=True)
 
     class Meta:
         indexes = [
@@ -29,18 +30,30 @@ class Persona(models.Model):
             models.Index(fields=["email"]),
         ]
 
+    def __str__(self):
+        return f"{self.nombres} {self.apellidos}"
+
 
 class Cuenta(AbstractUser):
-    persona = models.OneToOneField(Persona, on_delete=models.CASCADE, related_name="cuenta")
-    rol = models.CharField(max_length=20, choices=Rol.choices)
-    activo = models.BooleanField(default=True)
+    persona = models.OneToOneField(
+        Persona,
+        on_delete=models.CASCADE,
+        related_name="cuenta"
+    )
+    rol = models.CharField(max_length=20, choices=TipoRol.choices)
+    estado = models.BooleanField(default=True)
 
-    # Buenas prácticas: Limpiar campos heredados que no usaremos directamente en Cuenta
+    # Eliminamos para evitar duplicación con Persona.nombres / Persona.apellidos
     first_name = None
     last_name = None
+
+    correo = models.EmailField(unique=True)
 
     class Meta:
         indexes = [
             models.Index(fields=["rol"]),
-            models.Index(fields=["activo"]),
+            models.Index(fields=["estado"]),
         ]
+
+    def __str__(self):
+        return f"{self.username} ({self.get_rol_display()})"
