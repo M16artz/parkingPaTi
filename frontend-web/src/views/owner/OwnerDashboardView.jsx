@@ -1,143 +1,316 @@
+// ============================================================================
+// 1. IMPORTACIONES Y DEPENDENCIAS
+// ============================================================================
 import React, { useState } from 'react';
-import { LayoutDashboard, CalendarDays, Key, Car, Bell, Mail, Search, ChevronDown, LogOut } from 'lucide-react';
+import { LayoutDashboard, Settings, Key, Car, LogOut } from 'lucide-react'; 
 import { useNavigate } from 'react-router-dom';
 
-// RUTAS DEL ÁRBOL DE CARPETAS ACTUAL REVISADO
+// Importación de tu foto local desde la carpeta assets
+import userPhoto from '../../assets/user.png';
+
+// Vistas modulares internas
 import { OwnerInfoGeneral } from '../components/owner/OwnerInfoGeneral';
 import { OwnerConfigGeneral } from '../components/owner/OwnerConfigGeneral';
 import { OwnerConfigEspacios } from '../components/owner/OwnerConfigEspacios';
 
+// ============================================================================
+// 2. CONSTANTES DE CONFIGURACIÓN DE LA NAVEGACIÓN LATERAL
+// ============================================================================
+const NAV_ITEMS = [
+  { key: 'infoGeneral', icon: LayoutDashboard, label: 'CONFIGURACION INFORMACION', index: 0 },
+  { key: 'configGeneral', icon: Settings, label: 'CONFIGURACION GENERAL', index: 1 },
+  { key: 'configEspacios', icon: Key, label: 'CONFIGURACION ESPACIOS', index: 2 },
+];
+
+// ============================================================================
+// 3. COMPONENTE PRINCIPAL (PANEL DE CONTROL / DASHBOARD)
+// ============================================================================
 export const OwnerDashboardView = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('infoGeneral');
 
-  const navItems = [
-    { key: 'infoGeneral', icon: LayoutDashboard, label: 'Dashboard', sub: 'Overview', index: 0 },
-    { key: 'configGeneral', icon: CalendarDays, label: 'Schedule', sub: 'Shift & Rates', index: 1 },
-    { key: 'configEspacios', icon: Key, label: 'Settings', sub: 'Rates & Slots', index: 2 },
-  ];
-
-  const activeIndex = navItems.find(item => item.key === activeView)?.index ?? 0;
+  // Encontrar el índice dinámico para acoplar la cápsula flotante animada
+  const activeIndex = NAV_ITEMS.find(item => item.key === activeView)?.index ?? 0;
 
   return (
-    // 1. FONDO GENERAL AZUL REY OSCURO DE PANTALLA COMPLETA
-    <div className="w-screen h-screen bg-[#1e2f5c] flex items-center justify-center p-5 select-none overflow-hidden font-sans antialiased">
+    <div 
+      className={
+        "w-screen " + 
+        "h-screen " + 
+        "flex " + 
+        "p-6 " + 
+        "bg-bg " +               // Tu azulito/celeste bajito de fondo exterior
+        "select-none " + 
+        "overflow-hidden " + 
+        "font-sans " + 
+        "antialiased"
+      }
+    >
       
-      {/* 2. CONTENEDOR INTERNO DE LA INTERFAZ CON ESQUINAS ULTRA REDONDEADAS MASIVAS */}
-      <div className="w-full h-full bg-[#f3f6f9] rounded-[40px] flex overflow-hidden shadow-2xl relative transform-gpu">
+      {/* CONTENEDOR ENCAPSULADO CON BORDES REDONDEADOS Y SOMBRA ELEVADA */}
+      <div 
+        className={
+          "w-full " + 
+          "h-full " + 
+          "flex " + 
+          "bg-white " +            // Fondo interior blanco puro
+          "rounded-[32px] " + 
+          "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] " + 
+          "overflow-hidden"
+        }
+      >
         
-        {/* 3. BARRA LATERAL CON BORDES REDONDEADOS EN EL EXTREMO IZQUIERDO */}
-        <aside className="w-[280px] bg-[#2e52b2] flex flex-col pt-10 pb-8 px-0 text-white relative rounded-l-[40px] transform-gpu">
+        {/* ----------------------------------------------------------------- */}
+        {/* ASIDE: BARRA LATERAL AZUL DE NAVEGACIÓN ORIGINAL                  */}
+        {/* ----------------------------------------------------------------- */}
+        <aside 
+          className={
+            "w-[290px] " + 
+            "bg-primary " + 
+            "bg-gradient-to-b " + 
+            "from-primary " + 
+            "to-[#466fd3] " + 
+            "flex " + 
+            "flex-col " + 
+            "pt-12 " + 
+            "pb-8 " + 
+            "px-0 " + 
+            "text-white " + 
+            "relative " + 
+            "transform-gpu " + 
+            "z-10 " + 
+            "overflow-hidden " + 
+            "shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)]"
+          }
+        >
           
-          {/* ESTILO VISUAL DE LA TERCERA FOTO: SÓLO TEXTO E ICONOS EN BLANCO PERFECTO */}
-          <div className="flex items-center gap-3.5 px-7 mb-12 pointer-events-none select-none">
-            {/* Contenedor del icono sutilmente redondeado */}
-            <div className="w-11 h-11 rounded-[14px] bg-white/15 flex items-center justify-center backdrop-blur-sm">
-              <Car size={22} className="text-white stroke-[2.5]" />
+          {/* SECCIÓN DEL USUARIO (Foto circular y datos alineados) */}
+          <div 
+            className={
+              "flex " + 
+              "flex-col " + 
+              "items-center " + 
+              "px-6 " + 
+              "mb-10 " + 
+              "text-center"
+            }
+          >
+            {/* Contenedor de la Foto Circular */}
+            <div 
+              className={
+                "w-24 " + 
+                "h-24 " + 
+                "rounded-full " + 
+                "border-2 " + 
+                "border-teal-400 " + 
+                "p-1 " + 
+                "mb-4 " + 
+                "overflow-hidden " + 
+                "bg-white/10 " + 
+                "shadow-lg"
+              }
+            >
+              {/* Aquí se carga tu imagen user.png de assets */}
+              <img 
+                src={userPhoto} 
+                alt="User Profile" 
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
-            {/* Fuentes fluidas exactamente como el mock-up */}
-            <div className="flex flex-col text-left">
-              <span className="text-[22px] font-bold text-white tracking-tight leading-none">
-                ParkingPaTi
-              </span>
-              <span className="text-[10px] text-white/60 font-sans font-bold tracking-widest uppercase mt-1">
-                PRO MANAGER
-              </span>
-            </div>
+
+            {/* Nombre con tipografía grande y legible corregida */}
+            <h3 
+              className={
+                "text-2xl " + 
+                "font-black " + 
+                "tracking-wide " + 
+                "font-headline " + 
+                "uppercase " + 
+                "shadow-sm"
+              }
+            >
+              María Buri
+            </h3>
+            {/* Correo Electrónico Agrandado */}
+            <span 
+              className={
+                "text-base " +         // ¡Cambiado de text-xs a text-base para que sea más grande!
+                "font-semibold " +     // Un toque más grueso para mejorar el contraste
+                "text-white/80 " +     // Un blanco un poco más brillante (80% de opacidad)
+                "font-body " + 
+                "mt-1.5"
+              }
+            >
+              maria.buri@gmail.com
+            </span>
           </div>
 
-          {/* NAVEGACIÓN EMBEBIDA CON DESPLAZAMIENTO FLUIDO (MÁSCARA CORREGIDA SIN FILTRAR PÍXELES) */}
+          {/* CONTENEDOR ENVOLVENTE DE LA NAV CON TRUCO DE CÁPSULA FLOTANTE */}
           <div className="relative w-full pl-6 flex flex-col gap-1 transform-gpu">
             
-            {/* CÁPSULA FLOTANTE DETRÁS DE LOS BOTONES */}
+            {/* Fondo Blanco de Acople Animado Detrás de la Opción Activa */}
             <div 
-              className="absolute right-0 w-[256px] h-[64px] bg-[#f3f6f9] rounded-l-[32px] transition-all duration-300 ease-out transform-gpu"
+              className={
+                "absolute " + 
+                "right-0 " + 
+                "w-[266px] " + 
+                "h-[64px] " + 
+                "bg-white " + 
+                "rounded-l-[32px] " + 
+                "transition-all " + 
+                "duration-300 " + 
+                "ease-out " + 
+                "transform-gpu"
+              }
               style={{ 
                 top: `${activeIndex * 68}px`,
-                willChange: 'transform'
+                willChange: 'transform',
+                marginRight: '-1px'
               }}
             >
-              {/* TRUCO ANTI-ALIASING CON BOX-SHADOW: Genera esquinas perfectamente nítidas sin despixelar */}
-              <div className="absolute right-0 -top-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
-                <div className="w-full h-full rounded-br-[20px] shadow-[4px_4px_0_4px_#f3f6f9]" />
+              {/* Curvatura Interna Superior acoplada al fondo blanco */}
+              <div className="absolute right-0 -top-[21px] w-[21px] h-[21px] overflow-hidden pointer-events-none">
+                <div className="w-full h-full rounded-br-[21px] shadow-[5px_5px_0_6px_#ffffff]" />
               </div>
-              <div className="absolute right-0 -bottom-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
-                <div className="w-full h-full rounded-tr-[20px] shadow-[4px_-4px_0_4px_#f3f6f9]" />
+              {/* Curvatura Interna Inferior acoplada al fondo blanco */}
+              <div className="absolute right-0 -bottom-[21px] w-[21px] h-[21px] overflow-hidden pointer-events-none">
+                <div className="w-full h-full rounded-tr-[21px] shadow-[5px_-5px_0_6px_#ffffff]" />
               </div>
             </div>
 
-            {/* BOTONES INTERACTIVOS */}
-            {navItems.map((item) => {
+            {/* GENERACIÓN ITERATIVA DE BOTONES DE ACCESO DE LA NAV */}
+            {NAV_ITEMS.map((item) => {
               const isActive = activeView === item.key;
               return (
                 <button
                   key={item.key}
+                  type="button"
                   onClick={() => setActiveView(item.key)}
-                  className={`z-10 flex items-center justify-between pl-6 pr-4 h-[64px] rounded-l-[32px] font-bold text-[14px] w-full text-left group transition-colors duration-300 border-none outline-none focus:outline-none ${
-                    isActive ? 'text-[#2e52b2]' : 'text-white/70 hover:text-white'
-                  }`}
+                  className={
+                    "z-10 " + 
+                    "flex " + 
+                    "items-center " + 
+                    "justify-between " + 
+                    "pl-8 " + 
+                    "pr-4 " + 
+                    "h-[64px] " + 
+                    "rounded-l-[32px] " + 
+                    "font-bold " + 
+                    "text-[13px] " + 
+                    "tracking-wider " + 
+                    "w-full " + 
+                    "text-left " + 
+                    "group " + 
+                    "transition-colors " + 
+                    "duration-300 " + 
+                    "border-none " + 
+                    "outline-none " + 
+                    "focus:outline-none " + 
+                    (isActive ? 'text-primary' : 'text-white/70 hover:text-white')
+                  }
                 >
-                  <div className="flex items-center gap-3.5">
-                    <item.icon size={18} className={`transition-colors duration-200 ${isActive ? 'text-[#2e52b2]' : 'text-white/60 group-hover:text-white'}`} />
-                    <div className="flex flex-col">
-                      <span>{item.label}</span>
-                      <span className={`text-[10px] font-medium leading-none mt-0.5 transition-colors duration-200 ${isActive ? 'text-slate-400' : 'text-white/40'}`}>
-                        {item.sub}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <item.icon 
+                      size={20} 
+                      className={
+                        "transition-colors " + 
+                        "duration-200 " + 
+                        (isActive ? 'text-primary' : 'text-white/50 group-hover:text-white')
+                      } 
+                    />
+                    <span>{item.label}</span>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* BOTÓN DE LOG OUT */}
+          {/* BOTÓN DE CIERRE DE SESIÓN (Log Out) */} 
           <button
+            type="button"
             onClick={() => navigate('/login')}
-            className="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-[14px] text-white/60 hover:bg-white/5 hover:text-white transition-all mt-auto mx-6 group text-left transform-gpu"
+            className={
+              "flex " + 
+              "items-center " + 
+              "gap-4 " + 
+              "px-8 " + 
+              "py-4 " + 
+              "rounded-2xl " + 
+              "font-bold " + 
+              "text-[13px] " + 
+              "tracking-wider " + 
+              "text-white/50 " + 
+              "hover:bg-white/5 " + 
+              "hover:text-white " + 
+              "transition-all " + 
+              "mt-auto " + 
+              "mx-6 " + 
+              "group " + 
+              "text-left " + 
+              "transform-gpu"
+            }
           >
-            <LogOut size={16} className="text-white/40 group-hover:text-white transition-colors" />
-            <span>Log Out</span>
+            <LogOut size={18} className="text-white/40 group-hover:text-white transition-colors" />
+            <span>LOG OUT</span>
           </button>
         </aside>
 
-        {/* 4. SECCIÓN PRINCIPAL DE CONTENIDO */}
-        <main className="flex-1 p-10 flex flex-col overflow-y-auto bg-[#f3f6f9] transform-gpu">
+        {/* ----------------------------------------------------------------- */}
+        {/* MAIN: ÁREA CENTRAL DE CONTENIDO VARIABLE                          */}
+        {/* ----------------------------------------------------------------- */}
+        <main 
+          className={
+            "flex-1 " + 
+            "pt-6 " + 
+            "pb-12 " + 
+            "px-12 " + 
+            "flex " + 
+            "flex-col " + 
+            "overflow-y-auto " + 
+            "bg-white " + 
+            "transform-gpu " + 
+            "z-0"
+          }
+        >
           
-          {/* HEADER DE LA APLICACIÓN */}
-          <header className="w-full flex items-center justify-between mb-8 transform-gpu">
-            <div className="relative w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="w-full bg-white pl-11 pr-4 py-2.5 rounded-2xl text-xs font-semibold text-slate-700 placeholder-slate-300 shadow-sm shadow-slate-100/50 focus:outline-none focus:ring-2 focus:ring-[#2e52b2]/10"
-              />
-            </div>
+          {/* ENCABEZADO: Título dinámico a la izquierda y LOGO CORPORATIVO realzado a la derecha */}
+          <header 
+            className={
+              "w-full " + 
+              "flex " + 
+              "items-center " + 
+              "justify-between " + 
+              "mb-8 " + 
+              "transform-gpu"
+            }
+          >
+            {/* Título de la sección activa */}
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight  font-headline mt-4">
+              {activeView === 'infoGeneral' && "Panel de Control"}
+              {activeView === 'configGeneral' && "Configuración General"}
+              {activeView === 'configEspacios' && "Gestión de Espacios"}
+            </h1>
 
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-500 bg-white px-3 py-2 rounded-xl shadow-sm shadow-slate-100/50 cursor-pointer hover:bg-slate-50 transition-colors">
-                <span>ENG</span> <ChevronDown size={12} className="text-slate-400" />
-              </div>
-              <div className="flex items-center gap-4 text-slate-400">
-                <Mail size={16} className="cursor-pointer hover:text-slate-700 transition-colors" />
-                <Bell size={16} className="cursor-pointer hover:text-slate-700 transition-colors" />
-              </div>
-              
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" 
-                  alt="Avatar Owner" 
-                  className="w-8 h-8 rounded-full object-cover shadow-sm border border-white"
-                />
-                <span className="text-xs font-black text-slate-800 flex items-center gap-1 cursor-pointer">
-                  Grace Stanley <ChevronDown size={12} className="text-slate-400" />
-                </span>
-              </div>
+            {/* LOGO CORPORATIVO (Grande y elevado en la esquina superior derecha) */}
+            <div 
+              className={
+                "flex " + 
+                "items-center " + 
+                "gap-3 " + 
+                "pointer-events-none " + 
+                "select-none " + 
+                "text-primary " + 
+                "mt-2"
+              }
+            >
+              <Car size={36} className="text-primary" />
+              <span className="text-2xl font-black tracking-wide font-headline">
+                ParkingPaTi
+              </span>
             </div>
           </header>
 
-          {/* VISTAS MODULARES */}
+          {/* VISTAS MODULARES CONMUTABLES */}
           <section className="w-full flex-1 transform-gpu">
             {activeView === 'infoGeneral' && <OwnerInfoGeneral />}
             {activeView === 'configGeneral' && <OwnerConfigGeneral />}
