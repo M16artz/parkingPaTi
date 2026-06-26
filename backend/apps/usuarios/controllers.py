@@ -8,24 +8,16 @@ from .serializers_dto import (
 )
 
 class PersonaViewSet(viewsets.ModelViewSet):
-    """
-    Controlador para gestionar la entidad Persona.
-    """
     queryset = Persona.objects.all()
     serializer_class = PersonaDTO
     permission_classes = [IsAuthenticated]
 
 
 class CuentaViewSet(viewsets.ModelViewSet):
-    #Controlador para gestionar la entidad Cuenta (autenticación y roles).
-
     queryset = Cuenta.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        """
-        Intercambia el DTO dependiendo de la acción HTTP.
-        """
         if self.action in ['list', 'retrieve']:
             return CuentaLecturaDTO
         return CuentaEscrituraDTO

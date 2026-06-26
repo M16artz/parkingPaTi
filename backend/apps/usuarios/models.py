@@ -31,7 +31,7 @@ class Persona(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.nombres} {self.apellidos}"
+        return f"{self.nombre} {self.apellido}"
 
 
 class Cuenta(AbstractUser):

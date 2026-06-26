@@ -9,9 +9,6 @@ class HorarioAtencionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Ejemplo de petición: GET /horarios/?parqueadero=5
-        """
         queryset = super().get_queryset()
         parqueadero_id = self.request.query_params.get('parqueadero')
         

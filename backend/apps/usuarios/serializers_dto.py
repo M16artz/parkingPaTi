@@ -2,27 +2,19 @@ from rest_framework import serializers
 from .models import Persona, Cuenta
 
 class PersonaDTO(serializers.ModelSerializer):
-    """
-    Serializer para operaciones CRUD de la entidad Persona.
-    """
     class Meta:
         model = Persona
         fields = [
             'id', 
-            'nombres', 
-            'apellidos', 
+            'nombre', 
+            'apellido', 
             'tipo_identificacion', 
             'identificacion', 
-            'telefono', 
-            'email'
+            'estado'
         ]
 
 
 class CuentaLecturaDTO(serializers.ModelSerializer):
-    """
-    Serializer para lectura de Cuenta.
-    Expone la información de la cuenta y anida los datos completos de la Persona.
-    """
     persona = PersonaDTO(read_only=True)
 
     class Meta:
@@ -31,24 +23,22 @@ class CuentaLecturaDTO(serializers.ModelSerializer):
             'id', 
             'username', 
             'rol', 
-            'activo', 
+            'estado',
+            'correo',
             'persona'
         ]
         read_only_fields = fields
 
 
 class CuentaEscrituraDTO(serializers.ModelSerializer):
-    """
-    Serializer para creación y actualización de Cuentas.
-    Protege la contraseña configurándola como solo escritura (write_only).
-    """
     class Meta:
         model = Cuenta
         fields = [
             'username', 
             'password', 
             'rol', 
-            'activo', 
+            'estado',
+            'correo',
             'persona'
         ]
         extra_kwargs = {
@@ -56,14 +46,9 @@ class CuentaEscrituraDTO(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        """
-        Sobrescribe el método de creación para asegurar el hashing de la contraseña.
-        """
         password = validated_data.pop('password', None)
-        # Se crea la instancia de la cuenta sin la contraseña
         cuenta = super().create(validated_data)
         
-        # Se aplica el hash a la contraseña usando el método nativo de AbstractUser
         if password:
             cuenta.set_password(password)
             cuenta.save()
