@@ -55,6 +55,18 @@ class ParqueaderoDetalleDTO(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "validado", "propietario"]
 
+    def create(self, validated_data):
+        direccion_data = validated_data.pop('direccion', None)
+        ubicacion_data = validated_data.pop('ubicacion', None)
+        
+        parqueadero = Parqueadero.objects.create(**validated_data)
+        
+        if direccion_data:
+            Direccion.objects.create(parqueadero=parqueadero, **direccion_data)
+        if ubicacion_data:
+            Ubicacion.objects.create(parqueadero=parqueadero, **ubicacion_data)
+            
+        return parqueadero
 
 class ParqueaderoCrearDTO(serializers.Serializer):
     nombre = serializers.CharField(max_length=150)

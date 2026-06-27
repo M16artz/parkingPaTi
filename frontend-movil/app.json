@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "ParkingPaTi Móvil",
+    "slug": "frontend-movil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logoSimpleM.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logoM.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#041333"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#041333",
+        "foregroundImage": "./assets/logoSimpleM.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
