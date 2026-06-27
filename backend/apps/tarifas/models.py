@@ -1,8 +1,13 @@
 from django.db import models
 from apps.parqueaderos.models import Parqueadero
 
-
 class EstrategiaTarifa(models.Model):
+    # Movemos el parqueadero a la clase padre
+    parqueadero = models.OneToOneField(
+        Parqueadero,
+        on_delete=models.CASCADE,
+        related_name="tarifa" # Simplificamos el related_name
+    )
     precio_hora = models.DecimalField(max_digits=8, decimal_places=2)
 
     class Meta:
@@ -11,17 +16,11 @@ class EstrategiaTarifa(models.Model):
         ]
 
     def __str__(self):
-        return f"Estrategia base: ${self.precio_hora}/hora"
+        return f"Tarifa Normal: ${self.precio_hora}/hora - {self.parqueadero}"
 
 
 class IncrementoTarifa(EstrategiaTarifa):
-    parqueadero = models.OneToOneField(
-        Parqueadero,
-        on_delete=models.CASCADE,
-        related_name="incremento_tarifa",
-        null=True,
-        blank=True
-    )
+    # Hereda 'parqueadero' y 'precio_hora' automáticamente
     porcentaje = models.DecimalField(max_digits=5, decimal_places=2)
 
     def __str__(self):
@@ -29,13 +28,7 @@ class IncrementoTarifa(EstrategiaTarifa):
 
 
 class DescuentoTarifa(EstrategiaTarifa):
-    parqueadero = models.OneToOneField(
-        Parqueadero,
-        on_delete=models.CASCADE,
-        related_name="descuento_tarifa",
-        null=True,
-        blank=True
-    )
+    # Hereda 'parqueadero' y 'precio_hora' automáticamente
     porcentaje = models.DecimalField(max_digits=5, decimal_places=2)
 
     def __str__(self):

@@ -2,9 +2,6 @@ from rest_framework import serializers
 from .models import HorarioAtencion
 
 class HorarioAtencionDTO(serializers.ModelSerializer):
-    """
-    Serializer unificado para las operaciones CRUD de HorarioAtencion.
-    """
     class Meta:
         model = HorarioAtencion
         fields = [
@@ -25,3 +22,9 @@ class HorarioAtencionDTO(serializers.ModelSerializer):
                     "La hora de apertura debe ser anterior a la hora de cierre."
                 )
         return data
+
+class HorarioAtencionCrearDTO(serializers.Serializer):
+    parqueadero = serializers.IntegerField()
+    dia_semana = serializers.ChoiceField(choices=HorarioAtencion._meta.get_field("dia_semana").choices)
+    hora_apertura = serializers.TimeField()
+    hora_cierre = serializers.TimeField()

@@ -1,0 +1,10 @@
+"""Rutas de documentos."""
+
+from rest_framework.routers import DefaultRouter
+
+from apps.documentos.controllers import DocumentoViewSet
+
+router = DefaultRouter()
+router.register(r"documentos", DocumentoViewSet, basename="documento")
+
+urlpatterns = router.urls
