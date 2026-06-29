@@ -1,8 +1,23 @@
+# Core de Django y utilidades del sistema
+Django==5.1.4
 asgiref==3.11.1
-Django==5.1
-djangorestframework==3.17.1
-psycopg==3.3.4
-psycopg-binary==3.3.4
-python-dotenv==1.2.2
 sqlparse==0.5.5
 tzdata==2026.2
+
+# Base de datos (PostgreSQL v3 con soporte binario)
+psycopg==3.3.4
+psycopg-binary==3.3.4
+
+# Variables de entorno
+python-decouple==3.8
+python-dotenv==1.2.2
+
+# Django REST Framework y Seguridad
+djangorestframework==3.17.1
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.4.0
+django-filter==24.3
+
+# WebSockets y Asincronía (Channels)
+channels==4.1.0
+channels-redis==4.2.1
