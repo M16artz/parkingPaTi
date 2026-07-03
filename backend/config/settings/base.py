@@ -1,16 +1,16 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 from dotenv import load_dotenv
 
-# Sube 4 niveles desde este archivo para encontrar la raíz donde está el .env
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-
-# Cargar las variables de entorno
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key-if-env-fails')
+# CORRECCIÓN: Si falta la variable en el .env, la app no levanta (falla seguro).
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
 INSTALLED_APPS = [
+    'daphne', # ASGI server para desarrollo
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -19,17 +19,21 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Terceros
     'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    'channels',
+    # Apps locales
     'apps.usuarios',
     'apps.parqueaderos',
     'apps.tarifas',
     'apps.horarios',
     'apps.documentos',
-    # Tus aplicaciones locales (ej: 'apps.usuarios') se registrarán aquí más adelante
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # CORRECCIÓN: CORS agregado
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -38,6 +42,31 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
+
+# CORRECCIÓN: Configuración de DRF y JWT requerida para que funcione la autenticación
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
+# CORRECCIÓN: Configuración de Channels (In-Memory para MVP)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
 
 TEMPLATES = [
     {
@@ -65,13 +94,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Configuración regional (Ecuador)
 LANGUAGE_CODE = 'es-ec'
 TIME_ZONE = 'America/Guayaquil'
 USE_I18N = True
 USE_TZ = True
-
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 AUTH_USER_MODEL = 'usuarios.Cuenta'

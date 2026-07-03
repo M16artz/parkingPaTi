@@ -34,14 +34,12 @@ class DocumentoViewSet(viewsets.ModelViewSet):
         return Documento.objects.filter(cuenta=user)
 
     def perform_create(self, serializer):
-
-        # OPCIÓN A: Si DocumentoService es estrictamente necesario para la creación:
-        # ruta_archivo = self.request.data.get('ruta')
-        # fecha_exp = serializer.validated_data.get('fecha_expiracion')
-        # DocumentoService.subir_documento(self.request.user, ruta_archivo, fecha_exp)
+        # CORRECCIÓN: Extraer los datos validados del Serializer plano e inyectarlos al Service
+        archivo = serializer.validated_data.get('archivo')
+        fecha_exp = serializer.validated_data.get('fecha_expiracion')
         
-        # OPCIÓN B: Si ModelViewSet es suficiente y solo necesitas atar el usuario:
-        serializer.save(cuenta=self.request.user)
+        # El servicio se encarga de subir a Drive y crear el registro en BD
+        DocumentoService.subir_documento(self.request.user, archivo, fecha_exp)
 
     def perform_destroy(self, instance):
         """

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.core.validators import FileExtensionValidator
 from .models import Documento
 
 
@@ -16,12 +17,13 @@ class DocumentoLecturaDTO(serializers.ModelSerializer):
 
 
 class DocumentoEscrituraDTO(serializers.Serializer):
-    """
-    Antes era un ModelSerializer que exponia `cuenta` (redundante: el
-    controlador siempre lo sobreescribe con request.user) y `ruta` como
-    texto libre (permitiendo al cliente inventar cualquier URL sin que el
-    backend subiera realmente nada a Google Drive). Ahora recibe el
-    archivo real y `ruta` la calcula el servicio tras subirlo.
-    """
-    archivo = serializers.FileField(write_only=True)
+    archivo = serializers.FileField(
+        write_only=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'png'])]
+    )
     fecha_expiracion = serializers.DateField(required=False, allow_null=True)
+
+    def validate_archivo(self, value):
+        if value.size > 5 * 1024 * 1024:  # Limite de 5MB
+            raise serializers.ValidationError("El archivo no puede superar los 5MB.")
+        return value
