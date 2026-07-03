@@ -27,7 +27,7 @@ class Persona(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["identificacion"]),
-            models.Index(fields=["email"]),
+            # Se quitó models.Index(fields=["email"]) para evitar errores de compilación
         ]
 
     def __str__(self):
@@ -35,15 +35,16 @@ class Persona(models.Model):
 
 
 class Cuenta(AbstractUser):
-    persona = models.OneToOneField(
+    # Se cambia OneToOneField por ForeignKey para respetar la relación 1 a 0..* del diagrama
+    persona = models.ForeignKey(
         Persona,
         on_delete=models.CASCADE,
-        related_name="cuenta"
+        related_name="cuentas" # Se cambia a plural por convención de uno a muchos
     )
     rol = models.CharField(max_length=20, choices=TipoRol.choices)
     estado = models.BooleanField(default=True)
 
-    # Eliminamos para evitar duplicación con Persona.nombres / Persona.apellidos
+    # Ocultamos para evitar duplicación con Persona.nombre / Persona.apellido
     first_name = None
     last_name = None
 
