@@ -100,4 +100,4 @@ class Espacio(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.codigo} - {self.get_estado_display()}"
+        return f"{self.numero_espacio} - {self.get_estado_display()}"
