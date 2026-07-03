@@ -42,3 +42,4 @@ class DisponibilidadConsumer(AsyncWebsocketConsumer):
             "estado": event["estado"],
             "disponibles": event["disponibles"],
         }))
+        

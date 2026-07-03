@@ -12,6 +12,7 @@ from channels.layers import get_channel_layer
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.parqueaderos.repositories import EspacioRepository, ParqueaderoRepository
+from core.permissions import es_administrador
 
 
 class ParqueaderoService:
@@ -43,6 +44,12 @@ class ParqueaderoService:
     def actualizar(parqueadero_id, cuenta_solicitante, **datos):
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
+        # "validado" nunca puede llegar por esta via: solo ParqueaderoService.validar()
+        # (invocado desde el endpoint /validar/, protegido con EsAdministrador) puede
+        # cambiarlo. Se descarta explicitamente aunque el DTO de arriba ya lo excluya,
+        # como defensa en profundidad.
+        datos.pop("validado", None)
+        datos.pop("propietario", None)
         return ParqueaderoRepository.actualizar(parqueadero, **datos)
 
     @staticmethod
@@ -59,9 +66,11 @@ class ParqueaderoService:
 
     @staticmethod
     def _verificar_propietario(parqueadero, cuenta_solicitante):
-        # Cambiado 'parqueadero.cuenta_id' por 'parqueadero.propietario_id'
-        es_admin = getattr(cuenta_solicitante.rol, "nombre", None) == "ADMINISTRADOR"
-        if not es_admin and parqueadero.propietario_id != cuenta_solicitante.id:
+        # Cambiado 'parqueadero.cuenta_id' por 'parqueadero.propietario_id'.
+        # Bug corregido: antes se comparaba getattr(rol, "nombre", None), pero
+        # `rol` es un CharField (un string), no un objeto - esa comparacion
+        # siempre daba False y ningun administrador pasaba este chequeo.
+        if not es_administrador(cuenta_solicitante) and parqueadero.propietario_id != cuenta_solicitante.id:
             raise PermissionDenied("No tienes permiso para modificar este parqueadero.")
 
 

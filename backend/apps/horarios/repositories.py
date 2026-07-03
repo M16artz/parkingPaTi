@@ -1,6 +1,7 @@
 """Patron Repository para horarios de atencion."""
 
 from apps.horarios.models import HorarioAtencion
+from core.repositories import actualizar_generico
 
 
 class HorarioAtencionRepository:
@@ -13,20 +14,22 @@ class HorarioAtencionRepository:
         return HorarioAtencion.objects.select_related("parqueadero").filter(id=horario_id).first()
 
     @staticmethod
-    def crear(parqueadero, dia_semana, hora_apertura, hora_cierre):
+    def crear(parqueadero, dia, hora_apertura, hora_cierre):
+        # BUG CORREGIDO: el modelo HorarioAtencion define el campo como
+        # "dia", no "dia_semana" - el kwarg de abajo debe llamarse igual
+        # o Django lanza TypeError al crear.
         return HorarioAtencion.objects.create(
             parqueadero=parqueadero,
-            dia_semana=dia_semana,
+            dia=dia,
             hora_apertura=hora_apertura,
             hora_cierre=hora_cierre,
         )
 
     @staticmethod
     def actualizar(horario, **datos):
-        for campo, valor in datos.items():
-            setattr(horario, campo, valor)
-        horario.save()
-        return horario
+        return actualizar_generico(
+            horario, campos_permitidos={"dia", "hora_apertura", "hora_cierre"}, **datos
+        )
 
     @staticmethod
     def eliminar(horario):

@@ -9,7 +9,6 @@ psycopg==3.3.4
 psycopg-binary==3.3.4
 
 # Variables de entorno
-python-decouple==3.8
 python-dotenv==1.2.2
 
 # Django REST Framework y Seguridad

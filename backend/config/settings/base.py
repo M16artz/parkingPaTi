@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     'apps.usuarios',
     'apps.parqueaderos',
     'apps.tarifas',
+    'apps.horarios',
+    'apps.documentos',
     # Tus aplicaciones locales (ej: 'apps.usuarios') se registrarán aquí más adelante
 ]
 

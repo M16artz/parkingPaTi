@@ -3,6 +3,7 @@ Patrón Repository para la app usuarios.
 """
 
 from apps.usuarios.models import Cuenta, Persona
+from core.repositories import actualizar_generico
 
 
 class PersonaRepository:
@@ -41,10 +42,7 @@ class CuentaRepository:
 
     @staticmethod
     def actualizar(cuenta, **datos):
-        for campo, valor in datos.items():
-            setattr(cuenta, campo, valor)
-        cuenta.save()
-        return cuenta
+        return actualizar_generico(cuenta, campos_permitidos={"correo", "estado"}, **datos)
 
     @staticmethod
     def eliminar(cuenta):

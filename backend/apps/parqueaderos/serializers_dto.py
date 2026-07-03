@@ -4,7 +4,7 @@ DTOs para parqueaderos y espacios.
 
 from rest_framework import serializers
 
-from apps.parqueaderos.models import Direccion, Espacio, Parqueadero, TipoEstado, Ubicacion
+from apps.parqueaderos.models import Direccion, Disponibilidad, Espacio, Parqueadero, TipoEstado, Ubicacion
 from apps.parqueaderos.repositories import EspacioRepository
 
 
@@ -38,6 +38,13 @@ class ParqueaderoResumenDTO(serializers.ModelSerializer):
         fields = ["id", "nombre", "ubicacion", "tarifa", "disponibilidad", "espacios_disponibles"]
 
     def get_espacios_disponibles(self, obj):
+        # Usa el valor pre-calculado por ParqueaderoRepository.listar()
+        # (annotate) cuando esta disponible, evitando el N+1 de antes.
+        # Fallback a la query individual solo si el objeto no vino del
+        # repositorio anotado (p. ej. en tests unitarios del serializer).
+        anotado = getattr(obj, "espacios_disponibles_count", None)
+        if anotado is not None:
+            return anotado
         return EspacioRepository.contar_disponibles(obj.id)
 
 
@@ -55,18 +62,25 @@ class ParqueaderoDetalleDTO(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "validado", "propietario"]
 
-    def create(self, validated_data):
-        direccion_data = validated_data.pop('direccion', None)
-        ubicacion_data = validated_data.pop('ubicacion', None)
-        
-        parqueadero = Parqueadero.objects.create(**validated_data)
-        
-        if direccion_data:
-            Direccion.objects.create(parqueadero=parqueadero, **direccion_data)
-        if ubicacion_data:
-            Ubicacion.objects.create(parqueadero=parqueadero, **ubicacion_data)
-            
-        return parqueadero
+    # NOTA: se elimino el metodo create() que existia aqui - era codigo
+    # muerto (la creacion real siempre pasa por ParqueaderoService/
+    # ParqueaderoRepository.crear, ver ParqueaderoViewSet.create), y
+    # mantener dos caminos de creacion divergentes es una fuente de bugs.
+
+
+class ParqueaderoActualizarDTO(serializers.Serializer):
+    """
+    DTO de whitelist para PUT/PATCH (hallazgo 2.3: antes `update`/
+    `partial_update` pasaban request.data crudo al repositorio via
+    **kwargs, permitiendo mass assignment de `validado` o `propietario`).
+    Solo se exponen los campos que un propietario puede modificar; `validado`
+    y `propietario` quedan fuera a proposito.
+    """
+    nombre = serializers.CharField(max_length=150, required=False)
+    estado = serializers.BooleanField(required=False)
+    tarifa = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
+    disponibilidad = serializers.ChoiceField(choices=Disponibilidad.choices, required=False)
+
 
 class ParqueaderoCrearDTO(serializers.Serializer):
     nombre = serializers.CharField(max_length=150)
@@ -107,3 +121,4 @@ class EspacioCrearDTO(serializers.Serializer):
 
 class EspacioCambiarEstadoDTO(serializers.Serializer):
     estado = serializers.ChoiceField(choices=TipoEstado.choices)
+    

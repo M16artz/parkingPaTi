@@ -2,3 +2,5 @@ venv/
 env/
 node_modules/
 frontend-web/node_modules/
+frontend-movil/node_modules/
+migrations/

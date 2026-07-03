@@ -5,6 +5,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.horarios.repositories import HorarioAtencionRepository
 from apps.parqueaderos.services import ParqueaderoService
+from core.permissions import es_administrador
 
 
 class HorarioAtencionService:
@@ -13,7 +14,7 @@ class HorarioAtencionService:
         return HorarioAtencionRepository.listar_por_parqueadero(parqueadero_id)
 
     @staticmethod
-    def crear(parqueadero_id, dia_semana, hora_apertura, hora_cierre, cuenta_solicitante):
+    def crear(parqueadero_id, dia, hora_apertura, hora_cierre, cuenta_solicitante):
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
 
@@ -21,9 +22,9 @@ class HorarioAtencionService:
             raise ValidationError("La hora de apertura debe ser anterior a la hora de cierre.")
 
         try:
-            return HorarioAtencionRepository.crear(parqueadero, dia_semana, hora_apertura, hora_cierre)
+            return HorarioAtencionRepository.crear(parqueadero, dia, hora_apertura, hora_cierre)
         except IntegrityError:
-            raise ValidationError(f"Ya existe un horario configurado para {dia_semana} en este parqueadero.")
+            raise ValidationError(f"Ya existe un horario configurado para {dia} en este parqueadero.")
 
     @staticmethod
     def actualizar(horario_id, cuenta_solicitante, **datos):
@@ -34,7 +35,10 @@ class HorarioAtencionService:
         if hora_apertura >= hora_cierre:
             raise ValidationError("La hora de apertura debe ser anterior a la hora de cierre.")
 
-        return HorarioAtencionRepository.actualizar(horario, **datos)
+        try:
+            return HorarioAtencionRepository.actualizar(horario, **datos)
+        except IntegrityError:
+            raise ValidationError("Ya existe un horario configurado para ese dia en este parqueadero.")
 
     @staticmethod
     def eliminar(horario_id, cuenta_solicitante):
@@ -52,8 +56,11 @@ class HorarioAtencionService:
         if horario is None:
             raise ValidationError("El horario solicitado no existe.")
 
-        es_admin = getattr(cuenta_solicitante.rol, "nombre", None) == "ADMINISTRADOR"
-        if not es_admin and horario.parqueadero.cuenta_id != cuenta_solicitante.id:
+        # BUG CORREGIDO: antes se comparaba horario.parqueadero.cuenta_id,
+        # pero Parqueadero ya no tiene el campo "cuenta" (se renombro a
+        # "propietario"); ademas el chequeo de rol tenia el mismo bug de
+        # getattr(rol, "nombre") que en las otras apps.
+        if not es_administrador(cuenta_solicitante) and horario.parqueadero.propietario_id != cuenta_solicitante.id:
             raise PermissionDenied("No tienes permiso para modificar este horario.")
 
         return horario

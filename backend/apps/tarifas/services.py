@@ -2,6 +2,7 @@
 Capa de servicio para tarifas. Reglas de negocio sobre tarifas normales, incrementos y descuentos.
 """
 
+from django.db import IntegrityError, transaction
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.parqueaderos.services import ParqueaderoService
@@ -10,11 +11,11 @@ from apps.tarifas.repositories import (
     EstrategiaTarifaRepository,
     IncrementoTarifaRepository,
 )
+from core.permissions import es_administrador
 
 
 def _verificar_permiso(tarifa, cuenta_solicitante):
-    es_admin = getattr(cuenta_solicitante, "rol", None) == "ADMINISTRADOR"
-    if not es_admin and tarifa.parqueadero.propietario_id != cuenta_solicitante.id:
+    if not es_administrador(cuenta_solicitante) and tarifa.parqueadero.propietario_id != cuenta_solicitante.id:
         raise PermissionDenied("No tienes permiso para modificar esta tarifa.")
 
 
@@ -35,10 +36,20 @@ class EstrategiaTarifaService:
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
 
-        if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+        # NOTA (hallazgo 5.1): el chequeo "ya existe" + la creacion no son
+        # atomicos entre si a nivel de aplicacion, asi que ante dos requests
+        # concurrentes ambos podrian pasar el chequeo. Por eso se envuelve en
+        # una transaccion y se captura IntegrityError: el OneToOneField de
+        # EstrategiaTarifa.parqueadero es la garantia real (a nivel de BD)
+        # de unicidad; aqui solo se traduce ese error a un 400 legible en
+        # vez de dejar que escale a un 500.
+        try:
+            with transaction.atomic():
+                if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+                    raise ValidationError("Este parqueadero ya tiene una tarifa configurada.")
+                return EstrategiaTarifaRepository.crear(parqueadero, precio_hora)
+        except IntegrityError:
             raise ValidationError("Este parqueadero ya tiene una tarifa configurada.")
-
-        return EstrategiaTarifaRepository.crear(parqueadero, precio_hora)
 
     @staticmethod
     def actualizar(estrategia_id, cuenta_solicitante, **datos):
@@ -71,10 +82,13 @@ class IncrementoTarifaService:
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
 
-        if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+        try:
+            with transaction.atomic():
+                if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+                    raise ValidationError("Este parqueadero ya tiene una tarifa o estrategia configurada.")
+                return IncrementoTarifaRepository.crear(parqueadero, precio_hora, porcentaje)
+        except IntegrityError:
             raise ValidationError("Este parqueadero ya tiene una tarifa o estrategia configurada.")
-
-        return IncrementoTarifaRepository.crear(parqueadero, precio_hora, porcentaje)
 
     @staticmethod
     def actualizar(incremento_id, cuenta_solicitante, **datos):
@@ -107,10 +121,13 @@ class DescuentoTarifaService:
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
 
-        if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+        try:
+            with transaction.atomic():
+                if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+                    raise ValidationError("Este parqueadero ya tiene una tarifa o estrategia configurada.")
+                return DescuentoTarifaRepository.crear(parqueadero, precio_hora, porcentaje)
+        except IntegrityError:
             raise ValidationError("Este parqueadero ya tiene una tarifa o estrategia configurada.")
-
-        return DescuentoTarifaRepository.crear(parqueadero, precio_hora, porcentaje)
 
     @staticmethod
     def actualizar(descuento_id, cuenta_solicitante, **datos):

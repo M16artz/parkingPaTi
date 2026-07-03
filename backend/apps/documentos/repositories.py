@@ -1,6 +1,7 @@
 """Patron Repository para documentos."""
 
 from apps.documentos.models import Documento
+from core.repositories import actualizar_generico
 
 
 class DocumentoRepository:
@@ -20,11 +21,11 @@ class DocumentoRepository:
 
     @staticmethod
     def actualizar(documento, **datos):
-        for campo, valor in datos.items():
-            setattr(documento, campo, valor)
-        documento.save()
-        return documento
+        return actualizar_generico(
+            documento, campos_permitidos={"es_valido", "fecha_expiracion", "ruta"}, **datos
+        )
 
     @staticmethod
     def eliminar(documento):
         documento.delete()
+        

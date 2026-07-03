@@ -2,6 +2,7 @@
 DTOs (serializers de DRF) para la app usuarios.
 """
 
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -47,6 +48,47 @@ class CuentaActualizarDTO(serializers.ModelSerializer):
         model = Cuenta
         fields = ["correo", "password", "estado"]
 
+    def validate_password(self, value):
+        validate_password(value, user=self.instance)
+        return value
+
+
+class AdminCrearCuentaDTO(serializers.Serializer):
+    """
+    DTO exclusivo del endpoint administrativo de creacion de cuentas
+    (protegido con EsAdministrador). A diferencia de RegistroDTO (registro
+    publico), este SI permite elegir el rol, porque quien lo invoca ya es
+    un administrador autenticado.
+    """
+    nombre = serializers.CharField(max_length=100)
+    apellido = serializers.CharField(max_length=100)
+    tipo_identificacion = serializers.ChoiceField(choices=TipoIdentificacion.choices)
+    identificacion = serializers.CharField(max_length=20)
+
+    username = serializers.CharField(max_length=150)
+    correo = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    rol = serializers.ChoiceField(choices=TipoRol.choices, default=TipoRol.PROPIETARIO)
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def to_datos_persona(self):
+        return {
+            "nombre": self.validated_data["nombre"],
+            "apellido": self.validated_data["apellido"],
+            "tipo_identificacion": self.validated_data["tipo_identificacion"],
+            "identificacion": self.validated_data["identificacion"],
+        }
+
+    def to_datos_cuenta(self):
+        return {
+            "username": self.validated_data["username"],
+            "correo": self.validated_data["correo"],
+            "password": self.validated_data["password"],
+        }
+
 
 class RegistroDTO(serializers.Serializer):
     nombre = serializers.CharField(max_length=100)
@@ -58,9 +100,18 @@ class RegistroDTO(serializers.Serializer):
     correo = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
 
-    rol = serializers.ChoiceField(
-        choices=TipoRol.choices, default=TipoRol.PROPIETARIO, required=False
-    )
+    # SEGURIDAD (hallazgo 2.2 de la auditoria): el registro publico NO debe
+    # aceptar el rol desde el cliente - de lo contrario cualquiera puede
+    # autoregistrarse como ADMINISTRADOR. El rol de una cuenta nueva creada
+    # por este endpoint siempre es PROPIETARIO. Crear administradores es una
+    # operacion separada, protegida con EsAdministrador.
+
+    def validate_password(self, value):
+        # Corre TODOS los validadores de AUTH_PASSWORD_VALIDATORS
+        # (similitud con el usuario, longitud, contraseñas comunes, etc.),
+        # no solo el min_length=8 declarado arriba.
+        validate_password(value)
+        return value
 
     def to_datos_persona(self):
         return {

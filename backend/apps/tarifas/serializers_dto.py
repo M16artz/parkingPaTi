@@ -9,7 +9,10 @@ from apps.tarifas.models import EstrategiaTarifa, IncrementoTarifa, DescuentoTar
 class EstrategiaTarifaDTO(serializers.ModelSerializer):
     class Meta:
         model = EstrategiaTarifa
-        fields = ["id", "precio_hora"]
+        # Se agrega "parqueadero" - faltaba, y el controller ya asumia
+        # que dto.validated_data["parqueadero"] existia, provocando un
+        # KeyError garantizado en cada POST /api/tarifas/.
+        fields = ["id", "precio_hora", "parqueadero"]
         read_only_fields = ["id"]
 
 

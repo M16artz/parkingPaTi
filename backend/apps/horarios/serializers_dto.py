@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import HorarioAtencion
 
+
 class HorarioAtencionDTO(serializers.ModelSerializer):
     class Meta:
         model = HorarioAtencion
@@ -23,8 +24,24 @@ class HorarioAtencionDTO(serializers.ModelSerializer):
                 )
         return data
 
+
 class HorarioAtencionCrearDTO(serializers.Serializer):
     parqueadero = serializers.IntegerField()
-    dia_semana = serializers.ChoiceField(choices=HorarioAtencion._meta.get_field("dia_semana").choices)
+    # BUG CORREGIDO: el campo del modelo se llama "dia", no "dia_semana".
+    # `HorarioAtencion._meta.get_field("dia_semana")` lanzaba
+    # FieldDoesNotExist al importar este modulo (rompia toda la app).
+    dia = serializers.ChoiceField(choices=HorarioAtencion._meta.get_field("dia").choices)
     hora_apertura = serializers.TimeField()
     hora_cierre = serializers.TimeField()
+
+
+class HorarioAtencionActualizarDTO(serializers.Serializer):
+    """
+    Whitelist para PUT/PATCH (antes el controller pasaba request.data
+    crudo al servicio, permitiendo mass assignment de "parqueadero").
+    """
+    dia = serializers.ChoiceField(
+        choices=HorarioAtencion._meta.get_field("dia").choices, required=False
+    )
+    hora_apertura = serializers.TimeField(required=False)
+    hora_cierre = serializers.TimeField(required=False)

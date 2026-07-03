@@ -5,10 +5,12 @@ manteniendo la logica de negocio (validaciones, permisos) separada del
 detalle de infraestructura de almacenamiento.
 """
 
+from django.db import IntegrityError
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.documentos.repositories import DocumentoRepository
 from apps.documentos.storage_backends import GoogleDriveStorage
+from core.permissions import es_administrador
 
 
 class DocumentoService:
@@ -26,13 +28,25 @@ class DocumentoService:
 
         storage = GoogleDriveStorage()
         nombre_guardado = storage.save(archivo.name, archivo)
+        # BUG CORREGIDO: antes se guardaba `nombre_guardado` (el file ID de
+        # Drive) directamente en `ruta` (un URLField); el propio docstring
+        # de storage_backends.py aclara que hay que persistir el enlace
+        # (storage.url(...)), no el ID crudo.
+        enlace = storage.url(nombre_guardado)
 
-        return DocumentoRepository.crear(
-            cuenta=cuenta,
-            ruta=nombre_guardado,
-            fecha_expiracion=fecha_expiracion,
-            es_valido=False,  # Requiere validacion posterior de un administrador
-        )
+        try:
+            return DocumentoRepository.crear(
+                cuenta=cuenta,
+                ruta=enlace,
+                fecha_expiracion=fecha_expiracion,
+                es_valido=False,  # Requiere validacion posterior de un administrador
+            )
+        except IntegrityError:
+            # Defensa en profundidad ante una condicion de carrera: dos
+            # subidas casi simultaneas de la misma cuenta. El chequeo de
+            # arriba no es atomico con la creacion; el OneToOneField de
+            # Documento.cuenta es la garantia real a nivel de BD.
+            raise ValidationError("Esta cuenta ya tiene un documento registrado; usa actualizar en su lugar.")
 
     @staticmethod
     def validar_documento(documento_id):
@@ -48,8 +62,7 @@ class DocumentoService:
         if documento is None:
             raise ValidationError("El documento solicitado no existe.")
 
-        es_admin = getattr(cuenta_solicitante.rol, "nombre", None) == "ADMINISTRADOR"
-        if not es_admin and documento.cuenta_id != cuenta_solicitante.id:
+        if not es_administrador(cuenta_solicitante) and documento.cuenta_id != cuenta_solicitante.id:
             raise PermissionDenied("No tienes permiso para eliminar este documento.")
 
         DocumentoRepository.eliminar(documento)

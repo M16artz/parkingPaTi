@@ -13,15 +13,16 @@ de apps/documentos/ y NO en settings/, para que el resto del backend nunca
 dependa directamente de la API de Google - solo de esta interfaz.
 """
 
+import os
+
 from django.core.files.storage import Storage
-from decouple import config
 
 
 class GoogleDriveStorage(Storage):
     """
     Implementacion minima de un backend de almacenamiento sobre Google Drive.
     Requiere credenciales de una cuenta de servicio configuradas via
-    variables de entorno (GOOGLE_DRIVE_CREDENTIALS_JSON, GOOGLE_DRIVE_FOLDER_ID).
+    variables de entorno (GOOGLE_DRIVE_CREDENTIALS_PATH, GOOGLE_DRIVE_FOLDER_ID).
 
     NOTA: esta clase requiere las dependencias google-api-python-client y
     google-auth, que NO se incluyen en requirements/base.txt por defecto
@@ -31,7 +32,11 @@ class GoogleDriveStorage(Storage):
     """
 
     def __init__(self):
-        self.folder_id = config("GOOGLE_DRIVE_FOLDER_ID", default="")
+        # Antes usaba python-decouple (una segunda libreria de env-loading
+        # distinta a python-dotenv, usada en settings/base.py). Se unifica
+        # en os.environ, que ya viene poblado por load_dotenv() al importar
+        # settings - evita divergencias sobre desde donde se busca el .env.
+        self.folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
         self._service = None
 
     def _get_service(self):
@@ -39,7 +44,7 @@ class GoogleDriveStorage(Storage):
             from google.oauth2 import service_account
             from googleapiclient.discovery import build
 
-            credentials_path = config("GOOGLE_DRIVE_CREDENTIALS_PATH")
+            credentials_path = os.environ["GOOGLE_DRIVE_CREDENTIALS_PATH"]
             credentials = service_account.Credentials.from_service_account_file(
                 credentials_path, scopes=["https://www.googleapis.com/auth/drive.file"]
             )
@@ -74,3 +79,4 @@ class GoogleDriveStorage(Storage):
 
     def url(self, name):
         return f"https://drive.google.com/file/d/{name}/view"
+    

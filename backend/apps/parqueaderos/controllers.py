@@ -12,23 +12,28 @@ from apps.parqueaderos.serializers_dto import (
     EspacioCambiarEstadoDTO,
     EspacioCrearDTO,
     EspacioDTO,
+    ParqueaderoActualizarDTO,
     ParqueaderoCrearDTO,
     ParqueaderoDetalleDTO,
     ParqueaderoResumenDTO,
 )
 from apps.parqueaderos.services import EspacioService, ParqueaderoService
+from core.pagination import PaginacionManualMixin
 from core.permissions import EsAdministrador
 
 
-class ParqueaderoViewSet(viewsets.ViewSet):
+class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
         return [IsAuthenticated()]
 
     def list(self, request):
+        # Antes devolvia el queryset completo sin paginar (hallazgo 4.7):
+        # con muchos parqueaderos registrados, cada GET /api/parqueaderos/
+        # traia toda la tabla en una sola respuesta.
         parqueaderos = ParqueaderoService.listar_disponibles()
-        return Response(ParqueaderoResumenDTO(parqueaderos, many=True).data)
+        return self.paginar(request, parqueaderos, ParqueaderoResumenDTO)
 
     def create(self, request):
         dto = ParqueaderoCrearDTO(data=request.data)
@@ -47,11 +52,15 @@ class ParqueaderoViewSet(viewsets.ViewSet):
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
     def update(self, request, pk=None):
-        parqueadero = ParqueaderoService.actualizar(pk, request.user, **request.data)
+        dto = ParqueaderoActualizarDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        parqueadero = ParqueaderoService.actualizar(pk, request.user, **dto.validated_data)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
     def partial_update(self, request, pk=None):
-        parqueadero = ParqueaderoService.actualizar(pk, request.user, **request.data)
+        dto = ParqueaderoActualizarDTO(data=request.data, partial=True)
+        dto.is_valid(raise_exception=True)
+        parqueadero = ParqueaderoService.actualizar(pk, request.user, **dto.validated_data)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
     def destroy(self, request, pk=None):

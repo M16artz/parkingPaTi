@@ -3,6 +3,7 @@ Patrón Repository para tarifas usando Multi-Table Inheritance.
 """
 
 from apps.tarifas.models import DescuentoTarifa, EstrategiaTarifa, IncrementoTarifa
+from core.repositories import actualizar_generico
 
 
 class EstrategiaTarifaRepository:
@@ -30,10 +31,7 @@ class EstrategiaTarifaRepository:
 
     @staticmethod
     def actualizar(estrategia, **datos):
-        for campo, valor in datos.items():
-            setattr(estrategia, campo, valor)
-        estrategia.save()
-        return estrategia
+        return actualizar_generico(estrategia, campos_permitidos={"precio_hora"}, **datos)
 
     @staticmethod
     def eliminar(estrategia):
@@ -62,10 +60,7 @@ class IncrementoTarifaRepository:
 
     @staticmethod
     def actualizar(incremento, **datos):
-        for campo, valor in datos.items():
-            setattr(incremento, campo, valor)
-        incremento.save()
-        return incremento
+        return actualizar_generico(incremento, campos_permitidos={"precio_hora", "porcentaje"}, **datos)
 
     @staticmethod
     def eliminar(incremento):
@@ -94,10 +89,7 @@ class DescuentoTarifaRepository:
 
     @staticmethod
     def actualizar(descuento, **datos):
-        for campo, valor in datos.items():
-            setattr(descuento, campo, valor)
-        descuento.save()
-        return descuento
+        return actualizar_generico(descuento, campos_permitidos={"precio_hora", "porcentaje"}, **datos)
 
     @staticmethod
     def eliminar(descuento):

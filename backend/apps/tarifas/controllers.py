@@ -144,3 +144,4 @@ class DescuentoTarifaViewSet(viewsets.ViewSet):
     def destroy(self, request, pk=None):
         DescuentoTarifaService.eliminar(pk, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+        

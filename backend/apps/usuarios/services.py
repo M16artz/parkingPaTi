@@ -2,6 +2,7 @@
 Capa de servicio (logica de negocio) para la app usuarios.
 """
 
+from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
@@ -25,7 +26,7 @@ class RegistroService:
 
         with transaction.atomic():
             persona = PersonaRepository.crear(**datos_persona)
-            
+
             cuenta = CuentaRepository.crear(
                 username=datos_cuenta["username"],
                 correo=datos_cuenta["correo"],
@@ -33,7 +34,7 @@ class RegistroService:
                 persona=persona,
                 rol=nombre_rol,
             )
-            
+
         return cuenta
 
 
@@ -53,14 +54,18 @@ class CuentaService:
     def actualizar_cuenta(cuenta_id, **datos):
         cuenta = CuentaService.obtener_cuenta(cuenta_id)
         password = datos.pop("password", None)
-        
+
         cuenta = CuentaRepository.actualizar(cuenta, **datos)
-        
-        # set_password hashea la contraseña correctamente
+
         if password:
+            # validate_password ya corrio en el DTO (CuentaActualizarDTO),
+            # pero se revalida aqui tambien porque los services son el
+            # limite de confianza real de la capa de negocio (defensa en
+            # profundidad: no asumir que todo caller pasa por el DTO).
+            validate_password(password, user=cuenta)
             cuenta.set_password(password)
-            cuenta.save()
-            
+            cuenta.save(update_fields=["password"])
+
         return cuenta
 
     @staticmethod

@@ -1,30 +1,31 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import HorarioAtencion
+"""Controladores REST para horarios de atencion."""
 
-from .serializers_dto import HorarioAtencionDTO, HorarioAtencionCrearDTO
+from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
+from apps.horarios.serializers_dto import (
+    HorarioAtencionActualizarDTO,
+    HorarioAtencionCrearDTO,
+    HorarioAtencionDTO,
+)
 from apps.horarios.services import HorarioAtencionService
 
-class HorarioAtencionViewSet(viewsets.ModelViewSet):
-    queryset = HorarioAtencion.objects.all()
-    serializer_class = HorarioAtencionDTO
-    permission_classes = [IsAuthenticated]
+
+class HorarioAtencionViewSet(viewsets.ViewSet):
+    """
+    Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+    en el resto del proyecto, toda la logica de negocio y de permisos vive
+    en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+    (queryset/serializer_class implicitos) con overrides manuales de todos
+    los metodos, como estaba antes, era codigo redundante y confuso.
+    """
 
     def get_permissions(self):
         if self.action == "list":
             # Un conductor debe poder ver los horarios sin autenticarse (RNF02)
             return [AllowAny()]
-        return [IsAuthenticated()]    
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        parqueadero_id = self.request.query_params.get('parqueadero')
-        
-        if parqueadero_id:
-            queryset = queryset.filter(parqueadero_id=parqueadero_id)
-            
-        return queryset
+        return [IsAuthenticated()]
 
     def list(self, request):
         parqueadero_id = request.query_params.get("parqueadero")
@@ -41,7 +42,7 @@ class HorarioAtencionViewSet(viewsets.ModelViewSet):
         dto.is_valid(raise_exception=True)
         horario = HorarioAtencionService.crear(
             dto.validated_data["parqueadero"],
-            dto.validated_data["dia_semana"],
+            dto.validated_data["dia"],
             dto.validated_data["hora_apertura"],
             dto.validated_data["hora_cierre"],
             request.user,
@@ -53,11 +54,15 @@ class HorarioAtencionViewSet(viewsets.ModelViewSet):
         return Response(HorarioAtencionDTO(horario).data)
 
     def update(self, request, pk=None):
-        horario = HorarioAtencionService.actualizar(pk, request.user, **request.data)
+        dto = HorarioAtencionActualizarDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        horario = HorarioAtencionService.actualizar(pk, request.user, **dto.validated_data)
         return Response(HorarioAtencionDTO(horario).data)
 
     def partial_update(self, request, pk=None):
-        horario = HorarioAtencionService.actualizar(pk, request.user, **request.data)
+        dto = HorarioAtencionActualizarDTO(data=request.data, partial=True)
+        dto.is_valid(raise_exception=True)
+        horario = HorarioAtencionService.actualizar(pk, request.user, **dto.validated_data)
         return Response(HorarioAtencionDTO(horario).data)
 
     def destroy(self, request, pk=None):
