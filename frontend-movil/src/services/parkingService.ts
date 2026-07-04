@@ -1,35 +1,63 @@
 // src/services/parkingService.ts
 
-const API_URL = 'http://TU_IP_BACKEND:8000/api';
-const WS_URL = 'ws://TU_IP_BACKEND:8000/ws/parking';
+// ⚠️ REEMPLAZA "192.168.1.XX" CON TU DIRECCIÓN IPV4 DEL COMANDO IPCONFIG
+const BASE_IP = '192.168.1.5';
+
+const API_URL = `http://${BASE_IP}:8000/api`;
+const WS_URL = `ws://${BASE_IP}:8000/ws/parking`;
+
+export interface Parking {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    total: number;
+    available: number;
+}
 
 export const parkingService = {
-    // Petición HTTP inicial
-    async getInitialParkings() {
+    /**
+     * Obtiene el listado inicial de parqueaderos vía REST API
+     */
+    async getParkings(): Promise<Parking[]> {
         try {
-            const response = await fetch(`${API_URL}/parkings/`);
+            const response = await fetch(`${API_URL}/parqueaderos/`);
+            if (!response.ok) {
+                throw new Error('Error al conectar con el servidor');
+            }
             return await response.json();
         } catch (error) {
-            console.error("Error al traer parqueaderos:", error);
-            return null;
+            console.error('Error en getParkings:', error);
+            // Retornamos un arreglo vacío en caso de fallo para evitar que la app se rompa
+            return [];
         }
     },
 
-    // Conexión en tiempo real por WebSockets
-    connectToRealTimeUpdates(onMessageReceived: (data: any) => void) {
+    /**
+     * Inicializa y retorna una conexión WebSocket para escuchar actualizaciones en tiempo real
+     */
+    connectToRealTimeUpdates(onMessageReceived: (data: any) => void): WebSocket {
         const socket = new WebSocket(WS_URL);
 
         socket.onopen = () => {
-            console.log('¡Conectado exitosamente al WebSocket!');
+            console.log('✅ Conexión WebSocket establecida con el Backend de ParkingPaTi');
         };
 
         socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            onMessageReceived(data);
+            try {
+                const data = JSON.parse(event.data);
+                onMessageReceived(data);
+            } catch (error) {
+                console.error('Error al parsear mensaje del WebSocket:', error);
+            }
         };
 
         socket.onerror = (error) => {
-            console.error('Error WebSocket:', error);
+            console.error('❌ Error en el canal de WebSocket:', error);
+        };
+
+        socket.onclose = (e) => {
+            console.log('🔌 Conexión WebSocket cerrada:', e.reason);
         };
 
         return socket;
