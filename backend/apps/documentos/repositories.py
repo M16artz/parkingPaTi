@@ -14,9 +14,10 @@ class DocumentoRepository:
         return Documento.objects.select_related("cuenta").filter(id=documento_id).first()
 
     @staticmethod
-    def crear(cuenta, ruta, fecha_expiracion=None, es_valido=False):
+    def crear(cuenta, ruta, file_id, fecha_expiracion=None, es_valido=False):
         return Documento.objects.create(
-            cuenta=cuenta, ruta=ruta, fecha_expiracion=fecha_expiracion, es_valido=es_valido
+            cuenta=cuenta, ruta=ruta, file_id=file_id,
+            fecha_expiracion=fecha_expiracion, es_valido=es_valido
         )
 
     @staticmethod

@@ -9,8 +9,9 @@ actualizacion de inmediato (push real), cumpliendo el RNF06 (<= 5 segundos).
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError, NotFound
 
+from apps.parqueaderos.models import Disponibilidad, TipoEstado
 from apps.parqueaderos.repositories import EspacioRepository, ParqueaderoRepository
 from core.permissions import es_administrador
 
@@ -24,7 +25,7 @@ class ParqueaderoService:
     def obtener(parqueadero_id):
         parqueadero = ParqueaderoRepository.obtener_por_id(parqueadero_id)
         if parqueadero is None:
-            raise ValidationError("El parqueadero solicitado no existe.")
+            raise NotFound("El parqueadero solicitado no existe.")
         return parqueadero
 
     @staticmethod
@@ -80,25 +81,42 @@ class EspacioService:
         return EspacioRepository.listar_por_parqueadero(parqueadero_id)
 
     @staticmethod
-    def crear(parqueadero_id, numero_espacio, usuario_auth, estado="LIBRE"):
-        # Se requiere inyectar numero_espacio y se renombra a usuario_auth por consistencia con tu View
+    def crear(parqueadero_id, numero_espacio, cuenta_solicitante, estado="LIBRE"):
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
-        ParqueaderoService._verificar_propietario(parqueadero, usuario_auth)
+        ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
         return EspacioRepository.crear(parqueadero, numero_espacio=numero_espacio, estado=estado)
+
+    @staticmethod
+    def _recalcular_disponibilidad(parqueadero):
+        total_espacios = parqueadero.espacios.count()
+        libres = parqueadero.espacios.filter(estado=TipoEstado.LIBRE).count()
+        inhabilitados = parqueadero.espacios.filter(estado=TipoEstado.INHABILITADO).count()
+
+        if libres == 0:
+            return Disponibilidad.LLENO
+        elif inhabilitados == total_espacios:
+            return Disponibilidad.FUERA_DE_SERVICIO
+        return Disponibilidad.ABIERTO
 
     @staticmethod
     def cambiar_estado(espacio_id, nuevo_estado, cuenta_solicitante):
         espacio = EspacioRepository.obtener_por_id(espacio_id)
         if espacio is None:
             raise ValidationError("El espacio solicitado no existe.")
-
         ParqueaderoService._verificar_propietario(espacio.parqueadero, cuenta_solicitante)
 
         espacio = EspacioRepository.actualizar_estado(espacio, nuevo_estado)
 
-        # --- Notificacion push real (ADR 5 + ADR 8) ---
-        EspacioService._notificar_cambio(espacio)
+        # Recalcular disponibilidad del parqueadero
+        parqueadero = espacio.parqueadero
+        nueva_disponibilidad = EspacioService._recalcular_disponibilidad(parqueadero)
 
+        # Actualizar disponibilidad del parqueadero (sin disparar notificaciones en bucle)
+        parqueadero.disponibilidad = nueva_disponibilidad
+        parqueadero.save(update_fields=['disponibilidad'])
+
+        # Notificar cambio de espacio (ya existente)
+        EspacioService._notificar_cambio(espacio)
         return espacio
 
     @staticmethod

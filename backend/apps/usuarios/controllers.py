@@ -129,5 +129,7 @@ class CuentaViewSet(PaginacionManualMixin, viewsets.ViewSet):
         return Response(CuentaDetalleDTO(cuenta).data)
 
     def destroy(self, request, pk=None):
+        if str(request.user.id) == str(pk):
+            raise PermissionDenied("No puedes eliminar tu propia cuenta.")
         CuentaService.eliminar_cuenta(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)

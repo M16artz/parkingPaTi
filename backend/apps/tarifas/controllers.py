@@ -5,6 +5,7 @@ Controladores REST de tarifas, incrementos y descuentos.
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from core.pagination import PaginacionManualMixin   
 
 from apps.tarifas.serializers_dto import (
     DescuentoTarifaDTO,
@@ -18,20 +19,20 @@ from apps.tarifas.services import (
 )
 
 
-class EstrategiaTarifaViewSet(viewsets.ViewSet):
+class EstrategiaTarifaViewSet(PaginacionManualMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
         parqueadero_id = request.query_params.get("parqueadero")
         tarifas = EstrategiaTarifaService.listar(parqueadero_id)
-        return Response(EstrategiaTarifaDTO(tarifas, many=True).data)
+        return self.paginar(request, tarifas, EstrategiaTarifaDTO)
 
     def create(self, request):
         dto = EstrategiaTarifaDTO(data=request.data)
         dto.is_valid(raise_exception=True)
         
         tarifa = EstrategiaTarifaService.crear(
-            parqueadero_id=dto.validated_data["parqueadero"].id,
+            parqueadero_id=dto.validated_data["parqueadero"],
             precio_hora=dto.validated_data["precio_hora"],
             cuenta_solicitante=request.user,
         )
@@ -60,20 +61,20 @@ class EstrategiaTarifaViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class IncrementoTarifaViewSet(viewsets.ViewSet):
+class IncrementoTarifaViewSet(PaginacionManualMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
         parqueadero_id = request.query_params.get("parqueadero")
         incrementos = IncrementoTarifaService.listar(parqueadero_id)
-        return Response(IncrementoTarifaDTO(incrementos, many=True).data)
+        return self.paginar(request, incrementos, IncrementoTarifaDTO)
 
     def create(self, request):
         dto = IncrementoTarifaDTO(data=request.data)
         dto.is_valid(raise_exception=True)
         
         incremento = IncrementoTarifaService.crear(
-            parqueadero_id=dto.validated_data["parqueadero"].id,
+            parqueadero_id=dto.validated_data["parqueadero"],
             precio_hora=dto.validated_data["precio_hora"],
             porcentaje=dto.validated_data["porcentaje"],
             cuenta_solicitante=request.user,
@@ -103,20 +104,20 @@ class IncrementoTarifaViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DescuentoTarifaViewSet(viewsets.ViewSet):
+class DescuentoTarifaViewSet(PaginacionManualMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
         parqueadero_id = request.query_params.get("parqueadero")
-        descuentos = DescuentoTarifaService.listar(parqueadero_id)
-        return Response(DescuentoTarifaDTO(descuentos, many=True).data)
+        tarifas = DescuentoTarifaService.listar(parqueadero_id)
+        return self.paginar(request, tarifas, DescuentoTarifaDTO)
 
     def create(self, request):
         dto = DescuentoTarifaDTO(data=request.data)
         dto.is_valid(raise_exception=True)
         
         descuento = DescuentoTarifaService.crear(
-            parqueadero_id=dto.validated_data["parqueadero"].id,
+            parqueadero_id=dto.validated_data["parqueadero"],
             precio_hora=dto.validated_data["precio_hora"],
             porcentaje=dto.validated_data["porcentaje"],
             cuenta_solicitante=request.user,
@@ -145,3 +146,20 @@ class DescuentoTarifaViewSet(viewsets.ViewSet):
         DescuentoTarifaService.eliminar(pk, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
         
+        
+class TarifaViewSetMixin(PaginacionManualMixin):
+    service_class = None
+    dto_class = None
+
+    def list(self, request):
+        parqueadero_id = request.query_params.get("parqueadero")
+        items = self.service_class.listar(parqueadero_id)
+        return self.paginar(request, items, self.dto_class)
+
+    def create(self, request):
+        dto = self.dto_class(data=request.data)
+        dto.is_valid(raise_exception=True)
+        # Asumimos que el servicio espera parqueadero_id, precio_hora, etc.
+        # Esto requiere ajustes según cada DTO.
+        # Se puede sobrescribir en cada subclase si es necesario.
+        pass

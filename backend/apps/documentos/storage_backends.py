@@ -62,20 +62,42 @@ class GoogleDriveStorage(Storage):
             body=file_metadata, media_body=media, fields="id, webViewLink"
         ).execute()
 
-        # Se devuelve el file ID como "nombre" guardado; la ruta completa
-        # (webViewLink) se debe persistir aparte en el modelo Documento.ruta
+        # Hacer público para que cualquiera con el enlace pueda verlo
+        service.permissions().create(
+            fileId=archivo["id"],
+            body={"type": "anyone", "role": "reader"}
+        ).execute()
+
         return archivo["id"]
+
+    def delete(self, name):
+        """Elimina el archivo de Google Drive dado su file ID."""
+        service = self._get_service()
+        try:
+            service.files().delete(fileId=name).execute()
+        except Exception as e:
+            # Registrar error pero no propagar para no romper el flujo
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al eliminar archivo de Drive {name}: {e}")
+            raise
+
+    def exists(self, name):
+        # Implementación real: consultar a Drive
+        if not name:
+            return False
+        service = self._get_service()
+        try:
+            service.files().get(fileId=name).execute()
+            return True
+        except Exception:
+            return False
 
     def _open(self, name, mode="rb"):
         raise NotImplementedError(
             "La lectura directa de archivos no esta implementada en este adaptador; "
             "usar el campo `ruta` del modelo Documento para obtener el enlace publico."
         )
-
-    def exists(self, name):
-        # Simplificacion para el MVP: se asume que si hay un ID guardado, existe.
-        # Una implementacion completa deberia consultar service.files().get(fileId=name).
-        return bool(name)
 
     def url(self, name):
         return f"https://drive.google.com/file/d/{name}/view"

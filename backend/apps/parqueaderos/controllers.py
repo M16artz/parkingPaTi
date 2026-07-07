@@ -17,6 +17,8 @@ from apps.parqueaderos.serializers_dto import (
     ParqueaderoDetalleDTO,
     ParqueaderoResumenDTO,
 )
+
+from core.permissions import es_administrador
 from apps.parqueaderos.services import EspacioService, ParqueaderoService
 from core.pagination import PaginacionManualMixin
 from core.permissions import EsAdministrador
@@ -49,6 +51,12 @@ class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         parqueadero = ParqueaderoService.obtener(pk)
+        # Si no está validado y el usuario no es propietario ni admin, error 404
+        if not parqueadero.validado and not (
+            request.user.is_authenticated and
+            (es_administrador(request.user) or parqueadero.propietario_id == request.user.id)
+        ):
+            return Response({"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
     def update(self, request, pk=None):
@@ -73,7 +81,7 @@ class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
 
-class EspacioViewSet(viewsets.ViewSet):
+class EspacioViewSet(PaginacionManualMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
@@ -83,18 +91,23 @@ class EspacioViewSet(viewsets.ViewSet):
                 {"detail": "Debes indicar ?parqueadero=<id>."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        parqueadero = ParqueaderoService.obtener(parqueadero_id)
+        if not parqueadero.validado and not (
+            request.user.is_authenticated and
+            (es_administrador(request.user) or parqueadero.propietario_id == request.user.id)
+        ):
+            return Response({"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND)
         espacios = EspacioService.listar_por_parqueadero(parqueadero_id)
-        return Response(EspacioDTO(espacios, many=True).data)
+        return self.paginar(request, espacios, EspacioDTO)
 
     def create(self, request):
-        # Utilizando el nuevo DTO para validar el numero_espacio
         dto = EspacioCrearDTO(data=request.data)
         dto.is_valid(raise_exception=True)
         
         espacio = EspacioService.crear(
             parqueadero_id=dto.validated_data["parqueadero"],
-            numero_espacio=dto.validated_data["numero_espacio"], # Pasando el nuevo parámetro
-            usuario_auth=request.user
+            numero_espacio=dto.validated_data["numero_espacio"],
+            cuenta_solicitante=request.user      # <-- Cambio aquí
         )
         return Response(EspacioDTO(espacio).data, status=status.HTTP_201_CREATED)
 

@@ -3,16 +3,19 @@
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 from apps.horarios.serializers_dto import (
     HorarioAtencionActualizarDTO,
     HorarioAtencionCrearDTO,
     HorarioAtencionDTO,
 )
+from apps.parqueaderos.services import ParqueaderoService
 from apps.horarios.services import HorarioAtencionService
+from core.pagination import PaginacionManualMixin
 
 
-class HorarioAtencionViewSet(viewsets.ViewSet):
+class HorarioAtencionViewSet(PaginacionManualMixin, viewsets.ViewSet):
     """
     Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
     en el resto del proyecto, toda la logica de negocio y de permisos vive
@@ -34,8 +37,14 @@ class HorarioAtencionViewSet(viewsets.ViewSet):
                 {"detail": "Debes indicar ?parqueadero=<id>."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        # Verificar existencia
+        try:
+            ParqueaderoService.obtener(parqueadero_id)
+        except ValidationError:
+            return Response({"detail": "Parqueadero no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
         horarios = HorarioAtencionService.listar_por_parqueadero(parqueadero_id)
-        return Response(HorarioAtencionDTO(horarios, many=True).data)
+        return self.paginar(request, horarios, HorarioAtencionDTO)
 
     def create(self, request):
         dto = HorarioAtencionCrearDTO(data=request.data)

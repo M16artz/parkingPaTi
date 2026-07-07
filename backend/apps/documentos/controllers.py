@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from apps.documentos.services import DocumentoService
 from core.permissions import EsAdministrador
 from .models import Documento
+from rest_framework.exceptions import PermissionDenied
+from core.permissions import es_administrador
 from .serializers_dto import DocumentoLecturaDTO, DocumentoEscrituraDTO
 
 class DocumentoViewSet(viewsets.ModelViewSet):
@@ -33,19 +35,28 @@ class DocumentoViewSet(viewsets.ModelViewSet):
         # Ajusta 'cuenta_id' o 'cuenta' según cómo esté definido el campo en tu modelo Documento
         return Documento.objects.filter(cuenta=user)
 
-    def perform_create(self, serializer):
-        # CORRECCIÓN: Extraer los datos validados del Serializer plano e inyectarlos al Service
+    def create(self, request, *args, **kwargs):
+        # Usar el serializer de escritura para validar
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
         archivo = serializer.validated_data.get('archivo')
         fecha_exp = serializer.validated_data.get('fecha_expiracion')
         
-        # El servicio se encarga de subir a Drive y crear el registro en BD
-        DocumentoService.subir_documento(self.request.user, archivo, fecha_exp)
+        # El servicio retorna la instancia creada
+        documento = DocumentoService.subir_documento(request.user, archivo, fecha_exp)
+        
+        # Serializar la instancia con el serializer de lectura
+        output_serializer = DocumentoLecturaDTO(documento)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
         """
         Reemplaza el destroy() anterior. DRF obtiene la instancia automáticamente,
         y nosotros usamos tu servicio para ejecutar la lógica de eliminación.
         """
+        if not es_administrador(self.request.user) and instance.cuenta_id != self.request.user.id:
+            raise PermissionDenied("No tienes permiso para eliminar este documento.")
         DocumentoService.eliminar(instance.id, self.request.user)
 
     @action(detail=True, methods=["post"], permission_classes=[EsAdministrador])

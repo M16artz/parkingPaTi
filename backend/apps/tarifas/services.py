@@ -11,6 +11,7 @@ from apps.tarifas.repositories import (
     EstrategiaTarifaRepository,
     IncrementoTarifaRepository,
 )
+from apps.parqueaderos.models import Parqueadero
 from core.permissions import es_administrador
 
 
@@ -36,20 +37,12 @@ class EstrategiaTarifaService:
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
 
-        # NOTA (hallazgo 5.1): el chequeo "ya existe" + la creacion no son
-        # atomicos entre si a nivel de aplicacion, asi que ante dos requests
-        # concurrentes ambos podrian pasar el chequeo. Por eso se envuelve en
-        # una transaccion y se captura IntegrityError: el OneToOneField de
-        # EstrategiaTarifa.parqueadero es la garantia real (a nivel de BD)
-        # de unicidad; aqui solo se traduce ese error a un 400 legible en
-        # vez de dejar que escale a un 500.
-        try:
-            with transaction.atomic():
-                if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
-                    raise ValidationError("Este parqueadero ya tiene una tarifa configurada.")
-                return EstrategiaTarifaRepository.crear(parqueadero, precio_hora)
-        except IntegrityError:
-            raise ValidationError("Este parqueadero ya tiene una tarifa configurada.")
+        with transaction.atomic():
+            # Bloquear el parqueadero para evitar concurrencia
+            parqueadero_bloqueado = Parqueadero.objects.select_for_update().get(id=parqueadero_id)
+            if EstrategiaTarifaRepository.obtener_por_parqueadero(parqueadero_id):
+                raise ValidationError("Este parqueadero ya tiene una tarifa configurada.")
+            return EstrategiaTarifaRepository.crear(parqueadero_bloqueado, precio_hora)
 
     @staticmethod
     def actualizar(estrategia_id, cuenta_solicitante, **datos):

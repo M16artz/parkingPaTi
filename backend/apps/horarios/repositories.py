@@ -7,7 +7,7 @@ from core.repositories import actualizar_generico
 class HorarioAtencionRepository:
     @staticmethod
     def listar_por_parqueadero(parqueadero_id):
-        return HorarioAtencion.objects.filter(parqueadero_id=parqueadero_id)
+        return HorarioAtencion.objects.filter(parqueadero_id=parqueadero_id).select_related('parqueadero')
 
     @staticmethod
     def obtener_por_id(horario_id):

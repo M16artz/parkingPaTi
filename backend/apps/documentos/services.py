@@ -6,7 +6,10 @@ detalle de infraestructura de almacenamiento.
 """
 
 from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from rest_framework.exceptions import PermissionDenied, ValidationError
+import logging
+logger = logging.getLogger(__name__)
 
 from apps.documentos.repositories import DocumentoRepository
 from apps.documentos.storage_backends import GoogleDriveStorage
@@ -28,26 +31,22 @@ class DocumentoService:
 
         storage = GoogleDriveStorage()
         nombre_guardado = storage.save(archivo.name, archivo)
-        # BUG CORREGIDO: antes se guardaba `nombre_guardado` (el file ID de
-        # Drive) directamente en `ruta` (un URLField); el propio docstring
-        # de storage_backends.py aclara que hay que persistir el enlace
-        # (storage.url(...)), no el ID crudo.
         enlace = storage.url(nombre_guardado)
 
         try:
-            return DocumentoRepository.crear(
-                cuenta=cuenta,
-                ruta=enlace,
-                fecha_expiracion=fecha_expiracion,
-                es_valido=False,  # Requiere validacion posterior de un administrador
-            )
+            with transaction.atomic():
+                return DocumentoRepository.crear(
+                    cuenta=cuenta,
+                    ruta=enlace,
+                    file_id=nombre_guardado,
+                    fecha_expiracion=fecha_expiracion,
+                    es_valido=False,
+                )
         except IntegrityError:
-            # Defensa en profundidad ante una condicion de carrera: dos
-            # subidas casi simultaneas de la misma cuenta. El chequeo de
-            # arriba no es atomico con la creacion; el OneToOneField de
-            # Documento.cuenta es la garantia real a nivel de BD.
+            # Limpiar archivo de Drive si falló la creación en BD
+            storage.delete(nombre_guardado)
             raise ValidationError("Esta cuenta ya tiene un documento registrado; usa actualizar en su lugar.")
-
+        
     @staticmethod
     def validar_documento(documento_id):
         """Solo deberia invocarse desde un endpoint protegido con EsAdministrador."""
@@ -61,8 +60,16 @@ class DocumentoService:
         documento = DocumentoRepository.obtener_por_id(documento_id)
         if documento is None:
             raise ValidationError("El documento solicitado no existe.")
-
         if not es_administrador(cuenta_solicitante) and documento.cuenta_id != cuenta_solicitante.id:
             raise PermissionDenied("No tienes permiso para eliminar este documento.")
+
+        file_id = documento.file_id
+        storage = GoogleDriveStorage()
+        try:
+            storage.delete(file_id)  # Si falla, lanza excepción
+        except Exception as e:
+            # Registrar y relanzar para no eliminar el registro
+            logger.error(f"Error al eliminar archivo de Drive: {e}")
+            raise ValidationError("No se pudo eliminar el archivo del almacenamiento.")
 
         DocumentoRepository.eliminar(documento)

@@ -12,6 +12,7 @@ class Documento(models.Model):
     es_valido = models.BooleanField(default=False)
     fecha_expiracion = models.DateField(null=True, blank=True)
     ruta = models.URLField()
+    file_id = models.CharField(max_length=255, blank=True, null=True)  # Nuevo campo
 
     class Meta:
         indexes = [

@@ -12,9 +12,6 @@ from core.repositories import actualizar_generico
 class ParqueaderoRepository:
     @staticmethod
     def listar(solo_validados=True):
-        # Cambiado "cuenta" por "propietario"
-        # `annotate` evita el N+1 que tenia ParqueaderoResumenDTO
-        # (antes: 1 query COUNT extra por cada parqueadero de la lista).
         qs = (
             Parqueadero.objects.select_related("direccion", "ubicacion", "propietario")
             .annotate(
@@ -24,7 +21,14 @@ class ParqueaderoRepository:
             )
         )
         if solo_validados:
-            qs = qs.filter(estado=True, validado=True)
+            qs = qs.filter(
+                estado=True,
+                validado=True,
+                # Excluir parqueaderos cerrados o fuera de servicio
+            ).exclude(
+                Q(disponibilidad=Parqueadero.Disponibilidad.CERRADO) |
+                Q(disponibilidad=Parqueadero.Disponibilidad.FUERA_DE_SERVICIO)
+            )
         return qs.order_by("id")
 
     @staticmethod
