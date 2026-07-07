@@ -29,17 +29,18 @@ class ParqueaderoService:
         return parqueadero
 
     @staticmethod
-    def crear(propietario, direccion_datos, ubicacion_datos, **datos_parqueadero):
-        # Cambiado 'cuenta' por 'propietario'
-        # validado=False por defecto: requiere aprobacion de un administrador
-        # antes de aparecer en busquedas (ver ParqueaderoRepository.listar).
-        return ParqueaderoRepository.crear(
-            propietario=propietario,
-            direccion_datos=direccion_datos,
-            ubicacion_datos=ubicacion_datos,
-            validado=False,
-            **datos_parqueadero,
-        )
+    def crear(parqueadero_id, numero_espacio, cuenta_solicitante, estado="LIBRE"):
+        parqueadero = ParqueaderoService.obtener(parqueadero_id)
+        ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
+        
+        espacio = EspacioRepository.crear(parqueadero, numero_espacio=numero_espacio, estado=estado)
+        
+        # Sincronizar estado global
+        parqueadero.disponibilidad = EspacioService._recalcular_disponibilidad(parqueadero)
+        parqueadero.save(update_fields=['disponibilidad'])
+        EspacioService._notificar_cambio(espacio)
+        
+        return espacio
 
     @staticmethod
     def actualizar(parqueadero_id, cuenta_solicitante, **datos):
@@ -60,10 +61,20 @@ class ParqueaderoService:
         return ParqueaderoRepository.actualizar(parqueadero, validado=True)
 
     @staticmethod
-    def eliminar(parqueadero_id, cuenta_solicitante):
-        parqueadero = ParqueaderoService.obtener(parqueadero_id)
-        ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
-        ParqueaderoRepository.eliminar(parqueadero)
+    def eliminar(espacio_id, cuenta_solicitante):
+        espacio = EspacioRepository.obtener_por_id(espacio_id)
+        if espacio is None:
+            raise ValidationError("El espacio solicitado no existe.")
+        ParqueaderoService._verificar_propietario(espacio.parqueadero, cuenta_solicitante)
+        
+        parqueadero = espacio.parqueadero
+        EspacioRepository.eliminar(espacio)
+        
+        # Sincronizar estado global tras eliminar
+        parqueadero.disponibilidad = EspacioService._recalcular_disponibilidad(parqueadero)
+        parqueadero.save(update_fields=['disponibilidad'])
+        # Nota: Aquí no podemos notificar el espacio porque ya fue eliminado, 
+        # pero el parqueadero ya tiene su estado actualizado.
 
     @staticmethod
     def _verificar_propietario(parqueadero, cuenta_solicitante):

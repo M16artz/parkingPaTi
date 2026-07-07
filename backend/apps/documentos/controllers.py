@@ -67,3 +67,16 @@ class DocumentoViewSet(viewsets.ModelViewSet):
         # Obtenemos el serializador de lectura usando el método dinámico
         serializer = self.get_serializer(documento)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        archivo = serializer.validated_data.get('archivo')
+        fecha_exp = serializer.validated_data.get('fecha_expiracion')
+        
+        documento = DocumentoService.actualizar_documento(kwargs['pk'], request.user, archivo, fecha_exp)
+        return Response(DocumentoLecturaDTO(documento).data)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)

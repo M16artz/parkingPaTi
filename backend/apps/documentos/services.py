@@ -73,3 +73,33 @@ class DocumentoService:
             raise ValidationError("No se pudo eliminar el archivo del almacenamiento.")
 
         DocumentoRepository.eliminar(documento)
+
+    @staticmethod
+    def actualizar_documento(documento_id, cuenta_solicitante, archivo, fecha_expiracion=None):
+        documento = DocumentoRepository.obtener_por_id(documento_id)
+        if documento is None:
+            raise ValidationError("El documento solicitado no existe.")
+            
+        if not es_administrador(cuenta_solicitante) and documento.cuenta_id != cuenta_solicitante.id:
+            raise PermissionDenied("No tienes permiso para modificar este documento.")
+
+        storage = GoogleDriveStorage()
+        
+        # 1. Subir el nuevo archivo
+        nuevo_file_id = storage.save(archivo.name, archivo)
+        nuevo_enlace = storage.url(nuevo_file_id)
+        
+        # 2. Borrar el archivo viejo de Drive
+        try:
+            storage.delete(documento.file_id)
+        except Exception as e:
+            logger.error(f"Error al eliminar archivo viejo de Drive {documento.file_id}: {e}")
+            
+        # 3. Actualizar la base de datos
+        return DocumentoRepository.actualizar(
+            documento, 
+            ruta=nuevo_enlace, 
+            file_id=nuevo_file_id,
+            fecha_expiracion=fecha_expiracion,
+            es_valido=False # Al cambiar documento, requiere nueva validación
+        )
