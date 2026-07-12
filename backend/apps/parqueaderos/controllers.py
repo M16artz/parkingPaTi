@@ -79,6 +79,11 @@ class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
     def validar(self, request, pk=None):
         parqueadero = ParqueaderoService.validar(pk)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
+    
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def mios(self, request):
+        parqueaderos = ParqueaderoService.listar_propios(request.user)
+        return Response(ParqueaderoDetalleDTO(parqueaderos, many=True).data)
 
 
 class EspacioViewSet(PaginacionManualMixin, viewsets.ViewSet):

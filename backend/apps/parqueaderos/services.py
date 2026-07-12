@@ -84,6 +84,11 @@ class ParqueaderoService:
         # siempre daba False y ningun administrador pasaba este chequeo.
         if not es_administrador(cuenta_solicitante) and parqueadero.propietario_id != cuenta_solicitante.id:
             raise PermissionDenied("No tienes permiso para modificar este parqueadero.")
+    
+    @staticmethod
+    def listar_propios(cuenta_solicitante):
+        """Parqueaderos del propietario autenticado, validados o no."""
+        return ParqueaderoRepository.por_propietario(cuenta_solicitante.id)
 
 
 class EspacioService:

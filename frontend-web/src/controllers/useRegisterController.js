@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { authService } from '../services/authService';
+import { extraerErroresApi } from '../utils/apiError';
 
 export const useRegisterController = () => {
-  // 1. ESTRUCTURA COMPLETA DEL ESTADO DEL FORMULARIO
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -14,87 +15,85 @@ export const useRegisterController = () => {
     calleSecundaria: '',
     numeroLote: '',
     ubicacion: '',
-    archivoDocumento: null
+    archivoDocumento: null,
   });
 
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // 2. MANEJADOR DE CAMBIOS CON FILTRO EN TIEMPO REAL
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    //  FILTRO EN TIEMPO REAL PARA EL NÚMERO DE DOCUMENTO
     if (name === 'identificacion') {
       let valorLimpio = value;
 
-      // Evaluamos según el tipo de identificación seleccionado
       if (formData.tipoIdentificacion === 'CEDULA' || formData.tipoIdentificacion === 'RUC') {
-        // Bloqueo estricto: Elimina letras, guiones, espacios y signos negativos
         valorLimpio = value.replace(/[^0-9]/g, '');
-        
-        // Candado opcional de longitud máxima para Ecuador (Cédula 10 dígitos, RUC 13)
         const maximoDigitos = formData.tipoIdentificacion === 'CEDULA' ? 10 : 13;
         valorLimpio = valorLimpio.slice(0, maximoDigitos);
-
       } else if (formData.tipoIdentificacion === 'PASAPORTE') {
-        // Bloqueo Pasaporte: Alfanumérico sin caracteres especiales ni signos negativos
         valorLimpio = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
       }
 
       setFormData((prev) => ({ ...prev, [name]: valorLimpio }));
-
     } else {
-      // Procesamiento normal para todos los demás campos
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
-    // Limpiamos los errores visuales del campo actual mientras el usuario escribe
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  // 3. MANEJADOR PARA CARGA DE ARCHIVOS / DOCUMENTACIÓN
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setFormData((prev) => ({ ...prev, archivoDocumento: file }));
-      
+
       if (errors.archivoDocumento) {
         setErrors((prev) => ({ ...prev, archivoDocumento: null }));
       }
     }
   };
 
-  // 4. ENVÍO FINAL DE LOS DATOS A LA API
+  // handleSubmit ahora llama de verdad a POST /api/auth/register/ y
+  // encadena un login automático para dejar al usuario con sesión activa.
+  // Antes: console.log + await new Promise(setTimeout, 1500) simulado.
+  //
+  // IMPORTANTE - lo que este handler NO hace todavía, y por qué:
+  // nombreParqueadero / callePrincipal / calleSecundaria / numeroLote /
+  // ubicacion / archivoDocumento no se envían aquí. /api/auth/register/
+  // (RegistroDTO) no los acepta - solo crea Persona + Cuenta. Crear el
+  // parqueadero requiere latitud/longitud numéricas
+  // (ParqueaderoCrearDTO), y el campo `ubicacion` actual del formulario es
+  // un solo string de texto libre, no un par de coordenadas: hace falta
+  // agregar un selector de mapa (o geocodificar la dirección) antes de
+  // poder completar automáticamente ese segundo paso con
+  // parqueaderoService.crear(...) y documentoService.subir(...).
+  // Ver el informe adjunto, sección "Gaps pendientes".
   const handleSubmit = async (e, onSuccess) => {
     if (e) e.preventDefault();
     setIsSaving(true);
+    setErrors({});
 
     try {
-      console.log("Enviando toda la información del registro a la API...", formData);
-      
-      // Simulación de retraso de respuesta del servidor (Sustituir por Axios / Fetch / Firebase)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await authService.register(formData);
+      await authService.login({ correo: formData.correo, password: formData.password });
 
-      // Si la petición fue exitosa, disparamos el callback de la vista para mostrar el modal de éxito
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error al procesar el registro en el servidor:", error);
-      setErrors((prev) => ({ ...prev, formulario: "Ocurrió un error inesperado al procesar el registro." }));
+      setErrors(extraerErroresApi(error));
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 5. RETORNO DE PROPIEDADES Y FUNCIONES (Sincronizado con la Vista)
   return {
     formData,
     errors,
     isSaving,
     handleChange,
-    handleFileChange, 
-    handleSubmit
+    handleFileChange,
+    handleSubmit,
   };
 };

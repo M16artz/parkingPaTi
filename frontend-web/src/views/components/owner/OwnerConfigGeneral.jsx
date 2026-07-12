@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom'; // 🌟 1. IMPORTAMOS EL PORTAL
 import { Save, Clock, DollarSign, Activity, ChevronDown, Check, AlertTriangle, Copy } from 'lucide-react';
-import { Input } from '../Input'; 
+import { Input } from '../Input';
 import { Button } from '../Button';
 import { useOwnerConfigGController } from '../../../controllers/useOwnerConfigGController';
 
@@ -41,7 +41,7 @@ export const OwnerConfigGeneral = () => {
     { value: 'ABIERTO', label: '🟢 ABIERTO', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
     { value: 'CERRADO', label: '🔴 CERRADO', color: 'text-rose-700 bg-rose-50 border-rose-200' },
     { value: 'LLENO', label: '🟠 LLENO', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-    { value: 'FUERA DE SERVICIO', label: '⚫ FUERA DE SERVICIO', color: 'text-slate-700 bg-slate-50 border-slate-200' }
+    { value: 'FUERA_DE_SERVICIO', label: '⚫ FUERA DE SERVICIO', color: 'text-slate-700 bg-slate-50 border-slate-200' }
   ];
 
   const currentEnum = enumOptions.find(opt => opt.value === configCtrl.disponibilidad) || enumOptions[0];
@@ -49,7 +49,7 @@ export const OwnerConfigGeneral = () => {
 
   return (
     <div className="w-full max-w-[98%] mx-auto flex flex-col gap-8 text-left animate-fadeIn">
-      
+
       {/* SECCIÓN 1: ESTADO DE DISPONIBILIDAD */}
       <div className="bg-bg p-10 rounded-[32px] space-y-6 border border-slate-100">
         <div className="flex items-center gap-3.5 pb-3 border-b border-slate-200/60">
@@ -79,9 +79,9 @@ export const OwnerConfigGeneral = () => {
                 {enumOptions.map((option) => {
                   const isSelected = configCtrl.disponibilidad === option.value;
                   return (
-                    <div 
-                      key={option.value} 
-                      onClick={() => { configCtrl.setDisponibilidad(option.value); setIsOpenEnumMenu(false); }} 
+                    <div
+                      key={option.value}
+                      onClick={() => { configCtrl.setDisponibilidad(option.value); setIsOpenEnumMenu(false); }}
                       className={`px-4 py-3.5 rounded-xl flex items-center justify-between cursor-pointer transition-all font-body ${isSelected ? 'bg-slate-50 text-primary font-black' : 'text-slate-600 hover:bg-slate-50/80 font-bold'}`}
                     >
                       <span className="text-base tracking-wide">{option.label}</span>
@@ -129,11 +129,11 @@ export const OwnerConfigGeneral = () => {
                 <div className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${hasError ? 'border-red-400 bg-red-50/5' : dia.activo ? 'bg-white border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.02)]' : 'bg-white/50 border-slate-100 opacity-60'}`}>
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <input 
-                        type="checkbox" 
-                        checked={dia.activo} 
-                        onChange={(e) => configCtrl.handleDayChange(key, 'activo', e.target.checked)} 
-                        className="rounded-lg text-primary h-5 w-5 border-slate-300 cursor-pointer" 
+                      <input
+                        type="checkbox"
+                        checked={dia.activo}
+                        onChange={(e) => configCtrl.handleDayChange(key, 'activo', e.target.checked)}
+                        className="rounded-lg text-primary h-5 w-5 border-slate-300 cursor-pointer"
                       />
                       <span className="text-xl font-bold text-slate-800 font-body block">{dia.label} {dia.activo && <span className="text-red-500 text-sm">*</span>}</span>
                     </div>
@@ -178,10 +178,10 @@ export const OwnerConfigGeneral = () => {
       <div className="flex flex-col items-end gap-3 mt-4">
         {configCtrl.errors.formulario && (
           <span className="text-base font-black text-red-500 bg-red-50 border border-red-200 py-2 px-6 rounded-xl animate-shake">
-             {configCtrl.errors.formulario}
+            {configCtrl.errors.formulario}
           </span>
         )}
-        <Button 
+        <Button
           variant="primary"
           onClick={configCtrl.preSubmitCheck}
           disabled={configCtrl.isSaving}
@@ -194,7 +194,7 @@ export const OwnerConfigGeneral = () => {
       {/* ================================================================= */}
       {/*  ESCAPE PLAN: PORTALES DE REACT PARA ARRANCAR LOS MODALES       */}
       {/* ================================================================= */}
-      
+
       {/* MODAL 1: CONFIRMACIÓN */}
       {configCtrl.showConfirmModal && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
@@ -224,7 +224,7 @@ export const OwnerConfigGeneral = () => {
             </div>
           </div>
         </div>,
-        document.body 
+        document.body
       )}
 
       {/* MODAL 2: ÉXITO */}
