@@ -5,8 +5,7 @@ sqlparse==0.5.5
 tzdata==2026.2
 
 # Base de datos (PostgreSQL v3 con soporte binario)
-psycopg==3.3.4
-psycopg-binary==3.3.4
+psycopg[binary]==3.3.4
 
 # Variables de entorno
 python-dotenv==1.2.2
@@ -16,7 +15,8 @@ djangorestframework==3.17.1
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.4.0
 django-filter==24.3
+drf-spectacular==0.29.0
 
-# WebSockets y Asincronía (Channels)
-channels==4.1.0
-channels-redis==4.2.1
+# Google Drive
+google-api-python-client==2.187.0
+google-auth==2.43.0

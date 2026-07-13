@@ -50,8 +50,8 @@ export const useOwnerConfigGController = () => {
     descuento: '',
     grandes: '',
   });
-  // id de la EstrategiaTarifa (normal) existente, o null si aún no hay una.
-  const [tarifaId, setTarifaId] = useState(null);
+  // IDs de CategoriaTarifa existentes por cada campo de la UI.
+  const [categoriaIds, setCategoriaIds] = useState({ general: null, descuento: null, grandes: null });
 
   const [disponibilidad, setDisponibilidad] = useState('ABIERTO');
   const [errors, setErrors] = useState({});
@@ -84,9 +84,9 @@ export const useOwnerConfigGController = () => {
         setParqueaderoId(parqueadero.id);
         setDisponibilidad(parqueadero.disponibilidad);
 
-        const [horariosResp, tarifaNormal] = await Promise.all([
+        const [horariosResp, categorias] = await Promise.all([
           horarioService.listarPorParqueadero(parqueadero.id),
-          tarifaService.obtenerNormalPorParqueadero(parqueadero.id),
+          tarifaService.obtenerCategoriasPorParqueadero(parqueadero.id),
         ]);
 
         if (cancelado) return;
@@ -108,10 +108,16 @@ export const useOwnerConfigGController = () => {
         setHorarios(nuevosHorarios);
         setHorarioIds(nuevosIds);
 
-        if (tarifaNormal) {
-          setTarifaId(tarifaNormal.id);
-          setTarifas((prev) => ({ ...prev, general: String(tarifaNormal.precio_hora) }));
-        }
+        setCategoriaIds({
+          general: categorias.general?.id ?? null,
+          descuento: categorias.descuento?.id ?? null,
+          grandes: categorias.grandes?.id ?? null,
+        });
+        setTarifas({
+          general: categorias.general ? String(categorias.general.precio_hora) : '',
+          descuento: categorias.descuento ? String(categorias.descuento.precio_hora) : '',
+          grandes: categorias.grandes ? String(categorias.grandes.precio_hora) : '',
+        });
       } catch (error) {
         if (!cancelado) setLoadError(extraerErroresApi(error).formulario ?? 'No se pudo cargar la configuración.');
       } finally {
@@ -183,18 +189,7 @@ export const useOwnerConfigGController = () => {
     if (validateConfig()) setShowConfirmModal(true);
   };
 
-  // executeSubmit ahora hace 3 cosas de verdad contra el backend:
-  //  1. Sincroniza horarios (crea/actualiza/borra por día, porque cada
-  //     día es un registro independiente en el backend).
-  //  2. Crea o actualiza la tarifa NORMAL (precio_hora) - es la única de
-  //     las 3 tarifas de la UI que tiene un endpoint 1:1 hoy. "descuento"
-  //     y "grandes" quedan solo en el estado local: el modelo actual solo
-  //     permite UNA estrategia de tarifa por parqueadero (normal, o
-  //     incremento %, o descuento %; no las tres al mismo tiempo). Ver el
-  //     informe para las opciones de rediseño de este punto.
-  //  3. Actualiza disponibilidad del parqueadero si cambió (nota: el
-  //     backend también la recalcula solo cuando cambian espacios; esto
-  //     es la anulación manual del propietario).
+  // executeSubmit sincroniza horarios, categorias de tarifa y disponibilidad.
   const executeSubmit = async (onSuccess) => {
     setShowConfirmModal(false);
 
@@ -218,14 +213,16 @@ export const useOwnerConfigGController = () => {
         })
       );
 
-      if (tarifas.general !== '') {
-        const precio = Number(tarifas.general);
-        if (tarifaId) {
-          await tarifaService.actualizarNormal(tarifaId, precio);
-        } else {
-          const creada = await tarifaService.crearNormal(parqueaderoId, precio);
-          setTarifaId(creada.id);
-        }
+      const categoriasGuardadas = await Promise.all(
+        Object.entries(tarifas)
+          .filter(([, valor]) => valor !== '')
+          .map(async ([claveUi, valor]) => {
+            const categoria = await tarifaService.guardarCategoria(parqueaderoId, claveUi, Number(valor));
+            return [claveUi, categoria.id];
+          })
+      );
+      if (categoriasGuardadas.length) {
+        setCategoriaIds((prev) => ({ ...prev, ...Object.fromEntries(categoriasGuardadas) }));
       }
 
       await parqueaderoService.actualizar(parqueaderoId, { disponibilidad });

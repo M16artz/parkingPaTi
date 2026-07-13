@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mapas OSM Leaflet"
+  short_description: "Construir mapas interactivos de Loja"
+  default_prompt: "Implementa mapas de ParkingPaTi sin usar OSM como base de datos."

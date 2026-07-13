@@ -1,32 +1,24 @@
-"""
-DTOs para tarifas.
-"""
-
 from rest_framework import serializers
-from apps.tarifas.models import EstrategiaTarifa, IncrementoTarifa, DescuentoTarifa
+
+from apps.tarifas.models import CategoriaTarifa, TipoCategoriaTarifa
 
 
-class EstrategiaTarifaDTO(serializers.ModelSerializer):
+class CategoriaTarifaDTO(serializers.ModelSerializer):
     class Meta:
-        model = EstrategiaTarifa
-        # Se agrega "parqueadero" - faltaba, y el controller ya asumia
-        # que dto.validated_data["parqueadero"] existia, provocando un
-        # KeyError garantizado en cada POST /api/tarifas/.
-        fields = ["id", "precio_hora", "parqueadero"]
+        model = CategoriaTarifa
+        fields = ["id", "parqueadero", "codigo", "nombre_visible", "precio_hora", "activa"]
         read_only_fields = ["id"]
 
 
-class IncrementoTarifaDTO(serializers.ModelSerializer):
-    class Meta:
-        model = IncrementoTarifa
-        # Hereda 'precio_hora' de EstrategiaTarifa
-        fields = ["id", "precio_hora", "parqueadero", "porcentaje"]
-        read_only_fields = ["id"]
+class CategoriaTarifaCrearDTO(serializers.Serializer):
+    parqueadero = serializers.IntegerField()
+    codigo = serializers.ChoiceField(choices=TipoCategoriaTarifa.choices)
+    nombre_visible = serializers.CharField(max_length=80)
+    precio_hora = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
+    activa = serializers.BooleanField(required=False, default=True)
 
 
-class DescuentoTarifaDTO(serializers.ModelSerializer):
-    class Meta:
-        model = DescuentoTarifa
-        # Hereda 'precio_hora' de EstrategiaTarifa
-        fields = ["id", "precio_hora", "parqueadero", "porcentaje"]
-        read_only_fields = ["id"]
+class CategoriaTarifaActualizarDTO(serializers.Serializer):
+    nombre_visible = serializers.CharField(max_length=80, required=False)
+    precio_hora = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
+    activa = serializers.BooleanField(required=False)

@@ -1,29 +1,43 @@
 import React from 'react';
-import { StyleSheet, View, Text, FlatList } from 'react-native';
-import { useParking } from '../context/ParkingContext';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useNetInfo } from '@react-native-community/netinfo';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../navigation/AppNavigator';
+import ParkingCard from '../components/ParkingCard';
+import QueryState from '../components/QueryState';
+import { COLORS } from '../constants/theme';
+import { LOJA_BBOX, usePublicParkings } from '../hooks/usePublicParkings';
 
-export default function ListScreen() {
-    const { parkings } = useParking();
+interface Props {
+    navigation: StackNavigationProp<RootStackParamList, 'PublicParkings'>;
+}
+
+export default function ListScreen({ navigation }: Props) {
+    const query = usePublicParkings(LOJA_BBOX);
+    const network = useNetInfo();
+
+    if (query.isPending) return <QueryState kind="loading" />;
+    if (query.isError && !query.data) {
+        return <QueryState kind="error" message={query.error.message} onRetry={() => query.refetch()} />;
+    }
+    if (!query.data?.results.length) return <QueryState kind="empty" />;
 
     return (
         <View style={styles.container}>
+            {network.isConnected === false ? (
+                <Text accessibilityRole="alert" style={styles.offline}>Sin conexión. Se muestran los últimos datos.</Text>
+            ) : null}
+            <Text style={styles.updated}>Actualizado: {new Date(query.data.updated_at).toLocaleTimeString()}</Text>
             <FlatList
-                data={parkings}
-                keyExtractor={(item) => item.id}
+                data={query.data.results}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={styles.list}
+                refreshControl={<RefreshControl refreshing={query.isFetching} onRefresh={() => query.refetch()} />}
                 renderItem={({ item }) => (
-                    <View style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <Text style={styles.cardTitle}>{item.name}</Text>
-                            <Text style={[styles.statusText, { color: item.status === 'ABIERTO' ? '#4CAF50' : '#F44336' }]}>
-                                {item.status}
-                            </Text>
-                        </View>
-
-                        <View style={styles.cardBody}>
-                            <Text style={styles.infoText}>🚗 Espacios Libres: <Text style={{fontWeight: 'bold'}}>{item.available} / {item.total}</Text></Text>
-                            <Text style={styles.priceText}>💰 Tarifa General: <Text style={styles.priceValue}>$1.00 / Hora</Text></Text>
-                        </View>
-                    </View>
+                    <ParkingCard
+                        parking={item}
+                        onPress={() => navigation.navigate('ParkingDetail', { parkingId: item.id })}
+                    />
                 )}
             />
         </View>
@@ -31,13 +45,8 @@ export default function ListScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F7FA', padding: 10 },
-    card: { backgroundColor: '#FFF', padding: 16, borderRadius: 10, marginBottom: 12, elevation: 2 },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', flex: 1 },
-    statusText: { fontSize: 12, fontWeight: 'bold' },
-    cardBody: { gap: 4 },
-    infoText: { fontSize: 14, color: '#555' },
-    priceText: { fontSize: 14, color: '#666', marginTop: 2 },
-    priceValue: { color: '#2E7D32', fontWeight: 'bold' }
+    container: { flex: 1, backgroundColor: COLORS.background },
+    list: { padding: 12 },
+    updated: { color: COLORS.secondary, fontSize: 12, paddingHorizontal: 12, paddingTop: 10 },
+    offline: { backgroundColor: '#FFF1D6', color: '#6D4700', padding: 10, textAlign: 'center' },
 });

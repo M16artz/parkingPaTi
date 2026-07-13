@@ -20,6 +20,16 @@ export function extraerErroresApi(error) {
     return { formulario: 'No se pudo conectar con el servidor. Intenta nuevamente.' };
   }
 
+  if (data.fields && typeof data.fields === 'object') {
+    const errores = {};
+    Object.entries(data.fields).forEach(([campo, mensajes]) => {
+      errores[campo === 'non_field_errors' ? 'formulario' : campo] = Array.isArray(mensajes)
+        ? mensajes.join(' ')
+        : String(mensajes);
+    });
+    return errores;
+  }
+
   const detail = data.detail ?? data;
 
   // Caso 1: detail es un string simple (401, 403, 404, 500, etc.)

@@ -1,51 +1,74 @@
+from django.conf import settings
 from django.db import models
-from apps.usuarios.models import Cuenta
+from django.db.models import Q
 
 
-class Disponibilidad(models.TextChoices):
+class EstadoHabilitacion(models.TextChoices):
+    BORRADOR = "BORRADOR", "Borrador"
+    PENDIENTE = "PENDIENTE", "Pendiente"
+    APROBADO = "APROBADO", "Aprobado"
+    RECHAZADO = "RECHAZADO", "Rechazado"
+
+
+class EstadoOperativo(models.TextChoices):
     ABIERTO = "ABIERTO", "Abierto"
-    CERRADO = "CERRADO", "Cerrado"
     LLENO = "LLENO", "Lleno"
+    CERRADO = "CERRADO", "Cerrado"
+    INACTIVO = "INACTIVO", "Inactivo"
     FUERA_DE_SERVICIO = "FUERA_DE_SERVICIO", "Fuera de servicio"
 
-#Parqueadero 
+
+class EstadoEspacio(models.TextChoices):
+    OCUPADO = "OCUPADO", "Ocupado"
+    LIBRE = "LIBRE", "Libre"
+    INHABILITADO = "INHABILITADO", "Inhabilitado"
+
+
 class Parqueadero(models.Model):
-    propietario = models.ForeignKey(
-        Cuenta,
+    propietario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="parqueaderos"
+        related_name="parqueadero",
     )
-
     nombre = models.CharField(max_length=150)
-    estado = models.BooleanField(default=True)
-    validado = models.BooleanField(default=False)
-    tarifa = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-
-    disponibilidad = models.CharField(
+    descripcion = models.TextField(blank=True)
+    habilitacion_estado = models.CharField(
         max_length=20,
-        choices=Disponibilidad.choices,
-        default=Disponibilidad.CERRADO
+        choices=EstadoHabilitacion.choices,
+        default=EstadoHabilitacion.BORRADOR,
     )
+    motivo_rechazo = models.TextField(blank=True)
+    estado_operativo = models.CharField(
+        max_length=30,
+        choices=EstadoOperativo.choices,
+        default=EstadoOperativo.INACTIVO,
+    )
+    total_espacios = models.PositiveIntegerField(default=0)
+    espacios_disponibles = models.PositiveIntegerField(default=0)
+    configuracion_completa = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
             models.Index(fields=["nombre"]),
-            models.Index(fields=["validado"]),
-            models.Index(fields=["estado"]),
-            models.Index(fields=["disponibilidad"]),
+            models.Index(
+                fields=["habilitacion_estado", "configuracion_completa", "estado_operativo"]
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(espacios_disponibles__lte=models.F("total_espacios")),
+                name="park_available_lte_total",
+            ),
         ]
 
     def __str__(self):
         return self.nombre
 
 
-#Para Direccion
 class Direccion(models.Model):
-    parqueadero = models.OneToOneField(
-        Parqueadero,
-        on_delete=models.CASCADE,
-        related_name="direccion"
-    )
+    parqueadero = models.OneToOneField(Parqueadero, on_delete=models.CASCADE, related_name="direccion")
     calle_principal = models.CharField(max_length=200)
     calle_secundaria = models.CharField(max_length=200, blank=True)
     numero_lote = models.CharField(max_length=50, blank=True)
@@ -54,50 +77,60 @@ class Direccion(models.Model):
         return f"{self.calle_principal} - {self.parqueadero.nombre}"
 
 
-#Para Ubicacion
 class Ubicacion(models.Model):
-    parqueadero = models.OneToOneField(
-        Parqueadero,
-        on_delete=models.CASCADE,
-        related_name="ubicacion"
-    )
+    parqueadero = models.OneToOneField(Parqueadero, on_delete=models.CASCADE, related_name="ubicacion")
     latitud = models.DecimalField(max_digits=9, decimal_places=6)
     longitud = models.DecimalField(max_digits=9, decimal_places=6)
 
     class Meta:
-        indexes = [
-            models.Index(fields=["latitud", "longitud"]),
+        indexes = [models.Index(fields=["latitud", "longitud"])]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(latitud__gte=-90) & Q(latitud__lte=90),
+                name="location_valid_latitude",
+            ),
+            models.CheckConstraint(
+                condition=Q(longitud__gte=-180) & Q(longitud__lte=180),
+                name="location_valid_longitude",
+            ),
         ]
 
     def __str__(self):
         return f"({self.latitud}, {self.longitud})"
 
-#Para Espacio y TipoEstado
-class TipoEstado(models.TextChoices):
-    OCUPADO = "OCUPADO", "Ocupado"
-    LIBRE = "LIBRE", "Libre"
-    INHABILITADO = "INHABILITADO", "Inhabilitado"
-
 
 class Espacio(models.Model):
-    parqueadero = models.ForeignKey(
-        Parqueadero,
-        on_delete=models.CASCADE,
-        related_name="espacios"
+    parqueadero = models.ForeignKey(Parqueadero, on_delete=models.CASCADE, related_name="espacios")
+    nombre = models.CharField(max_length=50)
+    estado = models.CharField(max_length=20, choices=EstadoEspacio.choices, default=EstadoEspacio.LIBRE)
+    tarifa_predeterminada = models.ForeignKey(
+        "tarifas.CategoriaTarifa",
+        on_delete=models.PROTECT,
+        related_name="espacios_predeterminados",
+        null=True,
+        blank=True,
     )
-    numero_espacio = models.CharField(max_length=20) #Espacio 1, 2 etc 
-    estado = models.CharField(
-        max_length=20,
-        choices=TipoEstado.choices,
-        default=TipoEstado.LIBRE
-    )
+    is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("parqueadero", "numero_espacio")
         indexes = [
-            models.Index(fields=["estado"]),
-            models.Index(fields=["parqueadero"]),
+            models.Index(fields=["parqueadero", "estado"]),
+            models.Index(fields=["parqueadero", "is_active"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["parqueadero", "nombre"],
+                condition=Q(is_active=True),
+                name="space_unique_active_name_per_park",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.numero_espacio} - {self.get_estado_display()}"
+        return f"{self.nombre} - {self.get_estado_display()}"
+
+
+Disponibilidad = EstadoOperativo
+TipoEstado = EstadoEspacio

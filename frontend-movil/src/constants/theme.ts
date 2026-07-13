@@ -1,11 +1,13 @@
 // src/constants/theme.ts
 export const COLORS = {
-    primary: '#3366CC',     // Azul principal de ParkingPaTi
-    secondary: '#54595D',   // Gris secundario
-    tertiary: '#041333',    // Azul oscuro (Fondo principal/Header)
-    background: '#F8F9FA',  // Gris claro para fondos de listas
+    primary: '#176B57',
+    secondary: '#5D6368',
+    tertiary: '#17252A',
+    background: '#F4F6F5',
     white: '#FFFFFF',
     textDark: '#1A1A1A',
-    success: '#2ECC71',     // Verde para libre
-    error: '#E74C3C',       // Rojo para lleno
+    success: '#218A62',
+    warning: '#B56B16',
+    error: '#B53A3A',
+    border: '#D8DEDB',
 };

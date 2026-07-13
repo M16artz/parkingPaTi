@@ -1,105 +1,140 @@
-"""
-Capa de servicio para documentos.
-La subida real al storage (Google Drive) se delega a GoogleDriveStorage,
-manteniendo la logica de negocio (validaciones, permisos) separada del
-detalle de infraestructura de almacenamiento.
-"""
-
-from django.db import IntegrityError
-from django.db import IntegrityError, transaction
-from rest_framework.exceptions import PermissionDenied, ValidationError
 import logging
-logger = logging.getLogger(__name__)
+import unicodedata
+from pathlib import Path
 
+from django.db import transaction
+from django.utils import timezone
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+
+from apps.documentos.models import EstadoDocumento
 from apps.documentos.repositories import DocumentoRepository
 from apps.documentos.storage_backends import GoogleDriveStorage
+from apps.usuarios.models import EstadoOnboarding
 from core.permissions import es_administrador
+
+logger = logging.getLogger(__name__)
+
+
+def nombre_drive_privado(cuenta, nombre_original):
+    extension = Path(nombre_original).suffix.lower()
+    base = f"{cuenta.persona.apellido}_{cuenta.persona.nombre}_{cuenta.id}"
+    normalizado = unicodedata.normalize("NFKD", base).encode("ascii", "ignore").decode("ascii")
+    seguro = "_".join(
+        filter(None, "".join(caracter.lower() if caracter.isalnum() else " " for caracter in normalizado).split())
+    )
+    return f"{seguro}{extension}"
 
 
 class DocumentoService:
     @staticmethod
-    def obtener_por_cuenta(cuenta_id):
-        documento = DocumentoRepository.obtener_por_cuenta(cuenta_id)
+    def listar(cuenta_solicitante):
+        if es_administrador(cuenta_solicitante):
+            return DocumentoRepository.listar()
+        documento = DocumentoRepository.obtener_por_cuenta(cuenta_solicitante.id)
+        return [documento] if documento else []
+
+    @staticmethod
+    def obtener(documento_id, cuenta_solicitante):
+        documento = DocumentoRepository.obtener_por_id(documento_id)
         if documento is None:
-            raise ValidationError("Esta cuenta no tiene un documento registrado.")
+            raise NotFound("El documento solicitado no existe.")
+        DocumentoService._verificar_permiso(documento, cuenta_solicitante)
         return documento
 
     @staticmethod
-    def subir_documento(cuenta, archivo, fecha_expiracion=None):
-        if DocumentoRepository.obtener_por_cuenta(cuenta.id) is not None:
-            raise ValidationError("Esta cuenta ya tiene un documento registrado; usa actualizar en su lugar.")
+    def obtener_por_cuenta(cuenta_id):
+        documento = DocumentoRepository.obtener_por_cuenta(cuenta_id)
+        if documento is None:
+            raise NotFound("Esta cuenta no tiene un documento registrado.")
+        return documento
 
-        storage = GoogleDriveStorage()
-        nombre_guardado = storage.save(archivo.name, archivo)
-        enlace = storage.url(nombre_guardado)
+    @staticmethod
+    def subir_o_reemplazar(cuenta, archivo, storage=None):
+        if cuenta.onboarding_estado not in {
+            EstadoOnboarding.DATOS_INICIALES_PENDIENTES,
+            EstadoOnboarding.RECHAZADO,
+        }:
+            raise ValidationError("El documento no puede modificarse en el estado actual.")
 
+        storage = storage or GoogleDriveStorage()
+        nombre_seguro = nombre_drive_privado(cuenta, archivo.name)
+        nuevo = storage.upload(nombre_seguro, archivo)
+        anterior_id = None
         try:
             with transaction.atomic():
-                return DocumentoRepository.crear(
-                    cuenta=cuenta,
-                    ruta=enlace,
-                    file_id=nombre_guardado,
-                    fecha_expiracion=fecha_expiracion,
-                    es_valido=False,
-                )
-        except IntegrityError:
-            # Limpiar archivo de Drive si falló la creación en BD
-            storage.delete(nombre_guardado)
-            raise ValidationError("Esta cuenta ya tiene un documento registrado; usa actualizar en su lugar.")
-        
-    @staticmethod
-    def validar_documento(documento_id):
-        """Solo deberia invocarse desde un endpoint protegido con EsAdministrador."""
-        documento = DocumentoRepository.obtener_por_id(documento_id)
-        if documento is None:
-            raise ValidationError("El documento solicitado no existe.")
-        return DocumentoRepository.actualizar(documento, es_valido=True)
+                documento = DocumentoRepository.bloquear_por_cuenta(cuenta.id)
+                datos = {
+                    "drive_file_id": nuevo.file_id,
+                    "drive_web_view_link": nuevo.web_view_link,
+                    "nombre_archivo": nombre_seguro,
+                    "nombre_original": Path(archivo.name).name,
+                    "mime_type": archivo.content_type,
+                    "size_bytes": archivo.size,
+                    "estado": EstadoDocumento.PENDIENTE,
+                    "motivo_rechazo": "",
+                    "reviewed_at": None,
+                    "reviewed_by": None,
+                }
+                if documento is None:
+                    documento = DocumentoRepository.crear(cuenta=cuenta, **datos)
+                else:
+                    anterior_id = documento.drive_file_id
+                    documento = DocumentoRepository.actualizar(documento, **datos)
+        except Exception:
+            try:
+                storage.delete(nuevo.file_id)
+            except Exception:
+                logger.exception("Fallo la compensacion de un archivo nuevo en Drive")
+            raise
+
+        if anterior_id:
+            try:
+                storage.delete(anterior_id)
+            except Exception:
+                logger.exception("No se pudo retirar la version anterior de un documento")
+        return documento
 
     @staticmethod
-    def eliminar(documento_id, cuenta_solicitante):
+    def subir_documento(cuenta, archivo, storage=None):
+        if DocumentoRepository.obtener_por_cuenta(cuenta.id) is not None:
+            raise ValidationError("Esta cuenta ya tiene un documento registrado.")
+        return DocumentoService.subir_o_reemplazar(cuenta, archivo, storage=storage)
+
+    @staticmethod
+    def actualizar_documento(documento_id, cuenta_solicitante, archivo, storage=None):
+        documento = DocumentoService.obtener(documento_id, cuenta_solicitante)
+        return DocumentoService.subir_o_reemplazar(documento.cuenta, archivo, storage=storage)
+
+    @staticmethod
+    def validar_documento(documento_id, revisor):
         documento = DocumentoRepository.obtener_por_id(documento_id)
         if documento is None:
-            raise ValidationError("El documento solicitado no existe.")
-        if not es_administrador(cuenta_solicitante) and documento.cuenta_id != cuenta_solicitante.id:
-            raise PermissionDenied("No tienes permiso para eliminar este documento.")
+            raise NotFound("El documento solicitado no existe.")
+        return DocumentoRepository.actualizar(
+            documento,
+            estado=EstadoDocumento.APROBADO,
+            motivo_rechazo="",
+            reviewed_at=timezone.now(),
+            reviewed_by=revisor,
+        )
 
-        file_id = documento.file_id
-        storage = GoogleDriveStorage()
+    @staticmethod
+    def eliminar(documento_id, cuenta_solicitante, storage=None):
+        documento = DocumentoService.obtener(documento_id, cuenta_solicitante)
+        if not es_administrador(cuenta_solicitante) and cuenta_solicitante.onboarding_estado not in {
+            EstadoOnboarding.DATOS_INICIALES_PENDIENTES,
+            EstadoOnboarding.RECHAZADO,
+        }:
+            raise ValidationError("El documento no puede eliminarse en el estado actual.")
+        storage = storage or GoogleDriveStorage()
         try:
-            storage.delete(file_id)  # Si falla, lanza excepción
-        except Exception as e:
-            # Registrar y relanzar para no eliminar el registro
-            logger.error(f"Error al eliminar archivo de Drive: {e}")
-            raise ValidationError("No se pudo eliminar el archivo del almacenamiento.")
-
+            storage.delete(documento.drive_file_id)
+        except Exception as exc:
+            logger.exception("No se pudo eliminar un documento de Drive")
+            raise ValidationError("No se pudo eliminar el archivo del almacenamiento.") from exc
         DocumentoRepository.eliminar(documento)
 
     @staticmethod
-    def actualizar_documento(documento_id, cuenta_solicitante, archivo, fecha_expiracion=None):
-        documento = DocumentoRepository.obtener_por_id(documento_id)
-        if documento is None:
-            raise ValidationError("El documento solicitado no existe.")
-            
+    def _verificar_permiso(documento, cuenta_solicitante):
         if not es_administrador(cuenta_solicitante) and documento.cuenta_id != cuenta_solicitante.id:
-            raise PermissionDenied("No tienes permiso para modificar este documento.")
-
-        storage = GoogleDriveStorage()
-        
-        # 1. Subir el nuevo archivo
-        nuevo_file_id = storage.save(archivo.name, archivo)
-        nuevo_enlace = storage.url(nuevo_file_id)
-        
-        # 2. Borrar el archivo viejo de Drive
-        try:
-            storage.delete(documento.file_id)
-        except Exception as e:
-            logger.error(f"Error al eliminar archivo viejo de Drive {documento.file_id}: {e}")
-            
-        # 3. Actualizar la base de datos
-        return DocumentoRepository.actualizar(
-            documento, 
-            ruta=nuevo_enlace, 
-            file_id=nuevo_file_id,
-            fecha_expiracion=fecha_expiracion,
-            es_valido=False # Al cambiar documento, requiere nueva validación
-        )
+            raise PermissionDenied("No tienes permiso para acceder a este documento.")

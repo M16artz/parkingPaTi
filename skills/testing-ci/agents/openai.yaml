@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pruebas y CI"
+  short_description: "Crear pruebas y automatización CI"
+  default_prompt: "Añade verificación automatizada incremental a ParkingPaTi."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend React Query"
+  short_description: "Construir web con React Query"
+  default_prompt: "Implementa flujos web REST y polling de ParkingPaTi."

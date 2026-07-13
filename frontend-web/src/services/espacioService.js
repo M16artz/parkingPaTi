@@ -1,11 +1,6 @@
 // src/services/espacioService.js
 //
-// apps/parqueaderos.Espacio SOLO tiene numero_espacio + estado
-// (LIBRE | OCUPADO | INHABILITADO) - no tiene ningún campo de tarifa.
-// EspacioCambiarEstadoDTO únicamente acepta `estado`; enviar cualquier
-// otra clave (como la "tarifa" por espacio que maneja OwnerConfigEspacios.jsx
-// hoy) simplemente se ignora en el backend. Ver el informe, "Gap de
-// negocio: tarifas por espacio".
+// Espacio permite guardar estado y categoria_tarifa.
 
 import { apiClient } from './apiClient';
 
@@ -27,9 +22,13 @@ export const espacioService = {
     return data;
   },
 
-  /** PATCH /api/espacios/{id}/ - { estado } */
-  async cambiarEstado(espacioId, estado) {
-    const { data } = await apiClient.patch(`/espacios/${espacioId}/`, { estado });
+  /** PATCH /api/espacios/{id}/ - { estado?, categoria_tarifa? } */
+  async actualizar(espacioId, { estado, categoriaTarifaId } = {}) {
+    const payload = {};
+    if (estado !== undefined) payload.estado = estado;
+    if (categoriaTarifaId !== undefined) payload.categoria_tarifa = categoriaTarifaId;
+
+    const { data } = await apiClient.patch(`/espacios/${espacioId}/`, payload);
     return data;
   },
 

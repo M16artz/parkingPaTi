@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seguridad secretos auth"
+  short_description: "Proteger secretos y autenticación JWT"
+  default_prompt: "Aplica controles de secretos, documentos y autenticación."

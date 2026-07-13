@@ -6,7 +6,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from apps.usuarios.models import Cuenta, Persona, TipoIdentificacion, TipoRol
+from apps.usuarios.models import Cuenta, EstadoOnboarding, Persona, TipoIdentificacion, TipoRol
 
 
 class PersonaDTO(serializers.ModelSerializer):
@@ -25,7 +25,7 @@ class CuentaResumenDTO(serializers.ModelSerializer):
 
     class Meta:
         model = Cuenta
-        fields = ["id", "username", "nombre_completo", "rol", "rol_display", "estado"]
+        fields = ["id", "username", "nombre_completo", "rol", "rol_display", "is_active", "onboarding_estado"]
 
     def get_nombre_completo(self, obj):
         return f"{obj.persona.nombre} {obj.persona.apellido}"
@@ -37,7 +37,10 @@ class CuentaDetalleDTO(serializers.ModelSerializer):
 
     class Meta:
         model = Cuenta
-        fields = ["id", "username", "correo", "persona", "rol", "rol_display", "estado", "date_joined"]
+        fields = [
+            "id", "username", "correo", "persona", "rol", "rol_display",
+            "is_active", "correo_verificado", "onboarding_estado", "date_joined",
+        ]
         read_only_fields = ["id", "date_joined", "rol"]
 
 
@@ -46,7 +49,7 @@ class CuentaActualizarDTO(serializers.ModelSerializer):
 
     class Meta:
         model = Cuenta
-        fields = ["correo", "password", "estado"]
+        fields = ["correo", "password"]
 
     def validate_password(self, value):
         validate_password(value, user=self.instance)
@@ -96,7 +99,6 @@ class RegistroDTO(serializers.Serializer):
     tipo_identificacion = serializers.ChoiceField(choices=TipoIdentificacion.choices)
     identificacion = serializers.CharField(max_length=20)
 
-    username = serializers.CharField(max_length=150)
     correo = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
 
@@ -122,11 +124,49 @@ class RegistroDTO(serializers.Serializer):
         }
 
     def to_datos_cuenta(self):
+        correo = self.validated_data["correo"].strip().lower()
         return {
-            "username": self.validated_data["username"],
-            "correo": self.validated_data["correo"],
+            "username": correo,
+            "correo": correo,
             "password": self.validated_data["password"],
         }
+
+
+class VerificarCorreoDTO(serializers.Serializer):
+    token = serializers.CharField(min_length=32, max_length=512, trim_whitespace=True)
+
+
+class ReenviarVerificacionDTO(serializers.Serializer):
+    correo = serializers.EmailField()
+
+
+class MensajeDTO(serializers.Serializer):
+    detail = serializers.CharField(read_only=True)
+
+
+class VerificarCorreoResponseDTO(MensajeDTO):
+    onboarding_estado = serializers.CharField(read_only=True)
+
+
+class RegistroResponseDTO(MensajeDTO):
+    cuenta = CuentaDetalleDTO(read_only=True)
+    email_enviado = serializers.BooleanField(read_only=True)
+
+
+class OnboardingEstadoDTO(serializers.Serializer):
+    estado = serializers.CharField()
+    paso = serializers.CharField()
+    correo_verificado = serializers.BooleanField()
+    parqueadero = serializers.DictField(allow_null=True)
+    documento = serializers.DictField(allow_null=True)
+
+
+class CookieTokenRefreshResponseDTO(serializers.Serializer):
+    access = serializers.CharField(read_only=True)
+
+
+class EmptyDTO(serializers.Serializer):
+    pass
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -139,9 +179,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        refresh = self.get_token(self.user)
-        data["refresh"] = str(refresh)
-        data["access"] = str(refresh.access_token)
+        from apps.usuarios.services import SesionService
+
+        SesionService.validar_login(self.user)
+        data["refresh_cookie"] = data.pop("refresh")
         data["username"] = self.user.username
         data["rol"] = self.user.rol
+        data["onboarding_estado"] = self.user.onboarding_estado
         return data

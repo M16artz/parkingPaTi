@@ -1,0 +1,3745 @@
+openapi: 3.0.3
+info:
+  title: ParkingPaTi API
+  version: 1.0.0
+  description: Contrato base de la API REST de ParkingPaTi.
+paths:
+  /api/v1/admin/accounts/:
+    get:
+      operationId: admin_accounts_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: query
+        name: activo
+        schema:
+          type: boolean
+      - in: query
+        name: onboarding_estado
+        schema:
+          enum:
+          - CORREO_PENDIENTE
+          - DATOS_INICIALES_PENDIENTES
+          - REVISION_PENDIENTE
+          - RECHAZADO
+          - CONFIGURACION_PENDIENTE
+          - ACTIVO
+          - DESHABILITADO
+          type: string
+          minLength: 1
+        description: |-
+          * `CORREO_PENDIENTE` - Correo pendiente
+          * `DATOS_INICIALES_PENDIENTES` - Datos iniciales pendientes
+          * `REVISION_PENDIENTE` - Revision pendiente
+          * `RECHAZADO` - Rechazado
+          * `CONFIGURACION_PENDIENTE` - Configuracion pendiente
+          * `ACTIVO` - Activo
+          * `DESHABILITADO` - Deshabilitado
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 150
+          minLength: 1
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCuentaPaginaDTO'
+          description: ''
+  /api/v1/admin/accounts/{cuenta_id}/:
+    get:
+      operationId: admin_accounts_retrieve
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCuentaDetalleDTO'
+          description: ''
+  /api/v1/admin/accounts/{cuenta_id}/disable/:
+    post:
+      operationId: admin_accounts_disable
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAccionResponseDTO'
+          description: ''
+  /api/v1/admin/applications/:
+    get:
+      operationId: admin_applications_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: query
+        name: onboarding_estado
+        schema:
+          enum:
+          - CORREO_PENDIENTE
+          - DATOS_INICIALES_PENDIENTES
+          - REVISION_PENDIENTE
+          - RECHAZADO
+          - CONFIGURACION_PENDIENTE
+          - ACTIVO
+          - DESHABILITADO
+          type: string
+          minLength: 1
+        description: |-
+          * `CORREO_PENDIENTE` - Correo pendiente
+          * `DATOS_INICIALES_PENDIENTES` - Datos iniciales pendientes
+          * `REVISION_PENDIENTE` - Revision pendiente
+          * `RECHAZADO` - Rechazado
+          * `CONFIGURACION_PENDIENTE` - Configuracion pendiente
+          * `ACTIVO` - Activo
+          * `DESHABILITADO` - Deshabilitado
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 150
+          minLength: 1
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSolicitudPaginaDTO'
+          description: ''
+  /api/v1/admin/applications/{cuenta_id}/:
+    get:
+      operationId: admin_applications_retrieve
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSolicitudDetalleDTO'
+          description: ''
+  /api/v1/admin/applications/{cuenta_id}/approve/:
+    post:
+      operationId: admin_applications_approve
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAccionResponseDTO'
+          description: ''
+  /api/v1/admin/applications/{cuenta_id}/document/:
+    get:
+      operationId: admin_applications_document_retrieve
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDocumentoAccesoDTO'
+          description: ''
+  /api/v1/admin/applications/{cuenta_id}/reject/:
+    post:
+      operationId: admin_applications_reject
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRechazoDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminRechazoDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminRechazoDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAccionResponseDTO'
+          description: ''
+  /api/v1/admin/stays/:
+    get:
+      operationId: admin_stays_history_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstanciaPaginaDTO'
+          description: ''
+  /api/v1/auth/admin/crear-cuenta/:
+    post:
+      operationId: auth_admin_crear_cuenta_create
+      description: |-
+        POST /api/auth/admin/crear-cuenta/ - unico lugar donde se puede elegir
+        el rol de la cuenta nueva (incluido ADMINISTRADOR). Protegido: solo
+        administradores autenticados pueden invocarlo.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCrearCuentaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminCrearCuentaDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminCrearCuentaDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCrearCuentaDTO'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuentaDetalleDTO'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: POST /api/auth/register/ - registro publico. Siempre crea PROPIETARIO.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistroDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistroDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroDTO'
+          description: ''
+  /api/v1/auth/resend-verification/:
+    post:
+      operationId: auth_resend_verification_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReenviarVerificacionDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReenviarVerificacionDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReenviarVerificacionDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeDTO'
+          description: ''
+  /api/v1/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomTokenObtainPair'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieTokenRefreshResponseDTO'
+          description: ''
+  /api/v1/auth/verify-email/:
+    post:
+      operationId: auth_verify_email_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistroDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistroDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroResponseDTO'
+          description: ''
+  /api/v1/cuentas/:
+    get:
+      operationId: cuentas_list
+      description: |-
+        IMPORTANTE (hallazgo 2.1 de la auditoria): este es un viewsets.ViewSet
+        "plano", no un GenericViewSet, por lo que DRF NO invoca automaticamente
+        check_object_permissions(). Por eso cada accion que opera sobre un
+        objeto especifico valida explicitamente la propiedad del recurso con
+        `_verificar_acceso_propio`, ademas de exigir autenticacion.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - cuentas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCuentaDetalleDTOList'
+          description: ''
+    post:
+      operationId: cuentas_create
+      description: |-
+        IMPORTANTE (hallazgo 2.1 de la auditoria): este es un viewsets.ViewSet
+        "plano", no un GenericViewSet, por lo que DRF NO invoca automaticamente
+        check_object_permissions(). Por eso cada accion que opera sobre un
+        objeto especifico valida explicitamente la propiedad del recurso con
+        `_verificar_acceso_propio`, ademas de exigir autenticacion.
+      tags:
+      - cuentas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CuentaDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CuentaDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CuentaDetalleDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuentaDetalleDTO'
+          description: ''
+  /api/v1/cuentas/{id}/:
+    get:
+      operationId: cuentas_retrieve
+      description: |-
+        IMPORTANTE (hallazgo 2.1 de la auditoria): este es un viewsets.ViewSet
+        "plano", no un GenericViewSet, por lo que DRF NO invoca automaticamente
+        check_object_permissions(). Por eso cada accion que opera sobre un
+        objeto especifico valida explicitamente la propiedad del recurso con
+        `_verificar_acceso_propio`, ademas de exigir autenticacion.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - cuentas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuentaDetalleDTO'
+          description: ''
+    put:
+      operationId: cuentas_update
+      description: |-
+        IMPORTANTE (hallazgo 2.1 de la auditoria): este es un viewsets.ViewSet
+        "plano", no un GenericViewSet, por lo que DRF NO invoca automaticamente
+        check_object_permissions(). Por eso cada accion que opera sobre un
+        objeto especifico valida explicitamente la propiedad del recurso con
+        `_verificar_acceso_propio`, ademas de exigir autenticacion.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - cuentas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CuentaDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CuentaDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CuentaDetalleDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuentaDetalleDTO'
+          description: ''
+    patch:
+      operationId: cuentas_partial_update
+      description: |-
+        IMPORTANTE (hallazgo 2.1 de la auditoria): este es un viewsets.ViewSet
+        "plano", no un GenericViewSet, por lo que DRF NO invoca automaticamente
+        check_object_permissions(). Por eso cada accion que opera sobre un
+        objeto especifico valida explicitamente la propiedad del recurso con
+        `_verificar_acceso_propio`, ademas de exigir autenticacion.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - cuentas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCuentaDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCuentaDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCuentaDetalleDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuentaDetalleDTO'
+          description: ''
+    delete:
+      operationId: cuentas_destroy
+      description: |-
+        IMPORTANTE (hallazgo 2.1 de la auditoria): este es un viewsets.ViewSet
+        "plano", no un GenericViewSet, por lo que DRF NO invoca automaticamente
+        check_object_permissions(). Por eso cada accion que opera sobre un
+        objeto especifico valida explicitamente la propiedad del recurso con
+        `_verificar_acceso_propio`, ademas de exigir autenticacion.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - cuentas
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/documentos/:
+    get:
+      operationId: documentos_list
+      tags:
+      - documentos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+    post:
+      operationId: documentos_create
+      tags:
+      - documentos
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentoLecturaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentoLecturaDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+  /api/v1/documentos/{id}/:
+    get:
+      operationId: documentos_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - documentos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+    put:
+      operationId: documentos_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - documentos
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentoLecturaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentoLecturaDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+    patch:
+      operationId: documentos_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - documentos
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentoLecturaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentoLecturaDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+    delete:
+      operationId: documentos_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - documentos
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/documentos/{id}/validar/:
+    post:
+      operationId: documentos_validar_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - documentos
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentoLecturaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentoLecturaDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+  /api/v1/espacios/:
+    get:
+      operationId: espacios_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - espacios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEspacioDTOList'
+          description: ''
+    post:
+      operationId: espacios_create
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      tags:
+      - espacios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EspacioDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EspacioDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EspacioDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspacioDTO'
+          description: ''
+  /api/v1/espacios/{id}/:
+    get:
+      operationId: espacios_retrieve
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - espacios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspacioDTO'
+          description: ''
+    put:
+      operationId: espacios_update
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - espacios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EspacioDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EspacioDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EspacioDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspacioDTO'
+          description: ''
+    patch:
+      operationId: espacios_partial_update
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - espacios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEspacioDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEspacioDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEspacioDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspacioDTO'
+          description: ''
+    delete:
+      operationId: espacios_destroy
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - espacios
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/horarios/:
+    get:
+      operationId: horarios_list
+      description: |-
+        Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+        en el resto del proyecto, toda la logica de negocio y de permisos vive
+        en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+        (queryset/serializer_class implicitos) con overrides manuales de todos
+        los metodos, como estaba antes, era codigo redundante y confuso.
+      tags:
+      - horarios
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HorarioAtencionDTO'
+          description: ''
+    post:
+      operationId: horarios_create
+      description: |-
+        Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+        en el resto del proyecto, toda la logica de negocio y de permisos vive
+        en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+        (queryset/serializer_class implicitos) con overrides manuales de todos
+        los metodos, como estaba antes, era codigo redundante y confuso.
+      tags:
+      - horarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HorarioAtencionDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HorarioAtencionDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HorarioAtencionDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HorarioAtencionDTO'
+          description: ''
+  /api/v1/horarios/{id}/:
+    get:
+      operationId: horarios_retrieve
+      description: |-
+        Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+        en el resto del proyecto, toda la logica de negocio y de permisos vive
+        en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+        (queryset/serializer_class implicitos) con overrides manuales de todos
+        los metodos, como estaba antes, era codigo redundante y confuso.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - horarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HorarioAtencionDTO'
+          description: ''
+    put:
+      operationId: horarios_update
+      description: |-
+        Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+        en el resto del proyecto, toda la logica de negocio y de permisos vive
+        en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+        (queryset/serializer_class implicitos) con overrides manuales de todos
+        los metodos, como estaba antes, era codigo redundante y confuso.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - horarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HorarioAtencionDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HorarioAtencionDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HorarioAtencionDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HorarioAtencionDTO'
+          description: ''
+    patch:
+      operationId: horarios_partial_update
+      description: |-
+        Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+        en el resto del proyecto, toda la logica de negocio y de permisos vive
+        en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+        (queryset/serializer_class implicitos) con overrides manuales de todos
+        los metodos, como estaba antes, era codigo redundante y confuso.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - horarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHorarioAtencionDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHorarioAtencionDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHorarioAtencionDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HorarioAtencionDTO'
+          description: ''
+    delete:
+      operationId: horarios_destroy
+      description: |-
+        Se usa un viewsets.ViewSet "plano" (no ModelViewSet) porque, igual que
+        en el resto del proyecto, toda la logica de negocio y de permisos vive
+        en HorarioAtencionService, no en el viewset. Mezclar ModelViewSet
+        (queryset/serializer_class implicitos) con overrides manuales de todos
+        los metodos, como estaba antes, era codigo redundante y confuso.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - horarios
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/owner/application/submit/:
+    post:
+      operationId: owner_application_submit_create
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingEstadoDTO'
+          description: ''
+  /api/v1/owner/configuration/:
+    get:
+      operationId: owner_configuration_retrieve
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionFinalResponseDTO'
+          description: ''
+    put:
+      operationId: owner_configuration_update
+      tags:
+      - owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfiguracionFinalDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfiguracionFinalDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfiguracionFinalDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionFinalResponseDTO'
+          description: ''
+  /api/v1/owner/document/:
+    put:
+      operationId: owner_document_update
+      tags:
+      - owner
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentoEscrituraDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentoEscrituraDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoLecturaDTO'
+          description: ''
+  /api/v1/owner/onboarding-status/:
+    get:
+      operationId: owner_onboarding_status_retrieve
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingEstadoDTO'
+          description: ''
+  /api/v1/owner/parking/initial-data/:
+    put:
+      operationId: owner_parking_initial_data_update
+      tags:
+      - owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoCrearDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoCrearDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoCrearDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+  /api/v1/owner/spaces/{espacio_id}/:
+    patch:
+      operationId: owner_spaces_partial_update
+      parameters:
+      - in: path
+        name: espacio_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEspacioEditarDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEspacioEditarDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEspacioEditarDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspacioConfiguracionResponseDTO'
+          description: ''
+    delete:
+      operationId: owner_spaces_destroy
+      parameters:
+      - in: path
+        name: espacio_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/owner/spaces/{espacio_id}/reactivate/:
+    post:
+      operationId: owner_spaces_reactivate
+      parameters:
+      - in: path
+        name: espacio_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspacioConfiguracionResponseDTO'
+          description: ''
+  /api/v1/owner/spaces/{espacio_id}/stays/current/:
+    get:
+      operationId: owner_stays_current
+      parameters:
+      - in: path
+        name: espacio_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstanciaResponseDTO'
+          description: ''
+  /api/v1/owner/spaces/{espacio_id}/stays/finish/:
+    post:
+      operationId: owner_stays_finish
+      parameters:
+      - in: path
+        name: espacio_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstanciaResponseDTO'
+          description: ''
+  /api/v1/owner/spaces/{espacio_id}/stays/start/:
+    post:
+      operationId: owner_stays_start
+      parameters:
+      - in: path
+        name: espacio_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstanciaInicioDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EstanciaInicioDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EstanciaInicioDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstanciaResponseDTO'
+          description: ''
+  /api/v1/owner/spaces/bulk/:
+    post:
+      operationId: owner_spaces_bulk_create
+      tags:
+      - owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EspaciosLoteDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EspaciosLoteDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EspaciosLoteDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EspacioConfiguracionResponseDTO'
+          description: ''
+  /api/v1/owner/stays/:
+    get:
+      operationId: owner_stays_history_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      tags:
+      - owner
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstanciaPaginaDTO'
+          description: ''
+  /api/v1/parqueaderos/:
+    get:
+      operationId: parqueaderos_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - parqueaderos
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedParqueaderoDetalleDTOList'
+          description: ''
+    post:
+      operationId: parqueaderos_create
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      tags:
+      - parqueaderos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+  /api/v1/parqueaderos/{id}/:
+    get:
+      operationId: parqueaderos_retrieve
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - parqueaderos
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+    put:
+      operationId: parqueaderos_update
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - parqueaderos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+    patch:
+      operationId: parqueaderos_partial_update
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - parqueaderos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedParqueaderoDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedParqueaderoDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedParqueaderoDetalleDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+    delete:
+      operationId: parqueaderos_destroy
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - parqueaderos
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/parqueaderos/{id}/validar/:
+    post:
+      operationId: parqueaderos_validar_create
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - parqueaderos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+  /api/v1/parqueaderos/mios/:
+    get:
+      operationId: parqueaderos_mios_retrieve
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      tags:
+      - parqueaderos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+          description: ''
+  /api/v1/public/parkings/:
+    get:
+      operationId: public_parkings_list
+      parameters:
+      - in: query
+        name: bbox
+        schema:
+          type: string
+        description: minLng,minLat,maxLng,maxLat dentro de Loja
+        required: true
+      tags:
+      - public
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicParkingListDTO'
+          description: ''
+  /api/v1/public/parkings/{parqueadero_id}/:
+    get:
+      operationId: public_parkings_retrieve
+      parameters:
+      - in: path
+        name: parqueadero_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - public
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicParkingDetailDTO'
+          description: ''
+  /api/v1/tarifas/:
+    get:
+      operationId: tarifas_list
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - tarifas
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoriaTarifaDTOList'
+          description: ''
+    post:
+      operationId: tarifas_create
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      tags:
+      - tarifas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaTarifaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoriaTarifaDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoriaTarifaDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriaTarifaDTO'
+          description: ''
+  /api/v1/tarifas/{id}/:
+    get:
+      operationId: tarifas_retrieve
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - tarifas
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriaTarifaDTO'
+          description: ''
+    put:
+      operationId: tarifas_update
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - tarifas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaTarifaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoriaTarifaDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoriaTarifaDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriaTarifaDTO'
+          description: ''
+    patch:
+      operationId: tarifas_partial_update
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - tarifas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoriaTarifaDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoriaTarifaDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoriaTarifaDTO'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriaTarifaDTO'
+          description: ''
+    delete:
+      operationId: tarifas_destroy
+      description: |-
+        Los controladores de este proyecto son viewsets.ViewSet "planos", no
+        GenericViewSet - por eso DEFAULT_PAGINATION_CLASS (settings) NO se
+        aplica automaticamente a sus list(). Este mixin da una forma de una
+        sola linea para paginar manualmente en los list() que devuelven
+        datasets que crecen con el tiempo (hallazgo 4.7 de la auditoria).
+
+        Uso:
+            class MiViewSet(PaginacionManualMixin, viewsets.ViewSet):
+                def list(self, request):
+                    queryset = MiRepository.listar()
+                    return self.paginar(request, queryset, MiDTO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - tarifas
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    AdminAccionResponseDTO:
+      type: object
+      properties:
+        detail:
+          type: string
+        cuenta_id:
+          type: integer
+        onboarding_estado:
+          type: string
+        email_enviado:
+          type: boolean
+      required:
+      - cuenta_id
+      - detail
+      - onboarding_estado
+    AdminCrearCuentaDTO:
+      type: object
+      description: |-
+        DTO exclusivo del endpoint administrativo de creacion de cuentas
+        (protegido con EsAdministrador). A diferencia de RegistroDTO (registro
+        publico), este SI permite elegir el rol, porque quien lo invoca ya es
+        un administrador autenticado.
+      properties:
+        nombre:
+          type: string
+          maxLength: 100
+        apellido:
+          type: string
+          maxLength: 100
+        tipo_identificacion:
+          $ref: '#/components/schemas/TipoIdentificacionEnum'
+        identificacion:
+          type: string
+          maxLength: 20
+        username:
+          type: string
+          maxLength: 150
+        correo:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolEnum'
+          default: PROPIETARIO
+      required:
+      - apellido
+      - correo
+      - identificacion
+      - nombre
+      - password
+      - tipo_identificacion
+      - username
+    AdminCuentaDetalleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correo:
+          type: string
+          format: email
+          maxLength: 254
+        persona:
+          $ref: '#/components/schemas/AdminPersonaDTO'
+        is_active:
+          type: boolean
+          title: Activo
+          description: Indica si el usuario debe ser tratado como activo. Desmarque
+            esta opción en lugar de borrar la cuenta.
+        correo_verificado:
+          type: boolean
+        onboarding_estado:
+          $ref: '#/components/schemas/OnboardingEstadoEnum'
+        date_joined:
+          type: string
+          format: date-time
+          title: Fecha de alta
+        parqueadero:
+          allOf:
+          - $ref: '#/components/schemas/AdminParqueaderoDTO'
+          nullable: true
+          readOnly: true
+        documento:
+          allOf:
+          - $ref: '#/components/schemas/AdminDocumentoDTO'
+          nullable: true
+          readOnly: true
+      required:
+      - correo
+      - documento
+      - id
+      - parqueadero
+      - persona
+    AdminCuentaPaginaDTO:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCuentaResumenDTO'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    AdminCuentaResumenDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correo:
+          type: string
+          format: email
+          maxLength: 254
+        persona:
+          $ref: '#/components/schemas/AdminPersonaDTO'
+        is_active:
+          type: boolean
+          title: Activo
+          description: Indica si el usuario debe ser tratado como activo. Desmarque
+            esta opción en lugar de borrar la cuenta.
+        correo_verificado:
+          type: boolean
+        onboarding_estado:
+          $ref: '#/components/schemas/OnboardingEstadoEnum'
+        parqueadero_nombre:
+          type: string
+          nullable: true
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          title: Fecha de alta
+      required:
+      - correo
+      - id
+      - parqueadero_nombre
+      - persona
+    AdminDocumentoAccesoDTO:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+      required:
+      - url
+    AdminDocumentoDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre_original:
+          type: string
+          maxLength: 255
+        mime_type:
+          type: string
+          maxLength: 100
+        size_bytes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        estado:
+          $ref: '#/components/schemas/DocumentoEstadoEnum'
+        motivo_rechazo:
+          type: string
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        revisado_por:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - id
+      - mime_type
+      - nombre_original
+      - revisado_por
+      - size_bytes
+      - uploaded_at
+    AdminParqueaderoDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 150
+        descripcion:
+          type: string
+        habilitacion_estado:
+          $ref: '#/components/schemas/HabilitacionEstadoEnum'
+        estado_operativo:
+          $ref: '#/components/schemas/EstadoOperativoEnum'
+        motivo_rechazo:
+          type: string
+        calle_principal:
+          type: string
+        calle_secundaria:
+          type: string
+        numero_lote:
+          type: string
+        latitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - calle_principal
+      - calle_secundaria
+      - id
+      - latitud
+      - longitud
+      - nombre
+      - numero_lote
+      - updated_at
+    AdminPersonaDTO:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 100
+        apellido:
+          type: string
+          maxLength: 100
+        tipo_identificacion:
+          $ref: '#/components/schemas/TipoIdentificacionEnum'
+        identificacion:
+          type: string
+          maxLength: 20
+      required:
+      - apellido
+      - identificacion
+      - nombre
+      - tipo_identificacion
+    AdminRechazoDTO:
+      type: object
+      properties:
+        motivo:
+          type: string
+          maxLength: 1000
+          minLength: 3
+      required:
+      - motivo
+    AdminSolicitudDetalleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correo:
+          type: string
+          format: email
+          maxLength: 254
+        persona:
+          $ref: '#/components/schemas/AdminPersonaDTO'
+        is_active:
+          type: boolean
+          title: Activo
+          description: Indica si el usuario debe ser tratado como activo. Desmarque
+            esta opción en lugar de borrar la cuenta.
+        correo_verificado:
+          type: boolean
+        onboarding_estado:
+          $ref: '#/components/schemas/OnboardingEstadoEnum'
+        date_joined:
+          type: string
+          format: date-time
+          title: Fecha de alta
+        parqueadero:
+          $ref: '#/components/schemas/AdminParqueaderoDTO'
+        documento:
+          $ref: '#/components/schemas/AdminDocumentoDTO'
+      required:
+      - correo
+      - documento
+      - id
+      - parqueadero
+      - persona
+    AdminSolicitudPaginaDTO:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSolicitudResumenDTO'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    AdminSolicitudResumenDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correo:
+          type: string
+          format: email
+          maxLength: 254
+        persona:
+          $ref: '#/components/schemas/AdminPersonaDTO'
+        is_active:
+          type: boolean
+          title: Activo
+          description: Indica si el usuario debe ser tratado como activo. Desmarque
+            esta opción en lugar de borrar la cuenta.
+        onboarding_estado:
+          $ref: '#/components/schemas/OnboardingEstadoEnum'
+        parqueadero_nombre:
+          type: string
+        documento_estado:
+          type: string
+        actualizada_en:
+          type: string
+          format: date-time
+      required:
+      - actualizada_en
+      - correo
+      - documento_estado
+      - id
+      - parqueadero_nombre
+      - persona
+    CategoriaTarifaDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parqueadero:
+          type: integer
+        codigo:
+          $ref: '#/components/schemas/CodigoEnum'
+        nombre_visible:
+          type: string
+          maxLength: 80
+        precio_hora:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        activa:
+          type: boolean
+      required:
+      - codigo
+      - id
+      - nombre_visible
+      - parqueadero
+      - precio_hora
+    CodigoEnum:
+      enum:
+      - NORMAL
+      - DESCUENTO
+      - INCREMENTO
+      type: string
+      description: |-
+        * `NORMAL` - Normal
+        * `DESCUENTO` - Descuento
+        * `INCREMENTO` - Incremento
+    ConfiguracionFinalDTO:
+      type: object
+      properties:
+        horarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/HorarioConfiguracionDTO'
+        tarifas:
+          type: array
+          items:
+            $ref: '#/components/schemas/TarifaConfiguracionDTO'
+        cantidad_espacios:
+          type: integer
+          maximum: 500
+          minimum: 1
+      required:
+      - cantidad_espacios
+      - horarios
+      - tarifas
+    ConfiguracionFinalResponseDTO:
+      type: object
+      properties:
+        parqueadero_id:
+          type: integer
+        configuracion_completa:
+          type: boolean
+        onboarding_estado:
+          type: string
+        estado_operativo:
+          type: string
+        total_espacios:
+          type: integer
+        espacios_disponibles:
+          type: integer
+        horarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/HorarioConfiguracionResponseDTO'
+        tarifas:
+          type: array
+          items:
+            $ref: '#/components/schemas/TarifaConfiguracionResponseDTO'
+        espacios:
+          type: array
+          items:
+            $ref: '#/components/schemas/EspacioConfiguracionResponseDTO'
+      required:
+      - configuracion_completa
+      - espacios
+      - espacios_disponibles
+      - estado_operativo
+      - horarios
+      - onboarding_estado
+      - parqueadero_id
+      - tarifas
+      - total_espacios
+    CookieTokenRefreshResponseDTO:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    CuentaDetalleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: Nombre de usuario
+          description: 'Requerido. 150 carácteres como máximo. Únicamente letras,
+            dígitos y @/./+/-/_ '
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        correo:
+          type: string
+          format: email
+          maxLength: 254
+        persona:
+          allOf:
+          - $ref: '#/components/schemas/PersonaDTO'
+          readOnly: true
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolEnum'
+          readOnly: true
+        rol_display:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Activo
+          description: Indica si el usuario debe ser tratado como activo. Desmarque
+            esta opción en lugar de borrar la cuenta.
+        correo_verificado:
+          type: boolean
+        onboarding_estado:
+          $ref: '#/components/schemas/OnboardingEstadoEnum'
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Fecha de alta
+      required:
+      - correo
+      - date_joined
+      - id
+      - persona
+      - rol
+      - rol_display
+      - username
+    CustomTokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    DiaEnum:
+      enum:
+      - LUNES
+      - MARTES
+      - MIERCOLES
+      - JUEVES
+      - VIERNES
+      - SABADO
+      - DOMINGO
+      type: string
+      description: |-
+        * `LUNES` - Lunes
+        * `MARTES` - Martes
+        * `MIERCOLES` - Miercoles
+        * `JUEVES` - Jueves
+        * `VIERNES` - Viernes
+        * `SABADO` - Sabado
+        * `DOMINGO` - Domingo
+    DireccionDTO:
+      type: object
+      properties:
+        calle_principal:
+          type: string
+          maxLength: 200
+        calle_secundaria:
+          type: string
+          maxLength: 200
+        numero_lote:
+          type: string
+          maxLength: 50
+      required:
+      - calle_principal
+    DocumentoEscrituraDTO:
+      type: object
+      properties:
+        archivo:
+          type: string
+          format: uri
+          writeOnly: true
+          pattern: (?:pdf|jpg|jpeg|png)$
+      required:
+      - archivo
+    DocumentoEstadoEnum:
+      enum:
+      - PENDIENTE
+      - APROBADO
+      - RECHAZADO
+      type: string
+      description: |-
+        * `PENDIENTE` - Pendiente
+        * `APROBADO` - Aprobado
+        * `RECHAZADO` - Rechazado
+    DocumentoLecturaDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cuenta:
+          type: integer
+          readOnly: true
+        nombre_archivo:
+          type: string
+          readOnly: true
+        nombre_original:
+          type: string
+          readOnly: true
+        mime_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/DocumentoEstadoEnum'
+          readOnly: true
+        motivo_rechazo:
+          type: string
+          readOnly: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - cuenta
+      - estado
+      - id
+      - mime_type
+      - motivo_rechazo
+      - nombre_archivo
+      - nombre_original
+      - reviewed_at
+      - reviewed_by
+      - size_bytes
+      - uploaded_at
+    EspacioConfiguracionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 50
+        estado:
+          $ref: '#/components/schemas/EspacioEstadoEnum'
+        tarifa_predeterminada:
+          type: integer
+          nullable: true
+        tarifa_codigo:
+          type: string
+          nullable: true
+        tarifa_precio_hora:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          nullable: true
+        is_active:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - nombre
+      - tarifa_codigo
+      - tarifa_precio_hora
+    EspacioDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parqueadero:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 50
+        estado:
+          $ref: '#/components/schemas/EspacioEstadoEnum'
+        tarifa_predeterminada:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+          default: true
+      required:
+      - id
+      - is_active
+      - nombre
+      - parqueadero
+    EspacioEditarDTOEstadoEnum:
+      enum:
+      - LIBRE
+      - INHABILITADO
+      type: string
+      description: |-
+        * `LIBRE` - LIBRE
+        * `INHABILITADO` - INHABILITADO
+    EspacioEstadoEnum:
+      enum:
+      - OCUPADO
+      - LIBRE
+      - INHABILITADO
+      type: string
+      description: |-
+        * `OCUPADO` - Ocupado
+        * `LIBRE` - Libre
+        * `INHABILITADO` - Inhabilitado
+    EspaciosLoteDTO:
+      type: object
+      properties:
+        cantidad:
+          type: integer
+          maximum: 100
+          minimum: 1
+      required:
+      - cantidad
+    EstadoOperativoEnum:
+      enum:
+      - ABIERTO
+      - LLENO
+      - CERRADO
+      - INACTIVO
+      - FUERA_DE_SERVICIO
+      type: string
+      description: |-
+        * `ABIERTO` - Abierto
+        * `LLENO` - Lleno
+        * `CERRADO` - Cerrado
+        * `INACTIVO` - Inactivo
+        * `FUERA_DE_SERVICIO` - Fuera de servicio
+    EstanciaInicioDTO:
+      type: object
+      properties:
+        tarifa_id:
+          type: integer
+          minimum: 1
+          nullable: true
+    EstanciaPaginaDTO:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstanciaRegistroDTO'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    EstanciaRegistroDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        espacio_id:
+          type: integer
+          readOnly: true
+        espacio_nombre:
+          type: string
+        parqueadero_id:
+          type: integer
+        parqueadero_nombre:
+          type: string
+        tarifa_id:
+          type: integer
+          readOnly: true
+        tarifa_tipo_snapshot:
+          type: string
+          maxLength: 20
+        precio_hora_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        inicio:
+          type: string
+          format: date-time
+        fin:
+          type: string
+          format: date-time
+          nullable: true
+        calculado_hasta:
+          type: string
+          format: date-time
+        minutos_reales:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        horas_cobradas:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        costo_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        estado:
+          $ref: '#/components/schemas/EstanciaRegistroDTOEstadoEnum'
+      required:
+      - calculado_hasta
+      - espacio_id
+      - espacio_nombre
+      - id
+      - inicio
+      - parqueadero_id
+      - parqueadero_nombre
+      - precio_hora_snapshot
+      - tarifa_id
+      - tarifa_tipo_snapshot
+    EstanciaRegistroDTOEstadoEnum:
+      enum:
+      - ACTIVA
+      - FINALIZADA
+      - CANCELADA
+      type: string
+      description: |-
+        * `ACTIVA` - Activa
+        * `FINALIZADA` - Finalizada
+        * `CANCELADA` - Cancelada
+    EstanciaResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        espacio_id:
+          type: integer
+        espacio_nombre:
+          type: string
+        parqueadero_id:
+          type: integer
+        parqueadero_nombre:
+          type: string
+        tarifa_id:
+          type: integer
+        tarifa_tipo_snapshot:
+          type: string
+        precio_hora_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        inicio:
+          type: string
+          format: date-time
+        fin:
+          type: string
+          format: date-time
+          nullable: true
+        calculado_hasta:
+          type: string
+          format: date-time
+        minutos_reales:
+          type: integer
+        horas_cobradas:
+          type: integer
+        costo_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        estado:
+          type: string
+      required:
+      - calculado_hasta
+      - costo_total
+      - espacio_id
+      - espacio_nombre
+      - estado
+      - fin
+      - horas_cobradas
+      - id
+      - inicio
+      - minutos_reales
+      - parqueadero_id
+      - parqueadero_nombre
+      - precio_hora_snapshot
+      - tarifa_id
+      - tarifa_tipo_snapshot
+    HabilitacionEstadoEnum:
+      enum:
+      - BORRADOR
+      - PENDIENTE
+      - APROBADO
+      - RECHAZADO
+      type: string
+      description: |-
+        * `BORRADOR` - Borrador
+        * `PENDIENTE` - Pendiente
+        * `APROBADO` - Aprobado
+        * `RECHAZADO` - Rechazado
+    HorarioAtencionDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parqueadero:
+          type: integer
+        dia:
+          $ref: '#/components/schemas/DiaEnum'
+        hora_apertura:
+          type: string
+          format: time
+        hora_cierre:
+          type: string
+          format: time
+      required:
+      - dia
+      - hora_apertura
+      - hora_cierre
+      - id
+      - parqueadero
+    HorarioConfiguracionDTO:
+      type: object
+      properties:
+        dia:
+          $ref: '#/components/schemas/DiaEnum'
+        hora_apertura:
+          type: string
+          format: time
+        hora_cierre:
+          type: string
+          format: time
+      required:
+      - dia
+      - hora_apertura
+      - hora_cierre
+    HorarioConfiguracionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dia:
+          $ref: '#/components/schemas/DiaEnum'
+        hora_apertura:
+          type: string
+          format: time
+        hora_cierre:
+          type: string
+          format: time
+      required:
+      - dia
+      - hora_apertura
+      - hora_cierre
+      - id
+    MensajeDTO:
+      type: object
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    OnboardingEstadoDTO:
+      type: object
+      properties:
+        estado:
+          type: string
+        paso:
+          type: string
+        correo_verificado:
+          type: boolean
+        parqueadero:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        documento:
+          type: object
+          additionalProperties: {}
+          nullable: true
+      required:
+      - correo_verificado
+      - documento
+      - estado
+      - parqueadero
+      - paso
+    OnboardingEstadoEnum:
+      enum:
+      - CORREO_PENDIENTE
+      - DATOS_INICIALES_PENDIENTES
+      - REVISION_PENDIENTE
+      - RECHAZADO
+      - CONFIGURACION_PENDIENTE
+      - ACTIVO
+      - DESHABILITADO
+      type: string
+      description: |-
+        * `CORREO_PENDIENTE` - Correo pendiente
+        * `DATOS_INICIALES_PENDIENTES` - Datos iniciales pendientes
+        * `REVISION_PENDIENTE` - Revision pendiente
+        * `RECHAZADO` - Rechazado
+        * `CONFIGURACION_PENDIENTE` - Configuracion pendiente
+        * `ACTIVO` - Activo
+        * `DESHABILITADO` - Deshabilitado
+    PaginatedCategoriaTarifaDTOList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoriaTarifaDTO'
+    PaginatedCuentaDetalleDTOList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CuentaDetalleDTO'
+    PaginatedEspacioDTOList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EspacioDTO'
+    PaginatedParqueaderoDetalleDTOList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+    ParqueaderoCrearDTO:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+        descripcion:
+          type: string
+        calle_principal:
+          type: string
+          maxLength: 200
+        calle_secundaria:
+          type: string
+          maxLength: 200
+        numero_lote:
+          type: string
+          maxLength: 50
+        latitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+      required:
+      - calle_principal
+      - latitud
+      - longitud
+      - nombre
+    ParqueaderoDetalleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 150
+        descripcion:
+          type: string
+        habilitacion_estado:
+          allOf:
+          - $ref: '#/components/schemas/HabilitacionEstadoEnum'
+          readOnly: true
+        motivo_rechazo:
+          type: string
+          readOnly: true
+        estado_operativo:
+          $ref: '#/components/schemas/EstadoOperativoEnum'
+        total_espacios:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        espacios_disponibles:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        configuracion_completa:
+          type: boolean
+        direccion:
+          allOf:
+          - $ref: '#/components/schemas/DireccionDTO'
+          readOnly: true
+        ubicacion:
+          allOf:
+          - $ref: '#/components/schemas/UbicacionDTO'
+          readOnly: true
+        espacios:
+          type: array
+          items:
+            $ref: '#/components/schemas/EspacioDTO'
+          readOnly: true
+        propietario:
+          type: integer
+          readOnly: true
+      required:
+      - direccion
+      - espacios
+      - habilitacion_estado
+      - id
+      - motivo_rechazo
+      - nombre
+      - propietario
+      - ubicacion
+    PatchedCategoriaTarifaDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parqueadero:
+          type: integer
+        codigo:
+          $ref: '#/components/schemas/CodigoEnum'
+        nombre_visible:
+          type: string
+          maxLength: 80
+        precio_hora:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        activa:
+          type: boolean
+    PatchedCuentaDetalleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: Nombre de usuario
+          description: 'Requerido. 150 carácteres como máximo. Únicamente letras,
+            dígitos y @/./+/-/_ '
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        correo:
+          type: string
+          format: email
+          maxLength: 254
+        persona:
+          allOf:
+          - $ref: '#/components/schemas/PersonaDTO'
+          readOnly: true
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolEnum'
+          readOnly: true
+        rol_display:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Activo
+          description: Indica si el usuario debe ser tratado como activo. Desmarque
+            esta opción en lugar de borrar la cuenta.
+        correo_verificado:
+          type: boolean
+        onboarding_estado:
+          $ref: '#/components/schemas/OnboardingEstadoEnum'
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Fecha de alta
+    PatchedDocumentoLecturaDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cuenta:
+          type: integer
+          readOnly: true
+        nombre_archivo:
+          type: string
+          readOnly: true
+        nombre_original:
+          type: string
+          readOnly: true
+        mime_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/DocumentoEstadoEnum'
+          readOnly: true
+        motivo_rechazo:
+          type: string
+          readOnly: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+    PatchedEspacioDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parqueadero:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 50
+        estado:
+          $ref: '#/components/schemas/EspacioEstadoEnum'
+        tarifa_predeterminada:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+          default: true
+    PatchedEspacioEditarDTO:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 50
+        estado:
+          $ref: '#/components/schemas/EspacioEditarDTOEstadoEnum'
+        tarifa_predeterminada:
+          type: integer
+    PatchedHorarioAtencionDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parqueadero:
+          type: integer
+        dia:
+          $ref: '#/components/schemas/DiaEnum'
+        hora_apertura:
+          type: string
+          format: time
+        hora_cierre:
+          type: string
+          format: time
+    PatchedParqueaderoDetalleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 150
+        descripcion:
+          type: string
+        habilitacion_estado:
+          allOf:
+          - $ref: '#/components/schemas/HabilitacionEstadoEnum'
+          readOnly: true
+        motivo_rechazo:
+          type: string
+          readOnly: true
+        estado_operativo:
+          $ref: '#/components/schemas/EstadoOperativoEnum'
+        total_espacios:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        espacios_disponibles:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        configuracion_completa:
+          type: boolean
+        direccion:
+          allOf:
+          - $ref: '#/components/schemas/DireccionDTO'
+          readOnly: true
+        ubicacion:
+          allOf:
+          - $ref: '#/components/schemas/UbicacionDTO'
+          readOnly: true
+        espacios:
+          type: array
+          items:
+            $ref: '#/components/schemas/EspacioDTO'
+          readOnly: true
+        propietario:
+          type: integer
+          readOnly: true
+    PersonaDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 100
+        apellido:
+          type: string
+          maxLength: 100
+        tipo_identificacion:
+          $ref: '#/components/schemas/TipoIdentificacionEnum'
+        identificacion:
+          type: string
+          maxLength: 20
+        estado:
+          type: boolean
+      required:
+      - apellido
+      - id
+      - identificacion
+      - nombre
+      - tipo_identificacion
+    PublicParkingDetailDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        address:
+          type: string
+          readOnly: true
+        total_spaces:
+          type: integer
+        available_spaces:
+          type: integer
+        status:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        description:
+          type: string
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicRateDTO'
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicScheduleDTO'
+      required:
+      - address
+      - available_spaces
+      - description
+      - id
+      - latitude
+      - longitude
+      - name
+      - rates
+      - schedules
+      - status
+      - total_spaces
+      - updated_at
+    PublicParkingListDTO:
+      type: object
+      properties:
+        updated_at:
+          type: string
+          format: date-time
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicParkingSummaryDTO'
+      required:
+      - results
+      - updated_at
+    PublicParkingSummaryDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        address:
+          type: string
+          readOnly: true
+        total_spaces:
+          type: integer
+        available_spaces:
+          type: integer
+        status:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - available_spaces
+      - id
+      - latitude
+      - longitude
+      - name
+      - status
+      - total_spaces
+      - updated_at
+    PublicRateDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        price_per_hour:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+      required:
+      - code
+      - name
+      - price_per_hour
+    PublicScheduleDTO:
+      type: object
+      properties:
+        day:
+          type: string
+        opens_at:
+          type: string
+          format: time
+        closes_at:
+          type: string
+          format: time
+      required:
+      - closes_at
+      - day
+      - opens_at
+    ReenviarVerificacionDTO:
+      type: object
+      properties:
+        correo:
+          type: string
+          format: email
+      required:
+      - correo
+    RegistroDTO:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 100
+        apellido:
+          type: string
+          maxLength: 100
+        tipo_identificacion:
+          $ref: '#/components/schemas/TipoIdentificacionEnum'
+        identificacion:
+          type: string
+          maxLength: 20
+        correo:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - apellido
+      - correo
+      - identificacion
+      - nombre
+      - password
+      - tipo_identificacion
+    RegistroResponseDTO:
+      type: object
+      properties:
+        detail:
+          type: string
+          readOnly: true
+        cuenta:
+          allOf:
+          - $ref: '#/components/schemas/CuentaDetalleDTO'
+          readOnly: true
+        email_enviado:
+          type: boolean
+          readOnly: true
+      required:
+      - cuenta
+      - detail
+      - email_enviado
+    RolEnum:
+      enum:
+      - ADMINISTRADOR
+      - PROPIETARIO
+      type: string
+      description: |-
+        * `ADMINISTRADOR` - Administrador
+        * `PROPIETARIO` - Propietario
+    TarifaConfiguracionDTO:
+      type: object
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoEnum'
+        nombre_visible:
+          type: string
+          maxLength: 80
+        precio_hora:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        activa:
+          type: boolean
+          default: true
+      required:
+      - codigo
+      - precio_hora
+    TarifaConfiguracionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        codigo:
+          $ref: '#/components/schemas/CodigoEnum'
+        nombre_visible:
+          type: string
+          maxLength: 80
+        precio_hora:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        activa:
+          type: boolean
+      required:
+      - codigo
+      - id
+      - nombre_visible
+      - precio_hora
+    TipoIdentificacionEnum:
+      enum:
+      - CI
+      - PASAPORTE
+      - RUC
+      type: string
+      description: |-
+        * `CI` - Cedula
+        * `PASAPORTE` - Pasaporte
+        * `RUC` - RUC
+    UbicacionDTO:
+      type: object
+      properties:
+        latitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+      required:
+      - latitud
+      - longitud
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

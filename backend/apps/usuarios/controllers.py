@@ -2,10 +2,13 @@
 Capa de presentacion (controladores REST) para la app usuarios.
 """
 
+from django.conf import settings
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -14,10 +17,17 @@ from apps.usuarios.serializers_dto import (
     CuentaActualizarDTO,
     CuentaDetalleDTO,
     CuentaResumenDTO,
+    CookieTokenRefreshResponseDTO,
     CustomTokenObtainPairSerializer,
+    EmptyDTO,
+    MensajeDTO,
+    ReenviarVerificacionDTO,
     RegistroDTO,
+    RegistroResponseDTO,
+    VerificarCorreoDTO,
+    VerificarCorreoResponseDTO,
 )
-from apps.usuarios.services import CuentaService, RegistroService
+from apps.usuarios.services import CuentaService, RegistroService, SesionService, VerificacionCorreoService
 from core.pagination import PaginacionManualMixin
 from core.permissions import EsAdministrador, es_administrador
 
@@ -25,18 +35,78 @@ from core.permissions import EsAdministrador, es_administrador
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        refresh = response.data.pop("refresh_cookie", None)
+        if refresh:
+            _set_refresh_cookie(response, refresh)
+        return response
+
+
+def _set_refresh_cookie(response, refresh):
+    response.set_cookie(
+        settings.JWT_REFRESH_COOKIE_NAME,
+        refresh,
+        max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds(),
+        httponly=True,
+        secure=settings.JWT_COOKIE_SECURE,
+        samesite=settings.JWT_COOKIE_SAMESITE,
+        path=settings.JWT_COOKIE_PATH,
+    )
+
+
+class CookieTokenRefreshAPIView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = CookieTokenRefreshResponseDTO
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "token_refresh"
+
+    @extend_schema(request=None, responses=CookieTokenRefreshResponseDTO)
+    def post(self, request):
+        refresh = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
+        if not refresh:
+            return Response({"detail": "La sesion no es valida."}, status=status.HTTP_401_UNAUTHORIZED)
+        data = SesionService.refrescar(refresh)
+        rotated = data.pop("refresh", None)
+        response = Response(data)
+        if rotated:
+            _set_refresh_cookie(response, rotated)
+        return response
+
+
+class LogoutAPIView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = EmptyDTO
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request):
+        refresh = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
+        SesionService.cerrar(refresh)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie(
+            settings.JWT_REFRESH_COOKIE_NAME,
+            path=settings.JWT_COOKIE_PATH,
+            samesite=settings.JWT_COOKIE_SAMESITE,
+        )
+        return response
 
 
 class RegistroAPIView(APIView):
     """POST /api/auth/register/ - registro publico. Siempre crea PROPIETARIO."""
 
     permission_classes = [AllowAny]
+    serializer_class = RegistroDTO
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
 
     def post(self, request):
         dto = RegistroDTO(data=request.data)
         dto.is_valid(raise_exception=True)
 
-        cuenta = RegistroService.registrar_cuenta(
+        cuenta, email_enviado = RegistroService.registrar_cuenta(
             datos_persona=dto.to_datos_persona(),
             datos_cuenta=dto.to_datos_cuenta(),
             # nombre_rol NO se toma del request (ver hallazgo 2.2): siempre
@@ -44,9 +114,53 @@ class RegistroAPIView(APIView):
         )
 
         return Response(
-            CuentaDetalleDTO(cuenta).data,
+            {
+                "cuenta": CuentaDetalleDTO(cuenta).data,
+                "email_enviado": email_enviado,
+                "detail": "Cuenta creada. Revisa tu correo para verificarla.",
+            },
             status=status.HTTP_201_CREATED,
         )
+
+
+class VerificarCorreoAPIView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = VerificarCorreoDTO
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "verify_email"
+
+    @extend_schema(request=RegistroDTO, responses={201: RegistroResponseDTO})
+    @extend_schema(request=VerificarCorreoDTO, responses=VerificarCorreoResponseDTO)
+    def post(self, request):
+        dto = VerificarCorreoDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        cuenta = VerificacionCorreoService.verificar(dto.validated_data["token"])
+        return Response({"detail": "Correo verificado.", "onboarding_estado": cuenta.onboarding_estado})
+
+
+class ReenviarVerificacionAPIView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = ReenviarVerificacionDTO
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "resend_verification"
+
+    @extend_schema(request=ReenviarVerificacionDTO, responses={202: MensajeDTO})
+    def post(self, request):
+        dto = ReenviarVerificacionDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        VerificacionCorreoService.reenviar(dto.validated_data["correo"])
+        return Response(
+            {"detail": "Si la cuenta requiere verificacion, se enviara un nuevo correo."},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class MeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CuentaDetalleDTO
+
+    def get(self, request):
+        return Response(CuentaDetalleDTO(CuentaService.obtener_cuenta(request.user.id)).data)
 
 
 class AdminCrearCuentaAPIView(APIView):
@@ -57,12 +171,13 @@ class AdminCrearCuentaAPIView(APIView):
     """
 
     permission_classes = [EsAdministrador]
+    serializer_class = AdminCrearCuentaDTO
 
     def post(self, request):
         dto = AdminCrearCuentaDTO(data=request.data)
         dto.is_valid(raise_exception=True)
 
-        cuenta = RegistroService.registrar_cuenta(
+        cuenta, _ = RegistroService.registrar_cuenta(
             datos_persona=dto.to_datos_persona(),
             datos_cuenta=dto.to_datos_cuenta(),
             nombre_rol=dto.validated_data["rol"],
@@ -84,6 +199,8 @@ class CuentaViewSet(PaginacionManualMixin, viewsets.ViewSet):
     """
 
     permission_classes = [IsAuthenticated]
+    serializer_class = CuentaDetalleDTO
+    lookup_value_regex = r"\d+"
 
     def get_permissions(self):
         if self.action in ("list", "destroy"):

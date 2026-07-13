@@ -1,32 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { parqueaderoService } from '../services/parqueaderoService';
 import { espacioService } from '../services/espacioService';
-import { useDisponibilidadSocket } from '../hooks/useDisponibilidadSocket';
+import { tarifaService } from '../services/tarifaService';
 import { extraerErroresApi } from '../utils/apiError';
 
-// Antes: OwnerConfigEspacios.jsx no usaba ningún controlador - todo el
-// estado era local (`useState` con 12 espacios simulados) y
-// handleSaveAll() hacía console.log(espacios) + alert(). Este hook
-// reemplaza esa simulación por llamadas reales a /api/espacios/.
-//
-// Cambio de diseño importante: cada acción (crear un espacio, borrar uno,
-// cambiar su estado) se envía a la API en el momento en que ocurre, no
-// se acumula para un botón "Guardar Todo". Motivo: apps/parqueaderos
-// tiene un WebSocket real (consumers.py) que empuja estos mismos cambios
-// a otros clientes en <= 5s (conductores viendo el mapa, otra pestaña del
-// mismo propietario, etc.) - simular un buffer local y "guardar" al final
-// rompería esa garantía de tiempo real y generaría desincronización
-// mientras el propietario edita.
-//
-// También se elimina el campo `tarifa` por espacio: Espacio (backend)
-// solo tiene numero_espacio + estado. Ver el informe, "Gap de negocio:
-// tarifas por espacio".
+// Este hook sincroniza espacios contra /api/espacios/ en tiempo real.
+// La tarifa por espacio se guarda como categoria_tarifa en Espacio.
 
 const numeroEspacio = (indice) => String(indice + 1).padStart(2, '0');
+
+const idsPorCodigo = (categorias) => ({
+    GENERAL: categorias.general?.id ?? null,
+    PREFERENCIAL: categorias.descuento?.id ?? null,
+    PESADOS: categorias.grandes?.id ?? null,
+});
 
 export const useEspacioController = () => {
     const [parqueaderoId, setParqueaderoId] = useState(null);
     const [espacios, setEspacios] = useState([]);
+    const [categoriaIdsPorCodigo, setCategoriaIdsPorCodigo] = useState({
+        GENERAL: null,
+        PREFERENCIAL: null,
+        PESADOS: null,
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -51,8 +47,14 @@ export const useEspacioController = () => {
                 if (cancelado) return;
                 setParqueaderoId(parqueadero.id);
 
-                const lista = await espacioService.listarPorParqueadero(parqueadero.id);
-                if (!cancelado) setEspacios(lista);
+                const [lista, categorias] = await Promise.all([
+                    espacioService.listarPorParqueadero(parqueadero.id),
+                    tarifaService.obtenerCategoriasPorParqueadero(parqueadero.id),
+                ]);
+                if (cancelado) return;
+
+                setEspacios(lista);
+                setCategoriaIdsPorCodigo(idsPorCodigo(categorias));
             } catch (error) {
                 if (!cancelado) setLoadError(extraerErroresApi(error).formulario ?? 'No se pudo cargar los espacios.');
             } finally {
@@ -65,15 +67,6 @@ export const useEspacioController = () => {
             cancelado = true;
         };
     }, []);
-
-    // Recibe en vivo los cambios de estado que hagan OTROS clientes
-    // (conductores ocupando/liberando un espacio, otra pestaña, etc.) sobre
-    // este mismo parqueadero, vía consumers.py::DisponibilidadConsumer.
-    useDisponibilidadSocket(parqueaderoId, (evento) => {
-        setEspacios((prev) =>
-            prev.map((esp) => (esp.id === evento.espacio_id ? { ...esp, estado: evento.estado } : esp))
-        );
-    });
 
     const numEspacios = espacios.length;
 
@@ -122,9 +115,21 @@ export const useEspacioController = () => {
     // Antes: saveEspacioChanges solo actualizaba el array local (setEspacios).
     const saveEspacioChanges = async () => {
         if (!selectedEspacio) return;
+
+        const categoriaId = categoriaIdsPorCodigo[selectedEspacio.tarifa];
+        if (selectedEspacio.tarifa && !categoriaId) {
+            setErrors({
+                formulario: `Aun no has configurado un precio para la tarifa "${selectedEspacio.tarifa}". Hazlo primero en Configuracion General.`,
+            });
+            return;
+        }
+
         setIsSyncing(true);
         try {
-            const actualizado = await espacioService.cambiarEstado(selectedEspacio.id, selectedEspacio.estado);
+            const actualizado = await espacioService.actualizar(selectedEspacio.id, {
+                estado: selectedEspacio.estado,
+                categoriaTarifaId: categoriaId,
+            });
             setEspacios((prev) => prev.map((esp) => (esp.id === actualizado.id ? actualizado : esp)));
             setIsModalOpen(false);
         } catch (error) {

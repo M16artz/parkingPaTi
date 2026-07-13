@@ -1,99 +1,51 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { authService } from '../services/authService';
 import { extraerErroresApi } from '../utils/apiError';
+import { validateRegister } from '../utils/validators/authValidator';
+
+const INITIAL_FORM = {
+  nombres: '',
+  apellidos: '',
+  tipoIdentificacion: '',
+  identificacion: '',
+  correo: '',
+  confirmarCorreo: '',
+  password: '',
+  confirmarPassword: '',
+};
 
 export const useRegisterController = () => {
-  const [formData, setFormData] = useState({
-    nombres: '',
-    apellidos: '',
-    tipoIdentificacion: '',
-    identificacion: '',
-    correo: '',
-    password: '',
-    nombreParqueadero: '',
-    callePrincipal: '',
-    calleSecundaria: '',
-    numeroLote: '',
-    ubicacion: '',
-    archivoDocumento: null,
-  });
-
+  const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
-  const [isSaving, setIsSaving] = useState(false);
+  const mutation = useMutation({ mutationFn: authService.register });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
+  const handleChange = ({ target: { name, value } }) => {
+    let next = value;
     if (name === 'identificacion') {
-      let valorLimpio = value;
-
-      if (formData.tipoIdentificacion === 'CEDULA' || formData.tipoIdentificacion === 'RUC') {
-        valorLimpio = value.replace(/[^0-9]/g, '');
-        const maximoDigitos = formData.tipoIdentificacion === 'CEDULA' ? 10 : 13;
-        valorLimpio = valorLimpio.slice(0, maximoDigitos);
-      } else if (formData.tipoIdentificacion === 'PASAPORTE') {
-        valorLimpio = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-      }
-
-      setFormData((prev) => ({ ...prev, [name]: valorLimpio }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      next = formData.tipoIdentificacion === 'PASAPORTE'
+        ? value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 15)
+        : value.replace(/\D/g, '').slice(0, formData.tipoIdentificacion === 'RUC' ? 13 : 10);
     }
-
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
+    setFormData((current) => ({ ...current, [name]: next }));
+    setErrors((current) => ({ ...current, [name]: null }));
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setFormData((prev) => ({ ...prev, archivoDocumento: file }));
-
-      if (errors.archivoDocumento) {
-        setErrors((prev) => ({ ...prev, archivoDocumento: null }));
-      }
+  const handleSubmit = async (event, onSuccess) => {
+    event?.preventDefault();
+    const validation = validateRegister(formData);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
     }
-  };
-
-  // handleSubmit ahora llama de verdad a POST /api/auth/register/ y
-  // encadena un login automático para dejar al usuario con sesión activa.
-  // Antes: console.log + await new Promise(setTimeout, 1500) simulado.
-  //
-  // IMPORTANTE - lo que este handler NO hace todavía, y por qué:
-  // nombreParqueadero / callePrincipal / calleSecundaria / numeroLote /
-  // ubicacion / archivoDocumento no se envían aquí. /api/auth/register/
-  // (RegistroDTO) no los acepta - solo crea Persona + Cuenta. Crear el
-  // parqueadero requiere latitud/longitud numéricas
-  // (ParqueaderoCrearDTO), y el campo `ubicacion` actual del formulario es
-  // un solo string de texto libre, no un par de coordenadas: hace falta
-  // agregar un selector de mapa (o geocodificar la dirección) antes de
-  // poder completar automáticamente ese segundo paso con
-  // parqueaderoService.crear(...) y documentoService.subir(...).
-  // Ver el informe adjunto, sección "Gaps pendientes".
-  const handleSubmit = async (e, onSuccess) => {
-    if (e) e.preventDefault();
-    setIsSaving(true);
     setErrors({});
-
     try {
-      await authService.register(formData);
-      await authService.login({ correo: formData.correo, password: formData.password });
-
-      if (onSuccess) onSuccess();
+      const result = await mutation.mutateAsync(formData);
+      onSuccess?.(result);
     } catch (error) {
       setErrors(extraerErroresApi(error));
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  return {
-    formData,
-    errors,
-    isSaving,
-    handleChange,
-    handleFileChange,
-    handleSubmit,
-  };
+  return { formData, errors, isSaving: mutation.isPending, handleChange, handleSubmit };
 };

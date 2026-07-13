@@ -7,7 +7,7 @@ from core.repositories import actualizar_generico
 class HorarioAtencionRepository:
     @staticmethod
     def listar_por_parqueadero(parqueadero_id):
-        return HorarioAtencion.objects.filter(parqueadero_id=parqueadero_id).select_related('parqueadero')
+        return HorarioAtencion.objects.filter(parqueadero_id=parqueadero_id).select_related('parqueadero').order_by("dia")
 
     @staticmethod
     def obtener_por_id(horario_id):
@@ -34,3 +34,10 @@ class HorarioAtencionRepository:
     @staticmethod
     def eliminar(horario):
         horario.delete()
+
+    @staticmethod
+    def reemplazar_lote(parqueadero, horarios):
+        HorarioAtencion.objects.filter(parqueadero=parqueadero).delete()
+        return HorarioAtencion.objects.bulk_create(
+            [HorarioAtencion(parqueadero=parqueadero, **datos) for datos in horarios]
+        )

@@ -1,25 +1,46 @@
 // src/services/tarifaService.js
 //
-// IMPORTANTE - esto NO es un catálogo de precios por categoría de
-// vehículo. apps/tarifas modela una única "estrategia de tarifa" por
-// parqueadero (OneToOne real, reforzado también en el service:
-// "Este parqueadero ya tiene una tarifa o estrategia configurada"),
-// que puede ser de un solo tipo a la vez:
-//   - EstrategiaTarifa (normal):     /api/tarifas/      { precio_hora }
-//   - IncrementoTarifa (recargo %):  /api/incrementos/  { precio_hora, porcentaje }
-//   - DescuentoTarifa  (descuento %):/api/descuentos/   { precio_hora, porcentaje }
-//
-// El formulario actual (OwnerConfigGeneral.jsx) pide TRES precios fijos
-// simultáneos ("general", "descuento" 3ra edad, "grandes" vehículos
-// pesados) - eso no tiene dónde mapearse 1:1 en el modelo actual. Ver el
-// informe, sección "Gap de negocio: tarifas", para las opciones de
-// solución. Mientras tanto, este servicio solo cubre la tarifa NORMAL
-// (precio_hora), que sí tiene un endpoint real y es la que
-// useOwnerConfigGController.js sincroniza.
+// Maneja las tarifas por categoria de vehiculo y conserva los metodos de
+// tarifa normal existentes para compatibilidad con /api/tarifas/.
 
 import { apiClient } from './apiClient';
 
+const CODIGO_POR_CLAVE_UI = {
+  general: 'GENERAL',
+  descuento: 'PREFERENCIAL',
+  grandes: 'PESADOS',
+};
+
 export const tarifaService = {
+  async obtenerCategoriasPorParqueadero(parqueaderoId) {
+    const { data } = await apiClient.get('/categorias-tarifa/', {
+      params: { parqueadero: parqueaderoId },
+    });
+    const resultados = data.results ?? data;
+
+    const porCodigo = {};
+    resultados.forEach((cat) => {
+      porCodigo[cat.codigo] = cat;
+    });
+
+    return Object.fromEntries(
+      Object.entries(CODIGO_POR_CLAVE_UI).map(([claveUi, codigo]) => [
+        claveUi,
+        porCodigo[codigo] ? { id: porCodigo[codigo].id, precio_hora: porCodigo[codigo].precio_hora } : null,
+      ])
+    );
+  },
+
+  async guardarCategoria(parqueaderoId, claveUi, precioHora) {
+    const codigo = CODIGO_POR_CLAVE_UI[claveUi];
+    const { data } = await apiClient.post('/categorias-tarifa/', {
+      parqueadero: parqueaderoId,
+      codigo,
+      precio_hora: precioHora,
+    });
+    return data;
+  },
+
   /** GET /api/tarifas/?parqueadero=<id> -> respuesta paginada (paginación manual del backend) */
   async obtenerNormalPorParqueadero(parqueaderoId) {
     const { data } = await apiClient.get('/tarifas/', {

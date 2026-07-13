@@ -21,6 +21,9 @@ class HorarioAtencionViewSet(viewsets.ViewSet):
     los metodos, como estaba antes, era codigo redundante y confuso.
     """
 
+    serializer_class = HorarioAtencionDTO
+    lookup_value_regex = r"\d+"
+
     def get_permissions(self):
         if self.action == "list":
             # Un conductor debe poder ver los horarios sin autenticarse (RNF02)
