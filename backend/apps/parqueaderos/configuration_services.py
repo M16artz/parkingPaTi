@@ -4,7 +4,7 @@ from rest_framework.exceptions import APIException, NotFound, PermissionDenied, 
 
 from apps.estancias.repositories import EstanciaRepository
 from apps.horarios.repositories import HorarioAtencionRepository
-from apps.parqueaderos.models import EstadoEspacio, EstadoHabilitacion
+from apps.parqueaderos.models import EstadoEspacio, EstadoHabilitacion, EstadoOperativo, EstadoOperativoManual
 from apps.parqueaderos.repositories import EspacioRepository, ParqueaderoRepository
 from apps.parqueaderos.services import EspacioService
 from apps.tarifas.models import TipoCategoriaTarifa
@@ -134,6 +134,7 @@ class ConfiguracionFinalService:
             "configuracion_completa": parqueadero.configuracion_completa,
             "onboarding_estado": cuenta.onboarding_estado,
             "estado_operativo": parqueadero.estado_operativo,
+            "estado_operativo_manual": parqueadero.estado_operativo_manual,
             "total_espacios": parqueadero.total_espacios,
             "espacios_disponibles": parqueadero.espacios_disponibles,
             "horarios": HorarioAtencionRepository.listar_por_parqueadero(parqueadero.id),
@@ -143,6 +144,31 @@ class ConfiguracionFinalService:
                 incluir_inactivos=True,
             ),
         }
+
+
+class EstadoOperativoPropietarioService:
+    @staticmethod
+    @transaction.atomic
+    def cambiar(cuenta, estado):
+        ConfiguracionFinalService._verificar_propietario(cuenta)
+        parqueadero = ParqueaderoRepository.bloquear_por_propietario(cuenta.id)
+        if parqueadero is None:
+            raise NotFound("La cuenta no tiene un parqueadero.")
+        if not parqueadero.configuracion_completa:
+            raise ValidationError("Completa primero la configuracion final.")
+
+        if estado == EstadoOperativo.ABIERTO:
+            ParqueaderoRepository.actualizar(parqueadero, estado_operativo_manual=None)
+            EspacioService.recalcular_conteos(parqueadero)
+        else:
+            if estado not in EstadoOperativoManual.values:
+                raise ValidationError("El estado operativo manual no es valido.")
+            ParqueaderoRepository.actualizar(
+                parqueadero,
+                estado_operativo_manual=estado,
+                estado_operativo=estado,
+            )
+        return ConfiguracionFinalService._respuesta(cuenta, parqueadero)
 
 
 class GestionEspacioService:

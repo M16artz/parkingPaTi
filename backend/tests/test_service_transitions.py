@@ -42,6 +42,15 @@ def test_transicion_onboarding_valida_y_rechaza_saltos():
         CuentaService.cambiar_onboarding(cuenta.id, EstadoOnboarding.ACTIVO)
 
 
+def test_correo_pendiente_admite_revision_directa_para_registro_completo():
+    cuenta = crear_cuenta()
+    actualizada = CuentaService.cambiar_onboarding(
+        cuenta.id,
+        EstadoOnboarding.REVISION_PENDIENTE,
+    )
+    assert actualizada.onboarding_estado == EstadoOnboarding.REVISION_PENDIENTE
+
+
 def test_transicion_habilitacion_valida_y_rechaza_saltos():
     parqueadero = Parqueadero.objects.create(propietario=crear_cuenta(), nombre="Parking")
     pendiente = ParqueaderoService.cambiar_habilitacion(parqueadero.id, EstadoHabilitacion.PENDIENTE)

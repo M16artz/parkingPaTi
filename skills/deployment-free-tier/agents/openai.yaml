@@ -1,4 +1,0 @@
-interface:
-  display_name: "Despliegue gratuito"
-  short_description: "Desplegar servicios en niveles gratuitos"
-  default_prompt: "Configura Cloudflare Pages, Render y Supabase con sus límites."

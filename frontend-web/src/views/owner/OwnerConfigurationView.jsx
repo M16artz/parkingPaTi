@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../../services/authService';
+import { useLogoutController } from '../../controllers/useLogoutController';
 import { ownerConfigurationService } from '../../services/ownerConfigurationService';
 import { extraerErroresApi } from '../../utils/apiError';
 import { FinalConfigurationForm } from '../components/owner/FinalConfigurationForm';
@@ -12,6 +12,7 @@ import { StayDialog } from '../components/owner/StayDialog';
 export const OwnerConfigurationView = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const logout = useLogoutController();
   const [message, setMessage] = useState('');
   const [stayDialog, setStayDialog] = useState(null);
   const configuration = useQuery({
@@ -74,7 +75,7 @@ export const OwnerConfigurationView = () => {
   if (configuration.isError) return <main className="owner-configuration-copy min-h-screen grid place-items-center bg-slate-100"><div><p className="text-red-700">No se pudo cargar la configuración.</p><button className="mt-3 font-bold text-sky-700" type="button" onClick={() => configuration.refetch()}>Reintentar</button></div></main>;
   const data = configuration.data;
   return <div className="owner-configuration-copy min-h-screen bg-slate-100">
-    <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4"><div><p className="owner-configuration-title font-headline text-lg font-bold text-sky-800">ParkingPaTi</p><p className="text-xs text-slate-500">Gestión del parqueadero</p></div><button className="minimum-touch-target grid place-items-center" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" onClick={async () => { await authService.logout(); navigate('/login', { replace: true }); }}><LogOut size={20} /></button></div></header>
+    <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4"><div><p className="owner-configuration-title font-headline text-lg font-bold text-sky-800">ParkingPaTi</p><p className="text-xs text-slate-500">Gestión del parqueadero</p></div><button className="minimum-touch-target grid place-items-center" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" onClick={logout}><LogOut size={20} /></button></div></header>
     <main className="mx-auto max-w-7xl space-y-6 px-5 py-7">
       <div className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-bold">Configuración y espacios</h1><p className="mt-1 text-sm text-slate-600">{data.configuracion_completa ? 'Administra horarios, tarifas y distribución.' : 'Completa este paso obligatorio para activar el parqueadero.'}</p></div><dl className="flex gap-5 text-sm"><div><dt className="text-slate-500">Estado</dt><dd className="font-bold">{data.estado_operativo}</dd></div><div><dt className="text-slate-500">Disponibles</dt><dd className="font-bold">{data.espacios_disponibles} / {data.total_espacios}</dd></div></dl></div>
       {message && <p className="border border-slate-200 bg-white p-3 text-sm" role="status">{message}</p>}

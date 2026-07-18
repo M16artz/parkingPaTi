@@ -12,7 +12,7 @@ from apps.documentos.storage_backends import DriveUpload, LocalPrivateStorage
 from apps.parqueaderos.models import EstadoHabilitacion, Parqueadero
 from apps.usuarios.models import Cuenta, EstadoOnboarding, Persona, TipoIdentificacion
 from apps.usuarios.onboarding_services import OnboardingService
-from apps.usuarios.services import RegistroService
+from apps.usuarios.services import RegistroService, VerificacionCorreoService
 
 
 pytestmark = pytest.mark.django_db
@@ -156,7 +156,12 @@ def test_api_reanuda_y_envia_solicitud_atomica(monkeypatch):
 
 def test_registro_completo_crea_cuenta_parqueadero_y_documento_al_final(monkeypatch):
     storage = DriveFake()
+    tokens = []
     monkeypatch.setattr("apps.usuarios.services.get_document_storage", lambda: storage)
+    monkeypatch.setattr(
+        "apps.usuarios.email_adapters.GmailSmtpEmailAdapter.enviar_verificacion",
+        lambda self, cuenta, token: tokens.append(token),
+    )
 
     api = APIClient()
     response = api.post(
@@ -184,11 +189,17 @@ def test_registro_completo_crea_cuenta_parqueadero_y_documento_al_final(monkeypa
     cuenta = Cuenta.objects.get(correo="luisa@example.invalid")
     assert cuenta.username == cuenta.correo
     assert cuenta.onboarding_estado == EstadoOnboarding.CORREO_PENDIENTE
-    assert Parqueadero.objects.filter(propietario=cuenta, nombre="Parking Norte").exists()
+    parqueadero = Parqueadero.objects.get(propietario=cuenta, nombre="Parking Norte")
+    assert parqueadero.habilitacion_estado == EstadoHabilitacion.PENDIENTE
     documento = DocumentoHabilitacion.objects.get(cuenta=cuenta)
     assert documento.drive_file_id == "private-1"
     assert documento.nombre_original == "permiso.pdf"
     assert storage.uploaded == [f"mora_luisa_{cuenta.id}.pdf"]
+
+    verificada = VerificacionCorreoService.verificar(tokens[0])
+    assert verificada.onboarding_estado == EstadoOnboarding.REVISION_PENDIENTE
+    parqueadero.refresh_from_db()
+    assert parqueadero.habilitacion_estado == EstadoHabilitacion.PENDIENTE
 
 
 def test_registro_completo_compensa_archivo_si_falla_la_persistencia(monkeypatch):

@@ -59,6 +59,23 @@ class Cuenta(AbstractUser):
             models.Index(fields=["is_active"]),
             models.Index(fields=["onboarding_estado"]),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(email=models.F("correo")),
+                name="cuenta_email_igual_correo",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        correo_normalizado = (self.correo or "").strip().lower()
+        self.correo = correo_normalizado
+        self.email = correo_normalizado
+
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and {"correo", "email"}.intersection(update_fields):
+            kwargs["update_fields"] = set(update_fields) | {"correo", "email"}
+
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username} ({self.get_rol_display()})"

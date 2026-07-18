@@ -15,3 +15,4 @@
 - [x] `web` Exigir motivo de rechazo e invalidar queries tras éxito.
 - [x] `tests` Probar matriz de permisos, concurrencia y sesiones bloqueadas.
 - [x] `docs` Actualizar OpenAPI y manual del flujo admin.
+- [x] `backend/web/tests/docs` Incorporar rehabilitación administrativa tras reapertura de DP-06 el 2026-07-18.

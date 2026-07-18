@@ -27,6 +27,9 @@ vigente y el panel lo informa.
 2. Pulsar `Deshabilitar` y confirmar el mensaje.
 3. La cuenta pierde login/refresh y su parqueadero queda inactivo.
 
-No existe accion de rehabilitacion por DP-06. La recuperacion de una cuenta
-deshabilitada requiere una decision de alcance futura y no debe hacerse con
-cambios manuales en base de datos.
+## Rehabilitar una cuenta
+
+1. Filtrar por `Deshabilitadas` o localizar la cuenta en `Todas`.
+2. Pulsar `Rehabilitar` y confirmar la acción.
+3. El sistema restaura el acceso y determina si la cuenta debe volver a correo,
+   onboarding, revisión, configuración final o dashboard según sus recursos reales.

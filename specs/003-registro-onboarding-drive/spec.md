@@ -23,5 +23,7 @@ Implementar el onboarding reanudable desde la cuenta hasta el envío de solicitu
 
 - Flujo puede interrumpirse y reanudarse.
 - No se envía solicitud sin correo/parqueadero/documento completos.
+- El registro completo conserva `CORREO_PENDIENTE` hasta verificar el correo y luego pasa directamente a `REVISION_PENDIENTE`; no repite datos iniciales ni documento.
+- El login usa `correo` como identificador, mantiene `email = correo` en la tabla y admite propietarios en `CONFIGURACION_PENDIENTE`; `is_active=false` siempre bloquea, mientras que un indicador de correo heredado desincronizado no invalida un estado ya aprobado.
 - Drive y DB conservan IDs/enlace coherentes y privados.
 - No se exponen tokens/documentos en logs.

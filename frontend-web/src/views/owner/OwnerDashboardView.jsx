@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Car, Grid3X3, LayoutDashboard, LogOut, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import userPhoto from '../../assets/user.png';
+import { useLogoutController } from '../../controllers/useLogoutController';
 import { authService } from '../../services/authService';
 import { ownerConfigurationService } from '../../services/ownerConfigurationService';
 import { parqueaderoService } from '../../services/parqueaderoService';
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
 const TITLES = { inicio: 'Panel de control', infoGeneral: 'Información del parqueadero', configGeneral: 'Configuración operativa', configEspacios: 'Gestión de espacios' };
 
 export const OwnerDashboardView = () => {
-  const navigate = useNavigate();
+  const logout = useLogoutController();
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState('inicio');
   const [message, setMessage] = useState('');
@@ -40,13 +40,21 @@ export const OwnerDashboardView = () => {
   const mutation = useMutation({
     mutationFn: ({ type, payload }) => {
       if (type === 'configuration') return ownerConfigurationService.guardar(payload);
+      if (type === 'status') return ownerConfigurationService.cambiarEstadoOperativo(payload);
       if (type === 'add') return ownerConfigurationService.agregarEspacios(payload);
       if (type === 'edit') return ownerConfigurationService.editarEspacio(payload.id, payload.data);
       if (type === 'delete') return ownerConfigurationService.eliminarEspacio(payload);
       if (type === 'reactivate') return ownerConfigurationService.reactivarEspacio(payload);
       return Promise.reject(new Error('Operación no soportada'));
     },
-    onSuccess: async (_, variables) => { setMessage(variables.type === 'configuration' ? 'Configuración operativa guardada.' : 'Espacios actualizados.'); await refresh(); },
+    onSuccess: async (_, variables) => {
+      const successMessages = {
+        configuration: 'Configuración operativa guardada.',
+        status: 'Estado operativo actualizado.',
+      };
+      setMessage(successMessages[variables.type] || 'Espacios actualizados.');
+      await refresh();
+    },
     onError: (error) => { const errors = extraerErroresApi(error); setMessage(errors.formulario || Object.values(errors)[0] || 'No se pudo completar la operación.'); },
   });
   const stayMutation = useMutation({
@@ -64,7 +72,6 @@ export const OwnerDashboardView = () => {
     },
     onError: (error) => setMessage(extraerErroresApi(error).formulario || 'No se pudo completar la estancia.'),
   });
-  const logout = async () => { await authService.logout(); navigate('/login', { replace: true }); };
   const isLoading = session.isPending || parking.isPending || configuration.isPending;
   const isError = session.isError || parking.isError || configuration.isError || (!parking.isPending && !parking.data);
   const fullName = [session.data?.persona?.nombre, session.data?.persona?.apellido].filter(Boolean).join(' ') || 'Propietario';
@@ -87,7 +94,7 @@ export const OwnerDashboardView = () => {
       onStartStay: (space) => setStayDialog({ mode: 'start', space }),
       onViewStay: (space) => stayMutation.mutate({ type: 'current', space }),
     };
-    if (activeView === 'inicio') content = <OwnerHome session={session.data} parqueadero={parking.data} configuration={data} onNavigate={setActiveView} />;
+    if (activeView === 'inicio') content = <OwnerHome session={session.data} parqueadero={parking.data} configuration={data} pending={mutation.isPending} onChangeStatus={(status) => mutation.mutate({ type: 'status', payload: status })} onNavigate={setActiveView} />;
     if (activeView === 'infoGeneral') content = <OwnerInfoGeneral parqueadero={parking.data} />;
     if (activeView === 'configGeneral') content = <OwnerConfigGeneral data={data} pending={mutation.isPending} onSave={(payload) => mutation.mutate({ type: 'configuration', payload })} />;
     if (activeView === 'configEspacios') content = <OwnerConfigEspacios {...spaceProps} />;

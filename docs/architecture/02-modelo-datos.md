@@ -18,7 +18,7 @@ Espacio 1 -- N Estancia
 
 ## Entidades
 
-- **Cuenta:** propietario o administrador, `is_active`, correo verificado y estado de onboarding.
+- **Cuenta:** propietario o administrador, `is_active`, correo verificado y estado de onboarding. El campo heredado `email` se mantiene sincronizado mediante constraint con `correo`, que es el identificador de acceso del contrato.
 - **VerificacionCorreo:** hash unico, expiracion, uso y cuenta; nunca token en texto plano.
 - **Parqueadero:** propietario unico, habilitacion, operacion, conteos y configuracion.
 - **Direccion/Ubicacion:** tablas OneToOne separadas por DP-13.
@@ -56,6 +56,9 @@ Espacio 1 -- N Estancia
 - Al menos un espacio libre: `ABIERTO`.
 - Sin libres y con algun ocupado: `LLENO`.
 - Todos los espacios activos inhabilitados: `FUERA_DE_SERVICIO`.
+- `estado_operativo_manual` permite al propietario mantener `CERRADO` o
+  `FUERA_DE_SERVICIO`; cuando es nulo se aplica el calculo anterior. Un
+  parqueadero sin configuracion o sin espacios permanece `INACTIVO`.
 - Borrado desde API siempre es logico (`is_active=false`, `deleted_at`); una
   reactivacion exige que no exista otro nombre activo igual.
 

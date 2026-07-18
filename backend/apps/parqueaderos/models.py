@@ -18,6 +18,11 @@ class EstadoOperativo(models.TextChoices):
     FUERA_DE_SERVICIO = "FUERA_DE_SERVICIO", "Fuera de servicio"
 
 
+class EstadoOperativoManual(models.TextChoices):
+    CERRADO = "CERRADO", "Cerrado"
+    FUERA_DE_SERVICIO = "FUERA_DE_SERVICIO", "Fuera de servicio"
+
+
 class EstadoEspacio(models.TextChoices):
     OCUPADO = "OCUPADO", "Ocupado"
     LIBRE = "LIBRE", "Libre"
@@ -42,6 +47,12 @@ class Parqueadero(models.Model):
         max_length=30,
         choices=EstadoOperativo.choices,
         default=EstadoOperativo.INACTIVO,
+    )
+    estado_operativo_manual = models.CharField(
+        max_length=30,
+        choices=EstadoOperativoManual.choices,
+        null=True,
+        blank=True,
     )
     total_espacios = models.PositiveIntegerField(default=0)
     espacios_disponibles = models.PositiveIntegerField(default=0)

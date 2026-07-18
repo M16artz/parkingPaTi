@@ -39,4 +39,9 @@ export const adminService = {
     const { data } = await apiClient.post(`/admin/accounts/${cuentaId}/disable/`);
     return data;
   },
+
+  async rehabilitar(cuentaId) {
+    const { data } = await apiClient.post(`/admin/accounts/${cuentaId}/enable/`);
+    return data;
+  },
 };

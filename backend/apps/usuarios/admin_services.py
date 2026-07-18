@@ -86,7 +86,10 @@ class AdminService:
             raise ConflictoEstado("La solicitud no tiene parqueadero y documento completos.")
         if (
             cuenta.onboarding_estado != EstadoOnboarding.REVISION_PENDIENTE
-            or parqueadero.habilitacion_estado != EstadoHabilitacion.PENDIENTE
+            or parqueadero.habilitacion_estado not in {
+                EstadoHabilitacion.BORRADOR,
+                EstadoHabilitacion.PENDIENTE,
+            }
             or documento.estado != EstadoDocumento.PENDIENTE
         ):
             raise ConflictoEstado("La solicitud ya fue revisada o cambio de estado.")
@@ -136,7 +139,10 @@ class AdminService:
             raise ConflictoEstado("La solicitud no tiene parqueadero y documento completos.")
         if (
             cuenta.onboarding_estado != EstadoOnboarding.REVISION_PENDIENTE
-            or parqueadero.habilitacion_estado != EstadoHabilitacion.PENDIENTE
+            or parqueadero.habilitacion_estado not in {
+                EstadoHabilitacion.BORRADOR,
+                EstadoHabilitacion.PENDIENTE,
+            }
             or documento.estado != EstadoDocumento.PENDIENTE
         ):
             raise ConflictoEstado("La solicitud ya fue revisada o cambio de estado.")
@@ -177,6 +183,43 @@ class AdminService:
             is_active=False,
             onboarding_estado=EstadoOnboarding.DESHABILITADO,
         )
+
+    @staticmethod
+    @transaction.atomic
+    def rehabilitar(administrador, cuenta_id):
+        AdminService._validar_admin(administrador)
+        cuenta = CuentaRepository.bloquear_por_id(cuenta_id)
+        if cuenta is None or cuenta.rol != TipoRol.PROPIETARIO:
+            raise NotFound("La cuenta propietaria no existe.")
+        if cuenta.is_active or cuenta.onboarding_estado != EstadoOnboarding.DESHABILITADO:
+            raise ConflictoEstado("La cuenta no esta deshabilitada.")
+
+        parqueadero = ParqueaderoRepository.bloquear_por_propietario(cuenta.id)
+        documento = DocumentoRepository.bloquear_por_cuenta(cuenta.id)
+        nuevo_estado = AdminService._estado_al_rehabilitar(cuenta, parqueadero, documento)
+        PersonaRepository.actualizar_estado(cuenta.persona, True)
+        cuenta = CuentaRepository.actualizar(cuenta, is_active=True, onboarding_estado=nuevo_estado)
+        if parqueadero is not None:
+            if nuevo_estado == EstadoOnboarding.ACTIVO:
+                from apps.parqueaderos.services import EspacioService
+                EspacioService.recalcular_conteos(parqueadero)
+            else:
+                ParqueaderoRepository.actualizar(parqueadero, estado_operativo=EstadoOperativo.INACTIVO)
+        return cuenta
+
+    @staticmethod
+    def _estado_al_rehabilitar(cuenta, parqueadero, documento):
+        if not cuenta.correo_verificado:
+            return EstadoOnboarding.CORREO_PENDIENTE
+        if parqueadero is None or documento is None:
+            return EstadoOnboarding.DATOS_INICIALES_PENDIENTES
+        if parqueadero.habilitacion_estado == EstadoHabilitacion.RECHAZADO or documento.estado == EstadoDocumento.RECHAZADO:
+            return EstadoOnboarding.RECHAZADO
+        if parqueadero.habilitacion_estado == EstadoHabilitacion.PENDIENTE and documento.estado == EstadoDocumento.PENDIENTE:
+            return EstadoOnboarding.REVISION_PENDIENTE
+        if parqueadero.habilitacion_estado == EstadoHabilitacion.APROBADO and documento.estado == EstadoDocumento.APROBADO:
+            return EstadoOnboarding.ACTIVO if parqueadero.configuracion_completa else EstadoOnboarding.CONFIGURACION_PENDIENTE
+        return EstadoOnboarding.DATOS_INICIALES_PENDIENTES
 
     @staticmethod
     def _notificar_resultado(cuenta, aprobado, motivo="", email_adapter=None):

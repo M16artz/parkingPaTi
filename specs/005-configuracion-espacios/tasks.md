@@ -8,6 +8,8 @@ Estado: completada (13/13). Evidencia: `evidence.md`.
 - [x] `backend` Implementar renombrado/tarifa/estado con propiedad, sin tipo fisico por DP-02.
 - [x] `backend` Implementar borrado lógico y reactivación sin nombre activo duplicado.
 - [x] `backend` Centralizar recálculo de total/disponibles/estado operativo.
+- [x] `backend/web` Permitir cierre o fuera de servicio manual desde Inicio y
+  retorno explicito al calculo automatico sin perderse durante polling.
 - [x] `backend` Evitar nombres activos duplicados y cantidades inválidas.
 - [x] `web` Crear configuración final obligatoria y reanudable.
 - [x] `web` Crear grilla estable y edición individual.

@@ -1,541 +1,67 @@
-// 1. IMPORTACIONES (Agrupadas limpiamente por tipo)
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, Car, MapPin, Shield } from 'lucide-react';
-
-// Componentes Atómicos Reutilizables
-import { Button } from '../components/Button';
-
-// Assets e Imágenes de la Vista
+import { Building2, CarFront, Clock3, MapPinned } from 'lucide-react';
 import home01 from '../../assets/home01.png';
-import logoSimple from '../../assets/logoSimple.png';
 import quienesSomos1 from '../../assets/quienesSomos1.png';
 import quienesSomos2 from '../../assets/quienesSomos2.png';
 import quienesSomos3 from '../../assets/quienesSomos3.png';
 import nuestrosServiciosImg from '../../assets/nuestrosServicios.png';
+import { PublicFooter } from '../components/public/PublicFooter';
+import { PublicNavbar } from '../components/public/PublicNavbar';
 
-// 2. DEFINICIÓN DEL COMPONENTE (Named Export Obligatorio)
+const BENEFITS = [
+  [CarFront, 'Disponibilidad', 'Consulta de espacios', 'Visualiza la disponibilidad reportada por los parqueaderos registrados.'],
+  [MapPinned, 'Ubicación', 'Ubicaciones en el mapa', 'Encuentra parqueaderos cercanos y consulta su información antes de dirigirte al lugar.'],
+  [Clock3, 'Información', 'Tarifas y horarios', 'Revisa precios y horarios de atención desde una misma vista.'],
+];
+
 export const HomeView = () => {
   const navigate = useNavigate();
-  
-  // 3. ESTADOS LOCALES
+  const timerRef = useRef(null);
   const [isLeaving, setIsLeaving] = useState(false);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-  // 4. FUNCIONES MANEJADORAS (Handlers de navegación con transición fluida)
-  const handleComenzar = () => {
-    setIsLeaving(true); 
-    
-    // Transición rápida y fluida de salida de pantalla
-    setTimeout(() => {
-      navigate('/login'); 
-    }, 400); 
+  const goToAuth = (register = false) => {
+    if (isLeaving) return;
+    setIsLeaving(true);
+    timerRef.current = setTimeout(() => navigate(register ? '/register' : '/login'), 240);
   };
 
-  // 5. RENDERIZADO / JSX VERTICALIZADO Y COMENTADO
-  return (
-    <div 
-      className={
-        "w-full " +            // Ancho completo de la pantalla
-        "min-h-screen " +      // Altura mínima para cubrir todo el dispositivo
-        "overflow-x-hidden " + // Evita desbordamiento horizontal
-        "bg-bg"                // Mapeado global: Trae tu celeste bajito desde index.css
-      }
-    >
-      <div 
-        className={`
-          min-h-screen 
-          text-slate-700 
-          antialiased 
-          select-none 
-          font-body 
-          flex 
-          flex-col 
-          relative 
-          transition-all 
-          duration-[400ms] 
-          ease-out 
-          ${isLeaving ? '-translate-x-1/2 opacity-0' : 'translate-x-0 opacity-100'}
-        `}
-      >
-
-        {/* ========================================================= */}
-        {/* NAVBAR ESTÁTICA                                           */}
-        {/* ========================================================= */}
-        <div 
-          className="
-            sticky top-0 left-0 right-0 z-50 
-            w-full 
-            bg-white/95 backdrop-blur-md 
-            px-10 py-7 
-            flex items-center 
-            shadow-[0_10px_30px_rgba(0,0,0,0.1)] 
-            border-b border-slate-200/50
-          "
-        >
-          <div 
-            className="
-              w-full max-w-[1800px] mx-auto 
-              flex items-center gap-2 
-              text-sky-600
-            "
-          >
-            <Car 
-              size={32} 
-              className="text-sky-600" 
-            />
-            <span 
-              className="
-                text-2xl 
-                font-bold 
-                tracking-wide 
-                font-headline
-              "
-            >
-              ParkingPaTi
-            </span>
+  return <div className="min-h-screen overflow-x-hidden bg-sky-100 font-body text-slate-800">
+    <div className={`transition duration-300 motion-reduce:transition-none ${isLeaving ? 'translate-y-2 scale-[0.99] opacity-0' : 'opacity-100'}`}>
+      <PublicNavbar onParkings={() => navigate('/parqueaderos')} onLogin={() => goToAuth(false)} onRegister={() => goToAuth(true)} />
+      <main className="mx-auto flex max-w-[1800px] flex-col gap-5 px-3 py-4 sm:px-5 lg:px-7">
+        <section id="inicio" className="relative flex min-h-[560px] scroll-mt-24 items-center justify-center overflow-hidden rounded-[2rem] px-5 py-20 text-center shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] sm:min-h-[650px]">
+          <img src={home01} alt="Acceso a un parqueadero urbano" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-950/45 via-sky-950/65 to-slate-950/90" />
+          <div className="relative z-10 flex max-w-3xl flex-col items-center gap-6 text-white">
+            <span className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] backdrop-blur">Parqueaderos de Loja</span>
+            <h1 className="font-headline text-4xl font-bold leading-tight sm:text-5xl lg:text-7xl">Encuentra parqueadero sin dar más vueltas</h1>
+            <p className="max-w-2xl text-base leading-7 text-sky-100 sm:text-lg">Consulta espacios disponibles, tarifas, horarios y ubicaciones de parqueaderos desde una sola plataforma.</p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button type="button" disabled={isLeaving} onClick={() => goToAuth(false)} className="min-h-12 rounded-2xl bg-white px-8 font-bold text-sky-800 shadow-lg transition hover:-translate-y-0.5 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60 motion-reduce:transform-none">{isLeaving ? 'Abriendo…' : 'Comenzar'}</button>
+              <a href="#servicios" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/50 bg-white/10 px-8 font-bold text-white backdrop-blur hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Conocer más</a>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* CONTENEDOR ENVOLVENTE GENERAL MAX-WIDTH */}
-        <div 
-          className="
-            p-6 
-            flex flex-col gap-6 
-            w-full max-w-[1800px] mx-auto
-          "
-        >
+        <section id="quienes-somos" className="scroll-mt-24 rounded-[2rem] bg-white p-6 shadow-sm sm:p-10 lg:grid lg:grid-cols-12 lg:items-center lg:gap-12 lg:p-14">
+          <div className="lg:col-span-5"><p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">Quiénes somos</p><h2 className="mt-3 font-headline text-3xl font-bold text-slate-950 sm:text-4xl">Información útil para moverte y gestionar mejor</h2><p className="mt-5 text-base leading-7 text-slate-600">ParkingPaTi facilita la búsqueda de parqueaderos registrados, muestra disponibilidad, tarifas y horarios, y ofrece a los propietarios un panel para administrar sus espacios. La meta es reducir recorridos innecesarios mediante una consulta sencilla y centralizada.</p></div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3 lg:col-span-7 lg:mt-0">
+            {[[quienesSomos1, 'Consulta visual de parqueaderos'], [quienesSomos2, 'Información del parqueadero registrado'], [quienesSomos3, 'Gestión digital de espacios']].map(([src, alt]) => <figure key={src} className="overflow-hidden rounded-2xl border border-sky-200 bg-sky-50 shadow-sm"><img src={src} alt={alt} loading="lazy" className="aspect-[4/3] h-full w-full object-cover sm:aspect-square" /></figure>)}
+          </div>
+        </section>
 
-          {/* ========================================================= */}
-          {/* 1. HERO SECTION                                           */}
-          {/* ========================================================= */}
-          <header 
-            className="
-              relative 
-              w-full h-[80vh] 
-              rounded-[32px] overflow-hidden 
-              flex flex-col justify-center items-center 
-              pb-16 text-center 
-              shadow-[0_25px_60px_-15px_rgba(0,0,0,0.2)]
-            "
-          >
-            {/* Imagen de fondo del Hero */}
-            <img
-              src={home01}
-              alt="Parking Background"
-              className="
-                absolute inset-0 
-                w-full h-full 
-                object-cover 
-                z-0 
-                pointer-events-none 
-                select-none
-              "
-            />
-            
-            {/* Capa de degradado oscuro superior */}
-            <div 
-              className="
-                absolute inset-0 
-                bg-gradient-to-b from-sky-950/40 via-sky-900/60 to-slate-950/80 
-                z-10
-              " 
-            />
+        <section aria-labelledby="benefits-title" className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 sm:p-9"><h2 id="benefits-title" className="sr-only">Beneficios</h2><div className="grid gap-5 md:grid-cols-3">{BENEFITS.map(([Icon, category, title, description]) => <article key={title} className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md motion-reduce:transform-none"><span className="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-800"><Icon aria-hidden="true" /></span><p className="mt-5 text-xs font-black uppercase tracking-widest text-sky-700">{category}</p><h3 className="mt-2 text-xl font-bold text-slate-950">{title}</h3><p className="mt-3 flex-1 text-sm leading-6 text-slate-600">{description}</p></article>)}</div></section>
 
-            <div 
-              className="
-                relative z-20 
-                max-w-2xl mx-auto 
-                flex flex-col items-center 
-                text-white 
-                pt-24 pb-12
-              "
-            >
-              <h1 
-                className="
-                  text-5xl md:text-7xl 
-                  font-bold font-headline 
-                  tracking-tight leading-tight 
-                  drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]
-                "
-              >
-                Hecho con confianza
-              </h1>
-              <p 
-                className="
-                  text-base md:text-lg 
-                  text-sky-100 max-w-md 
-                  font-light leading-relaxed 
-                  drop-shadow-[0_1px_4px_rgba(0,0,0,0.2)] 
-                  mt-6
-                "
-              >
-                Tu espacio seguro y reservado en las mejores ubicaciones de la ciudad. Sin vueltas, sin estrés.
-              </p>
+        <section id="servicios" className="grid scroll-mt-24 gap-5 lg:grid-cols-12">
+          <div className="rounded-[2rem] bg-white p-6 shadow-sm sm:p-10 lg:col-span-7"><p className="text-xs font-black uppercase tracking-widest text-sky-700">Servicios</p><h2 className="mt-3 font-headline text-3xl font-bold text-slate-950 sm:text-4xl">Una plataforma, dos experiencias</h2><div className="mt-8 grid gap-5"><article className="flex gap-4 rounded-2xl border border-sky-200 bg-sky-50 p-5"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-sky-700 text-white"><MapPinned aria-hidden="true" /></span><div><h3 className="text-xl font-bold">Encuentra parqueaderos</h3><p className="mt-2 leading-6 text-slate-600">Consulta ubicaciones, disponibilidad, tarifas y horarios de atención.</p><button type="button" onClick={() => navigate('/parqueaderos')} className="mt-3 rounded font-bold text-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600">Explorar parqueaderos</button></div></article><article className="flex gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-emerald-700 text-white"><Building2 aria-hidden="true" /></span><div><h3 className="text-xl font-bold">Administra tu parqueadero</h3><p className="mt-2 leading-6 text-slate-600">Actualiza la información general, disponibilidad, horarios, tarifas y espacios desde un panel de gestión.</p><button type="button" onClick={() => goToAuth(true)} className="mt-3 rounded font-bold text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">Crear cuenta</button></div></article></div></div>
+          <article className="relative min-h-[420px] overflow-hidden rounded-[2rem] shadow-lg lg:col-span-5"><img src={nuestrosServiciosImg} alt="Movilidad urbana y búsqueda de parqueaderos" loading="lazy" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/65 to-sky-900/20" /><div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-10"><h3 className="font-headline text-3xl font-bold">Muévete por la ciudad con mejor información</h3><p className="mt-3 leading-7 text-slate-200">Consulta las opciones disponibles antes de iniciar tu recorrido.</p></div></article>
+        </section>
 
-              {/* Botón "Comenzar" */}
-              <button 
-                onClick={handleComenzar}
-                className="
-                  mt-40 
-                  px-14 py-4 
-                  bg-white text-sky-700 
-                  border-none outline-none 
-                  rounded-2xl 
-                  text-base font-bold font-label 
-                  shadow-lg 
-                  hover:bg-sky-50 hover:scale-105 
-                  active:scale-95 
-                  transition-all duration-200 
-                  uppercase tracking-wider
-                "
-              >
-                Comenzar
-              </button>
-            </div>
-          </header>
-
-          {/* ========================================================= */}
-          {/* 2. SECCIÓN: QUIÉNES SOMOS                                 */}
-          {/* ========================================================= */}
-          <section 
-            className="
-              bg-white 
-              rounded-[32px] 
-              p-12 md:p-16 
-              grid grid-cols-1 md:grid-cols-12 gap-10 
-              items-center 
-              shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]
-            "
-          >
-            {/* Columna de Texto Informativo */}
-            <div 
-              className="
-                md:col-span-4 
-                flex flex-col gap-6 
-                text-center md:text-left 
-                items-center md:items-start
-              "
-            >
-              <h2 
-                className="
-                  text-5xl font-bold font-headline text-[#0284c7] 
-                  tracking-tight w-full
-                "
-              >
-                Quiénes somos
-              </h2>
-              <p 
-                className="
-                  text-slate-900 text-lg md:text-xl 
-                  leading-relaxed text-justify w-full
-                "
-              >
-                En ParkingPaTi transformamos la tediosa búsqueda de estacionamiento en una{" "}
-                <span 
-                  className="
-                    bg-sky-100 text-sky-900 
-                    px-2 py-0.5 
-                    rounded-md font-medium 
-                    inline-block my-0.5
-                  "
-                >
-                  experiencia fluida
-                </span>{" "}
-                y digital. Optimizamos espacios privados para brindarte comodidad y una{" "}
-                <span 
-                  className="
-                    bg-sky-100 text-sky-900 
-                    px-2 py-0.5 
-                    rounded-md font-medium 
-                    inline-block my-0.5
-                  "
-                >
-                  seguridad garantizada
-                </span>{" "}
-                cerca de tus destinos favoritos.
-              </p>
-            </div>
-
-            {/* Columna del Grid de 3 Imágenes de la UNL */}
-            <div 
-              className="
-                md:col-span-8 
-                grid grid-cols-3 gap-5 
-                w-full
-              "
-            >
-              {/* Tarjeta Imagen 1 */}
-              <div 
-                className="
-                  rounded-[24px] overflow-hidden 
-                  border-4 border-sky-400 
-                  bg-white shadow-md 
-                  aspect-square 
-                  flex items-center justify-center 
-                  p-2
-                "
-              >
-                <img 
-                  src={quienesSomos1} 
-                  alt="Quienes Somos 1" 
-                  className="max-w-full max-h-full object-contain pointer-events-none select-none" 
-                />
-              </div>
-
-              {/* Tarjeta Imagen 2 */}
-              <div 
-                className="
-                  rounded-[24px] overflow-hidden 
-                  border-4 border-sky-400 
-                  bg-white shadow-md 
-                  aspect-square 
-                  flex items-center justify-center 
-                  p-2
-                "
-              >
-                <img 
-                  src={quienesSomos2} 
-                  alt="Quienes Somos 2" 
-                  className="max-w-full max-h-full object-contain pointer-events-none select-none" 
-                />
-              </div>
-
-              {/* Tarjeta Imagen 3 */}
-              <div 
-                className="
-                  rounded-[24px] overflow-hidden 
-                  border-4 border-sky-400 
-                  bg-white shadow-md 
-                  aspect-square 
-                  flex items-center justify-center 
-                  p-2
-                "
-              >
-                <img 
-                  src={quienesSomos3} 
-                  alt="Quienes Somos 3" 
-                  className="max-w-full max-h-full object-contain pointer-events-none select-none" 
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* ========================================================= */}
-          {/* 3. PANEL INTERMEDIO: INFORMACIÓN ADICIONAL                */}
-          {/* ========================================================= */}
-          <section 
-            className="
-              w-full bg-slate-50 
-              rounded-[32px] 
-              p-8 md:p-10 
-              border border-slate-200/60 
-              shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]
-            "
-          >
-            <div 
-              className="
-                grid grid-cols-1 md:grid-cols-3 gap-8 
-                text-center md:text-left
-              "
-            >
-              {/* Tarjeta Cobertura */}
-              <div 
-                className="
-                  flex flex-col gap-2 p-4 
-                  rounded-2xl hover:bg-white 
-                  transition-all duration-300
-                "
-              >
-                <span className="text-xs font-bold text-sky-600 uppercase tracking-widest">Cobertura</span>
-                <h4 className="text-xl font-bold text-slate-800">Puntos Estratégicos</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">Ubicaciones clave en las zonas de mayor afluencia corporativa.</p>
-              </div>
-              
-              {/* Tarjeta Tecnología */}
-              <div 
-                className="
-                  flex flex-col gap-2 p-4 
-                  rounded-2xl hover:bg-white 
-                  transition-all duration-300 
-                  md:border-x md:border-slate-200 px-6
-                "
-              >
-                <span className="text-xs font-bold text-sky-600 uppercase tracking-widest">Tecnología</span>
-                <h4 className="text-xl font-bold text-slate-800">Monitoreo 24/7</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">Sistemas automatizados de lectura de patentes.</p>
-              </div>
-              
-              {/* Tarjeta Comunidad */}
-              <div 
-                className="
-                  flex flex-col gap-2 p-4 
-                  rounded-2xl hover:bg-white 
-                  transition-all duration-300
-                "
-              >
-                <span className="text-xs font-bold text-sky-600 uppercase tracking-widest">Comunidad</span>
-                <h4 className="text-xl font-bold text-slate-800">Soporte Inmediato</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">Asistencia al usuario integrada en la app al instante.</p>
-              </div>
-            </div>
-          </section>
-
-          {/* ========================================================= */}
-          {/* 4. ACERCA DE NUESTROS SERVICIOS                            */}
-          {/* ========================================================= */}
-          <section 
-            className="
-              grid grid-cols-1 md:grid-cols-12 gap-6
-            "
-          >
-            
-            {/* Panel de Características con iconos */}
-            <div 
-              className="
-                md:col-span-7 
-                bg-white 
-                rounded-[32px] 
-                p-10 md:p-14 
-                flex flex-col justify-between gap-10 
-                shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]
-              "
-            >
-              <div>
-                <span 
-                  className="
-                    text-xs font-black text-sky-600 uppercase tracking-widest 
-                    bg-sky-50 px-3 py-1.5 
-                    rounded-lg
-                  "
-                >
-                  Nuestra Tecnología
-                </span>
-                <h3 
-                  className="
-                    text-4xl font-extrabold font-headline text-slate-900 
-                    mt-4 tracking-tight
-                  "
-                >
-                  Acerca de nuestros servicios
-                </h3>
-                <p className="text-base text-slate-400 mt-2">
-                  La forma más inteligente y segura de gestionar tu estacionamiento.
-                </p>
-              </div>
-
-              {/* Grid de Bloques de Servicio */}
-              <div className="grid grid-cols-1 gap-6 w-full">
-                
-                {/* Servicio 1: Búsqueda */}
-                <div 
-                  className="
-                    flex flex-col sm:flex-row items-start gap-5 
-                    bg-sky-50/60 p-6 md:p-8 
-                    rounded-[24px] border border-sky-300
-                  "
-                >
-                  <div className="p-4 bg-sky-600 text-white rounded-2xl shrink-0">
-                    <Car size={26} />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h4 className="font-extrabold text-slate-900 text-xl">Búsqueda de Espacios Libres</h4>
-                    <p className="text-slate-600 text-base md:text-lg">Visualizar y localizar parqueaderos privados disponibles en tiempo real.</p>
-                  </div>
-                </div>
-                
-                {/* Servicio 2: Confianza */}
-                <div 
-                  className="
-                    flex flex-col sm:flex-row items-start gap-5 
-                    bg-sky-50/60 p-6 md:p-8 
-                    rounded-[24px] border border-sky-300
-                  "
-                >
-                  <div className="p-4 bg-emerald-600 text-white rounded-2xl shrink-0">
-                    <Shield size={26} />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h4 className="font-extrabold text-slate-900 text-xl">Parqueaderos 100% Confiables</h4>
-                    <p className="text-slate-600 text-base md:text-lg">Revisión física y legal de su permiso de funcionamiento.</p>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Tarjeta Derecha con Imagen 'nuestrosServicios.png' de fondo */}
-            <div 
-              className="
-                md:col-span-5 
-                text-white 
-                rounded-[32px] 
-                p-12 text-center 
-                flex flex-col items-center justify-center gap-6 
-                shadow-xl 
-                relative overflow-hidden 
-                min-h-[450px]
-              "
-            >
-              <img 
-                src={nuestrosServiciosImg} 
-                alt="Nuestros Servicios" 
-                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none" 
-              />
-              <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px] z-10" />
-              
-              <div className="relative z-20 flex flex-col items-center gap-4">
-                <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-black">
-                  Innovación Urbana
-                </span>
-                <h4 className="text-3xl md:text-4xl font-extrabold">Tu escape seguro a la ciudad</h4>
-                <div className="w-12 h-1 bg-sky-400 rounded-full my-2" />
-                <p className="text-base text-sky-100 font-light max-w-xs">
-                  Diseñado exclusivamente para conductores que valoran la integridad de sus vehículos.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* ========================================================= */}
-          {/* 5. CORPORATE FOOTER                                       */}
-          {/* ========================================================= */}
-          <footer 
-            className="
-              w-full bg-[#0b1329] text-white 
-              rounded-[32px] pt-12 
-              border border-slate-800/60 
-              overflow-hidden
-            "
-          >
-            {/* Contenedor de Créditos e Integrantes */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center px-12 pb-12">
-              <div className="md:col-span-7 flex flex-col gap-3">
-                <span className="text-xs font-bold text-sky-400 uppercase">Grupo corporativo</span>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Armas Ordoñes Miguel, Buri Camacho María, Chamba Santín Richard, Flores Gallardo Emilio, Rosillo Gaona Odalis, Orozco Guamán Marco.
-                </p>
-              </div>
-              <div className="md:col-span-5 flex flex-col gap-3 text-sm text-slate-300 md:pl-4">
-                <span className="text-xs font-bold text-sky-400 uppercase">Contacto directo</span>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex items-center gap-3 bg-slate-800/30 px-4 py-2.5 rounded-xl border border-slate-700/40">
-                    +593 95 994 8917
-                  </div>
-                  <div className="flex items-center gap-3 bg-slate-800/30 px-4 py-2.5 rounded-xl border border-slate-700/40">
-                    parkingPaTi@gmail.com
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Barra inferior de Copyright */}
-            <div className="w-full bg-[#050b18] py-5 text-center text-base font-bold text-white border-t border-slate-800/40">
-              © ParkingPaTi.com - 2026
-            </div>
-          </footer>
-
-        </div>
-      </div>
+        <section className="rounded-[2rem] bg-gradient-to-r from-sky-800 to-blue-800 px-6 py-12 text-center text-white shadow-lg sm:px-10"><h2 className="font-headline text-3xl font-bold">Empieza a utilizar ParkingPaTi</h2><p className="mx-auto mt-4 max-w-2xl text-sky-100">Accede a la plataforma para consultar parqueaderos o administrar uno registrado.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><button type="button" onClick={() => goToAuth(false)} className="min-h-12 rounded-xl bg-white px-7 font-bold text-sky-800">Iniciar sesión</button><button type="button" onClick={() => goToAuth(true)} className="min-h-12 rounded-xl border border-white/60 px-7 font-bold text-white">Crear cuenta</button></div></section>
+      </main>
+      <PublicFooter onLogin={() => goToAuth(false)} />
     </div>
-  );
+  </div>;
 };

@@ -27,6 +27,7 @@ from apps.usuarios.admin_controllers import (
     AdminCuentaDeshabilitarAPIView,
     AdminCuentaDetalleAPIView,
     AdminCuentaListaAPIView,
+    AdminCuentaRehabilitarAPIView,
     AdminSolicitudAprobarAPIView,
     AdminSolicitudDetalleAPIView,
     AdminSolicitudDocumentoAPIView,
@@ -90,5 +91,10 @@ admin_urlpatterns = [
         "accounts/<int:cuenta_id>/disable/",
         AdminCuentaDeshabilitarAPIView.as_view(),
         name="admin_account_disable",
+    ),
+    path(
+        "accounts/<int:cuenta_id>/enable/",
+        AdminCuentaRehabilitarAPIView.as_view(),
+        name="admin_account_enable",
     ),
 ]

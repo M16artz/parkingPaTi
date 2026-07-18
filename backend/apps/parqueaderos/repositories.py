@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, DecimalField, OuterRef, Prefetch, Q, Subquery
 
 from apps.estancias.models import Estancia, EstadoEstancia
 from apps.parqueaderos.models import (
@@ -11,7 +11,7 @@ from apps.parqueaderos.models import (
     Parqueadero,
     Ubicacion,
 )
-from apps.tarifas.models import CategoriaTarifa
+from apps.tarifas.models import CategoriaTarifa, TipoCategoriaTarifa
 from core.repositories import actualizar_generico
 
 
@@ -20,7 +20,22 @@ class ParqueaderoRepository:
         EstadoOperativo.ABIERTO,
         EstadoOperativo.LLENO,
         EstadoOperativo.CERRADO,
+        EstadoOperativo.FUERA_DE_SERVICIO,
     ]
+
+    @staticmethod
+    def _con_tarifa_normal(queryset):
+        tarifa_normal = CategoriaTarifa.objects.filter(
+            parqueadero_id=OuterRef("pk"),
+            codigo=TipoCategoriaTarifa.NORMAL,
+            activa=True,
+        ).values("precio_hora")[:1]
+        return queryset.annotate(
+            tarifa_normal_publica=Subquery(
+                tarifa_normal,
+                output_field=DecimalField(max_digits=8, decimal_places=2),
+            )
+        )
 
     @staticmethod
     def listar_publicos():
@@ -32,7 +47,9 @@ class ParqueaderoRepository:
 
     @staticmethod
     def listar_publicos_bbox(min_lng, min_lat, max_lng, max_lat):
-        return Parqueadero.objects.select_related("direccion", "ubicacion").filter(
+        return ParqueaderoRepository._con_tarifa_normal(
+            Parqueadero.objects.select_related("direccion", "ubicacion")
+        ).filter(
             habilitacion_estado=EstadoHabilitacion.APROBADO,
             configuracion_completa=True,
             estado_operativo__in=ParqueaderoRepository.ESTADOS_PUBLICOS,
@@ -46,7 +63,9 @@ class ParqueaderoRepository:
     @staticmethod
     def obtener_publico(parqueadero_id):
         return (
-            Parqueadero.objects.select_related("direccion", "ubicacion")
+            ParqueaderoRepository._con_tarifa_normal(
+                Parqueadero.objects.select_related("direccion", "ubicacion")
+            )
             .prefetch_related(
                 Prefetch(
                     "tarifas",
@@ -54,6 +73,25 @@ class ParqueaderoRepository:
                     to_attr="tarifas_publicas",
                 ),
                 "horarios",
+                Prefetch(
+                    "espacios",
+                    queryset=Espacio.objects.filter(is_active=True)
+                    .select_related("tarifa_predeterminada")
+                    .prefetch_related(
+                        Prefetch(
+                            "estancias",
+                            queryset=Estancia.objects.filter(estado=EstadoEstancia.ACTIVA).only(
+                                "id",
+                                "espacio_id",
+                                "tarifa_tipo_snapshot",
+                                "precio_hora_snapshot",
+                            ),
+                            to_attr="estancias_activas",
+                        )
+                    )
+                    .order_by("id"),
+                    to_attr="espacios_publicos",
+                ),
             )
             .filter(
                 id=parqueadero_id,
@@ -103,6 +141,7 @@ class ParqueaderoRepository:
                 "habilitacion_estado",
                 "motivo_rechazo",
                 "estado_operativo",
+                "estado_operativo_manual",
                 "total_espacios",
                 "espacios_disponibles",
                 "configuracion_completa",

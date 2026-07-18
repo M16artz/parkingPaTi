@@ -8,7 +8,7 @@ from django.test import override_settings
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from apps.usuarios.models import EstadoOnboarding, TipoIdentificacion, VerificacionCorreo
+from apps.usuarios.models import Cuenta, EstadoOnboarding, TipoIdentificacion, VerificacionCorreo
 from apps.usuarios.services import RegistroService, VerificacionCorreoService
 
 
@@ -83,12 +83,17 @@ def test_fallo_de_correo_conserva_la_cuenta():
 def test_login_no_expone_refresh_y_refresh_usa_cookie(client):
     persona, cuenta_data = datos_registro("4")
     cuenta, _ = RegistroService.registrar_cuenta(persona, cuenta_data)
-    cuenta.correo_verificado = True
-    cuenta.onboarding_estado = EstadoOnboarding.DATOS_INICIALES_PENDIENTES
-    cuenta.save(update_fields=["correo_verificado", "onboarding_estado"])
+    cuenta.username = "identificador-interno-distinto"
+    cuenta.onboarding_estado = EstadoOnboarding.CONFIGURACION_PENDIENTE
+    cuenta.save(update_fields=["username", "onboarding_estado"])
 
-    response = client.post("/api/v1/auth/token/", {"username": cuenta.correo, "password": cuenta_data["password"]})
+    response = client.post(
+        "/api/v1/auth/token/",
+        {"correo": cuenta.correo.upper(), "password": cuenta_data["password"]},
+    )
     assert response.status_code == 200
+    assert response.json()["onboarding_estado"] == EstadoOnboarding.CONFIGURACION_PENDIENTE
+    assert cuenta.correo_verificado is False
     assert "refresh" not in response.json()
     cookie = response.cookies["parkingpati_refresh"]
     assert cookie["httponly"] is True
@@ -103,6 +108,47 @@ def test_login_no_expone_refresh_y_refresh_usa_cookie(client):
     cuenta.is_active = False
     cuenta.save(update_fields=["is_active"])
     assert client.post("/api/v1/auth/token/refresh/").status_code == 401
+
+
+def test_cuenta_sincroniza_email_con_correo():
+    persona, cuenta_data = datos_registro("6")
+    cuenta, _ = RegistroService.registrar_cuenta(persona, cuenta_data)
+    assert cuenta.email == cuenta.correo
+    assert Cuenta.objects.get(pk=cuenta.pk).email == cuenta.correo
+
+    cuenta.correo = "Nuevo.Correo@Example.Invalid "
+    cuenta.save(update_fields=["correo"])
+    cuenta.refresh_from_db()
+    assert cuenta.correo == "nuevo.correo@example.invalid"
+    assert cuenta.email == cuenta.correo
+
+
+def test_configuracion_pendiente_no_omite_bloqueo_is_active(client):
+    cache.clear()
+    persona, cuenta_data = datos_registro("7")
+    cuenta, _ = RegistroService.registrar_cuenta(persona, cuenta_data)
+    cuenta.correo_verificado = True
+    cuenta.onboarding_estado = EstadoOnboarding.CONFIGURACION_PENDIENTE
+    cuenta.is_active = False
+    cuenta.save(update_fields=["correo_verificado", "onboarding_estado", "is_active"])
+
+    response = client.post(
+        "/api/v1/auth/token/",
+        {"correo": cuenta.correo, "password": cuenta_data["password"]},
+    )
+    assert response.status_code == 401
+
+
+def test_correo_pendiente_sin_verificar_no_puede_iniciar_sesion(client):
+    cache.clear()
+    persona, cuenta_data = datos_registro("8")
+    cuenta, _ = RegistroService.registrar_cuenta(persona, cuenta_data)
+
+    response = client.post(
+        "/api/v1/auth/token/",
+        {"correo": cuenta.correo, "password": cuenta_data["password"]},
+    )
+    assert response.status_code == 401
 
 
 @override_settings(FRONTEND_BASE_URL="https://web.example.invalid")

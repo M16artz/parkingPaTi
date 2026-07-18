@@ -13,14 +13,16 @@ OpenAPI versionado: `docs/openapi.yaml`. Endpoint runtime: `GET /api/v1/schema/`
 ## Autenticacion y registro
 
 - `POST auth/register/`: crea Persona/Cuenta propietaria y solicita correo de verificacion; no crea sesion.
+- `POST auth/register/complete/`: crea atomicamente Persona/Cuenta, parqueadero dentro del bbox de Loja y documento privado. La cuenta permanece `CORREO_PENDIENTE`; al verificar el correo pasa directamente a `REVISION_PENDIENTE` porque los datos iniciales ya existen.
 - `POST auth/verify-email/`: consume un token expirable y de un solo uso.
 - `POST auth/resend-verification/`: respuesta generica `202`, incluso si el correo no existe.
-- `POST auth/token/`: exige cuenta activa y correo verificado; devuelve access, rol y estado.
+- `POST auth/token/`: recibe `{correo, password}`, autentica por `correo` sin depender de `username` y siempre exige `is_active=true`. Exige correo verificado mientras el onboarding no haya sido aprobado; por compatibilidad con filas heredadas, `CONFIGURACION_PENDIENTE` y `ACTIVO` son autenticables aunque el indicador `correo_verificado` haya quedado desincronizado. Devuelve access, rol y estado; configuración pendiente dirige a la configuración final y activo al dashboard.
 - `POST auth/token/refresh/`: lee el refresh exclusivamente desde cookie HttpOnly.
 - `POST auth/logout/`: invalida y elimina la cookie refresh.
 - `GET auth/me/`: devuelve cuenta, rol y estado de onboarding.
 
-El refresh nunca forma parte del JSON ni se almacena en JavaScript. La cookie
+El refresh aplica la misma política de acceso por `is_active` y estado que el
+login. Nunca forma parte del JSON ni se almacena en JavaScript. La cookie
 usa `HttpOnly`, `Secure`, `SameSite` y path restringido; los valores de
 despliegue no sensibles se configuran por entorno.
 
@@ -30,6 +32,8 @@ despliegue no sensibles se configuran por entorno.
 - `PUT owner/parking/initial-data/`: crea o actualiza el borrador inicial.
 - `PUT owner/document/`: carga o reemplaza el documento privado multipart.
 - `POST owner/application/submit/`: valida correo, parqueadero y documento, y envia a revision.
+
+El registro simple conserva la transicion `CORREO_PENDIENTE -> DATOS_INICIALES_PENDIENTES`. El registro completo usa `CORREO_PENDIENTE -> REVISION_PENDIENTE` y deja parqueadero/documento en estado `PENDIENTE`. Una migracion de datos reconcilia registros completos anteriores que hubieran quedado como datos iniciales o parqueadero `BORRADOR`.
 
 El estado es reanudable. El documento de propietario expone metadatos, pero
 no `drive_file_id` ni `drive_web_view_link`.
@@ -64,10 +68,12 @@ paginado comun.
 - `GET admin/accounts/{cuenta_id}/`: detalle administrativo de cuenta.
 - `POST admin/accounts/{cuenta_id}/disable/`: fija `is_active=false`, estado
   `DESHABILITADO`, parqueadero `INACTIVO` y revoca refresh tokens conocidos.
+- `POST admin/accounts/{cuenta_id}/enable/`: rehabilita una cuenta deshabilitada,
+  activa Persona/Cuenta y reconstruye el estado de onboarding desde los recursos persistidos.
 
-Aprobar, rechazar o deshabilitar nuevamente responde `409 state_conflict`.
+Aprobar, rechazar, deshabilitar o rehabilitar nuevamente responde `409 state_conflict`.
 El fallo del correo de aprobación/rechazo se informa con `email_enviado=false`
-sin revertir la decisión persistida. DP-06 excluye rehabilitación.
+sin revertir la decisión persistida.
 
 La consulta publica pertenece a la fase 007.
 
@@ -83,6 +89,10 @@ tambien en service.
   mayor o igual a `0.01`, y cada apertura debe ser anterior a su cierre;
   reemplaza horarios, consolida tarifas y crea el lote inicial en una sola
   transaccion. `NORMAL` es obligatoria.
+- `PATCH owner/operational-status/`: recibe `{estado}` con `ABIERTO`,
+  `CERRADO` o `FUERA_DE_SERVICIO`. Los dos ultimos persisten una anulacion
+  manual; `ABIERTO` la elimina y recalcula `ABIERTO`, `LLENO`,
+  `FUERA_DE_SERVICIO` o `INACTIVO` desde los espacios.
 - `POST owner/spaces/bulk/`: recibe `{cantidad}` entre 1 y 100 y crea un lote
   adicional con nombres generados y tarifa `NORMAL`.
 - `PATCH owner/spaces/{espacio_id}/`: permite nombre, tarifa predeterminada y
@@ -96,6 +106,10 @@ Completar la configuracion cambia cuenta a `ACTIVO`, parqueadero a
 `configuracion_completa=true` y recalcula totales/estado. Repetir el mismo PUT
 es idempotente y no duplica espacios. Cambiar la cantidad despues exige el
 endpoint batch; el frontend no ejecuta bucles de requests.
+
+En web, una sesion propietaria con `CONFIGURACION_PENDIENTE` solo permanece en
+`/owner/configuration`. Cuando el PUT responde con configuracion completa y
+`ACTIVO`, se invalida `auth/me` y se redirige a `/owner/dashboard`.
 
 ## Estancias y valor informativo
 
@@ -133,17 +147,20 @@ programacion operativa se configura en la fase 010 sin secretos en el repo.
 
 No requiere autenticacion. Los datos proceden de Django/PostgreSQL y solo
 incluyen parqueaderos aprobados, configurados, con cuenta activa y estado
-`OPEN`, `FULL` o `CLOSED`.
+`OPEN`, `FULL`, `CLOSED` o `OUT_OF_SERVICE`.
 
 - `GET public/parkings/?bbox=minLng,minLat,maxLng,maxLat`: marcadores dentro
   del viewport. Valida cuatro numeros, orden min/max y limites de Loja con la
   tolerancia DP-01. Responde `{updated_at, results}`.
 - `GET public/parkings/{id}/`: detalle publico con descripcion, direccion,
-  disponibilidad, tarifas activas y horarios.
+  disponibilidad, tarifas activas, horarios y distribucion de espacios activos
+  de solo lectura.
 
 El resumen usa nombres compartidos web/movil: `name`, `latitude`, `longitude`,
-`address`, `total_spaces`, `available_spaces`, `status` y `updated_at`. El
-detalle no expone propietario, cuentas, documentos ni espacios internos.
+`address`, `total_spaces`, `available_spaces`, `status`, `normal_rate` y
+`updated_at`. El detalle agrega `rates`, `schedules` y `spaces`; cada espacio
+publico contiene solamente nombre, estado y tarifa aplicada. No se exponen
+propietario, cuentas, documentos, estancias ni identificadores de vehiculos.
 
 La consulta bbox usa indices de ubicacion y visibilidad. El test de carga base
 verifica una consulta ORM constante para 40 marcadores.

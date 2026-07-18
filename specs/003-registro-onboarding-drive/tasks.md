@@ -16,3 +16,5 @@
 - [x] `web` Manejar reanudación, errores y doble submit.
 - [x] `tests` Probar auth, tokens, fallos correo/Drive y flujo API/web. **Evidencia:** 21 pruebas backend y 3 web.
 - [x] `docs` Actualizar OpenAPI y estados finales.
+- [x] `backend` Ajustar registro completo para pasar de verificación de correo a revisión sin repetir datos iniciales, con migración de reconciliación para registros previos. **Ajuste aprobado por el solicitante el 2026-07-18.**
+- [x] `auth` Autenticar por `correo`, sincronizar la columna heredada `email` y permitir el primer acceso en `CONFIGURACION_PENDIENTE` conservando el bloqueo real por `is_active`. **Ajuste aprobado por el solicitante el 2026-07-18.**

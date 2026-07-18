@@ -1,11 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './views/components/Button';
 import { AvailabilityBadge } from './views/components/AvailabilityBadge';
 
 function App() {
-  const handleTestClick = () => {
-    alert('Hello Soledad! Your Frontend environment is working 100%!');
-  };
+  const [testMessage, setTestMessage] = useState('');
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#F4F6FB] p-6 gap-6">
@@ -42,12 +40,13 @@ function App() {
           <label className="text-xs font-bold font-label text-secondary uppercase tracking-wider">
             Action Buttons:
           </label>
-          <Button variant="primary" onClick={handleTestClick}>
+          <Button variant="primary" onClick={() => setTestMessage('El entorno frontend responde correctamente.')}>
             Test Click Event
           </Button>
           <Button variant="success" isLoading={true}>
             Simulating API Request...
           </Button>
+          {testMessage && <p role="status" className="text-sm font-semibold text-emerald-700">{testMessage}</p>}
         </div>
       </div>
     </div>

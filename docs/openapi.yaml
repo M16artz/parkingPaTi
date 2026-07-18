@@ -102,6 +102,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminAccionResponseDTO'
           description: ''
+  /api/v1/admin/accounts/{cuenta_id}/enable/:
+    post:
+      operationId: admin_accounts_enable
+      parameters:
+      - in: path
+        name: cuenta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAccionResponseDTO'
+          description: ''
   /api/v1/admin/applications/:
     get:
       operationId: admin_applications_list
@@ -357,6 +377,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistroDTO'
           description: ''
+  /api/v1/auth/register/complete/:
+    post:
+      operationId: auth_register_complete_create
+      description: Crea cuenta propietaria, parqueadero dentro del bbox de Loja y documento privado. Tras verificar el correo, el registro completo pasa directamente a revision pendiente.
+      tags:
+      - auth
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistroCompletoDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroResponseDTO'
+          description: Registro creado; verificacion de correo pendiente.
   /api/v1/auth/resend-verification/:
     post:
       operationId: auth_resend_verification_create
@@ -1247,6 +1289,32 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/ConfiguracionFinalDTO'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionFinalResponseDTO'
+          description: ''
+  /api/v1/owner/operational-status/:
+    patch:
+      operationId: owner_operational_status_update
+      tags:
+      - owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoOperativoPropietarioDTO'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EstadoOperativoPropietarioDTO'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EstadoOperativoPropietarioDTO'
         required: true
       security:
       - jwtAuth: []
@@ -2507,6 +2575,9 @@ components:
           type: string
         estado_operativo:
           type: string
+        estado_operativo_manual:
+          type: string
+          nullable: true
         total_espacios:
           type: integer
         espacios_disponibles:
@@ -2528,11 +2599,23 @@ components:
       - espacios
       - espacios_disponibles
       - estado_operativo
+      - estado_operativo_manual
       - horarios
       - onboarding_estado
       - parqueadero_id
       - tarifas
       - total_espacios
+    EstadoOperativoPropietarioDTO:
+      type: object
+      properties:
+        estado:
+          enum:
+          - ABIERTO
+          - CERRADO
+          - FUERA_DE_SERVICIO
+          type: string
+      required:
+      - estado
     CookieTokenRefreshResponseDTO:
       type: object
       properties:
@@ -2594,15 +2677,16 @@ components:
     CustomTokenObtainPair:
       type: object
       properties:
-        username:
+        correo:
           type: string
+          format: email
           writeOnly: true
         password:
           type: string
           writeOnly: true
       required:
+      - correo
       - password
-      - username
     DiaEnum:
       enum:
       - LUNES
@@ -3537,6 +3621,12 @@ components:
         status:
           type: string
           readOnly: true
+        normal_rate:
+          type: string
+          format: decimal
+          nullable: true
+          readOnly: true
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         updated_at:
           type: string
           format: date-time
@@ -3551,6 +3641,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PublicScheduleDTO'
+        spaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicSpaceDTO'
       required:
       - address
       - available_spaces
@@ -3559,8 +3653,10 @@ components:
       - latitude
       - longitude
       - name
+      - normal_rate
       - rates
       - schedules
+      - spaces
       - status
       - total_spaces
       - updated_at
@@ -3601,6 +3697,12 @@ components:
         status:
           type: string
           readOnly: true
+        normal_rate:
+          type: string
+          format: decimal
+          nullable: true
+          readOnly: true
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         updated_at:
           type: string
           format: date-time
@@ -3612,9 +3714,41 @@ components:
       - latitude
       - longitude
       - name
+      - normal_rate
       - status
       - total_spaces
       - updated_at
+    PublicSpaceDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        rate_code:
+          type: string
+          nullable: true
+          readOnly: true
+        rate_name:
+          type: string
+          nullable: true
+          readOnly: true
+        price_per_hour:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - id
+      - name
+      - price_per_hour
+      - rate_code
+      - rate_name
+      - status
     PublicRateDTO:
       type: object
       properties:
@@ -3679,6 +3813,65 @@ components:
       - correo
       - identificacion
       - nombre
+      - password
+      - tipo_identificacion
+    RegistroCompletoDTO:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 100
+        apellido:
+          type: string
+          maxLength: 100
+        tipo_identificacion:
+          $ref: '#/components/schemas/TipoIdentificacionEnum'
+        identificacion:
+          type: string
+          maxLength: 20
+        correo:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        nombre_parqueadero:
+          type: string
+          maxLength: 150
+        descripcion:
+          type: string
+        calle_principal:
+          type: string
+          maxLength: 200
+        calle_secundaria:
+          type: string
+          maxLength: 200
+        numero_lote:
+          type: string
+          maxLength: 50
+        latitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitud:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        archivo:
+          type: string
+          format: binary
+          writeOnly: true
+      required:
+      - apellido
+      - archivo
+      - calle_principal
+      - correo
+      - identificacion
+      - latitud
+      - longitud
+      - nombre
+      - nombre_parqueadero
       - password
       - tipo_identificacion
     RegistroResponseDTO:

@@ -4,6 +4,7 @@ import secrets
 from datetime import timedelta
 from pathlib import Path
 
+from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
 from django.db import transaction
@@ -17,6 +18,7 @@ from apps.documentos.models import EstadoDocumento
 from apps.documentos.repositories import DocumentoRepository
 from apps.documentos.services import nombre_drive_privado
 from apps.documentos.storage_backends import get_document_storage
+from apps.parqueaderos.models import EstadoHabilitacion
 from apps.parqueaderos.repositories import ParqueaderoRepository
 from apps.usuarios.email_adapters import GmailSmtpEmailAdapter
 from apps.usuarios.models import EstadoOnboarding, TipoRol
@@ -30,9 +32,40 @@ logger = logging.getLogger(__name__)
 
 
 class SesionService:
+    ESTADOS_APROBADOS_PARA_ACCESO = {
+        EstadoOnboarding.CONFIGURACION_PENDIENTE,
+        EstadoOnboarding.ACTIVO,
+    }
+
+    @staticmethod
+    def puede_autenticar(cuenta):
+        return bool(
+            cuenta
+            and cuenta.is_active
+            and (
+                cuenta.correo_verificado
+                or cuenta.onboarding_estado in SesionService.ESTADOS_APROBADOS_PARA_ACCESO
+            )
+        )
+
+    @staticmethod
+    def autenticar_por_correo(correo, password, request=None):
+        correo_normalizado = correo.strip().lower()
+        cuenta = CuentaRepository.obtener_por_correo(correo_normalizado)
+        username = cuenta.username if cuenta is not None else correo_normalizado
+        cuenta_autenticada = authenticate(
+            request=request,
+            username=username,
+            password=password,
+        )
+        if cuenta_autenticada is None:
+            raise AuthenticationFailed("No fue posible iniciar sesion con estas credenciales.")
+        SesionService.validar_login(cuenta_autenticada)
+        return cuenta_autenticada
+
     @staticmethod
     def validar_login(cuenta):
-        if not cuenta.is_active or not cuenta.correo_verificado:
+        if not SesionService.puede_autenticar(cuenta):
             raise AuthenticationFailed("No fue posible iniciar sesion con estas credenciales.")
 
     @staticmethod
@@ -42,7 +75,7 @@ class SesionService:
         except TokenError as exc:
             raise AuthenticationFailed("La sesion no es valida.") from exc
         cuenta = CuentaRepository.obtener_por_id(token.get("user_id"))
-        if cuenta is None or not cuenta.is_active or not cuenta.correo_verificado:
+        if not SesionService.puede_autenticar(cuenta):
             raise AuthenticationFailed("La sesion no es valida.")
         serializer = TokenRefreshSerializer(data={"refresh": refresh})
         serializer.is_valid(raise_exception=True)
@@ -128,6 +161,7 @@ class RegistroService:
                     cuenta,
                     datos_direccion,
                     datos_ubicacion,
+                    habilitacion_estado=EstadoHabilitacion.PENDIENTE,
                     **datos_parqueadero,
                 )
                 nombre_seguro = nombre_drive_privado(cuenta, archivo.name)
@@ -198,18 +232,36 @@ class VerificacionCorreoService:
         cuenta = verificacion.cuenta
         VerificacionCorreoRepository.marcar_usada(verificacion)
         VerificacionCorreoRepository.invalidar_activas(cuenta.id)
+        parqueadero = ParqueaderoRepository.bloquear_por_propietario(cuenta.id)
+        documento = DocumentoRepository.bloquear_por_cuenta(cuenta.id)
+        nuevo_estado = EstadoOnboarding.DATOS_INICIALES_PENDIENTES
+        if parqueadero is not None and documento is not None:
+            if parqueadero.habilitacion_estado == EstadoHabilitacion.BORRADOR:
+                parqueadero = ParqueaderoRepository.actualizar(
+                    parqueadero,
+                    habilitacion_estado=EstadoHabilitacion.PENDIENTE,
+                    motivo_rechazo="",
+                )
+            if (
+                parqueadero.habilitacion_estado == EstadoHabilitacion.PENDIENTE
+                and documento.estado == EstadoDocumento.PENDIENTE
+            ):
+                nuevo_estado = EstadoOnboarding.REVISION_PENDIENTE
         CuentaRepository.actualizar(
             cuenta,
             correo_verificado=True,
             correo_verificado_en=ahora,
-            onboarding_estado=EstadoOnboarding.DATOS_INICIALES_PENDIENTES,
+            onboarding_estado=nuevo_estado,
         )
         return cuenta
 
 
 class CuentaService:
     TRANSICIONES_ONBOARDING = {
-        EstadoOnboarding.CORREO_PENDIENTE: {EstadoOnboarding.DATOS_INICIALES_PENDIENTES},
+        EstadoOnboarding.CORREO_PENDIENTE: {
+            EstadoOnboarding.DATOS_INICIALES_PENDIENTES,
+            EstadoOnboarding.REVISION_PENDIENTE,
+        },
         EstadoOnboarding.DATOS_INICIALES_PENDIENTES: {EstadoOnboarding.REVISION_PENDIENTE},
         EstadoOnboarding.REVISION_PENDIENTE: {
             EstadoOnboarding.RECHAZADO,

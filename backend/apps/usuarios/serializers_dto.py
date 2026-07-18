@@ -206,6 +206,12 @@ class EmptyDTO(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    correo = serializers.EmailField(write_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop(self.username_field, None)
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
@@ -214,12 +220,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        data = super().validate(attrs)
         from apps.usuarios.services import SesionService
 
-        SesionService.validar_login(self.user)
-        data["refresh_cookie"] = data.pop("refresh")
-        data["username"] = self.user.username
-        data["rol"] = self.user.rol
-        data["onboarding_estado"] = self.user.onboarding_estado
-        return data
+        self.user = SesionService.autenticar_por_correo(
+            attrs["correo"],
+            attrs["password"],
+            request=self.context.get("request"),
+        )
+        refresh = self.get_token(self.user)
+        return {
+            "access": str(refresh.access_token),
+            "refresh_cookie": str(refresh),
+            "username": self.user.username,
+            "rol": self.user.rol,
+            "onboarding_estado": self.user.onboarding_estado,
+        }

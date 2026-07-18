@@ -95,6 +95,26 @@ def test_endpoints_admin_rechazan_anonimo_y_propietario_y_paginan():
     assert "drive_file_id" not in str(detalle.json())
 
 
+def test_listado_cuentas_sin_filtro_incluye_habilitadas_y_deshabilitadas():
+    admin = crear_cuenta(906, rol=TipoRol.ADMINISTRADOR, estado=EstadoOnboarding.ACTIVO)
+    habilitada = crear_cuenta(7, estado=EstadoOnboarding.ACTIVO)
+    deshabilitada = crear_cuenta(8, estado=EstadoOnboarding.DESHABILITADO)
+    deshabilitada.is_active = False
+    deshabilitada.save(update_fields=["is_active"])
+
+    cliente = APIClient()
+    cliente.force_authenticate(admin)
+
+    todas = cliente.get("/api/v1/admin/accounts/?page_size=100")
+    habilitadas = cliente.get("/api/v1/admin/accounts/?activo=true&page_size=100")
+    deshabilitadas = cliente.get("/api/v1/admin/accounts/?activo=false&page_size=100")
+
+    assert todas.status_code == 200
+    assert {item["id"] for item in todas.json()["results"]} == {habilitada.id, deshabilitada.id}
+    assert [item["id"] for item in habilitadas.json()["results"]] == [habilitada.id]
+    assert [item["id"] for item in deshabilitadas.json()["results"]] == [deshabilitada.id]
+
+
 def test_aprobar_es_atomico_y_repetir_devuelve_409(monkeypatch):
     admin = crear_cuenta(901, rol=TipoRol.ADMINISTRADOR, estado=EstadoOnboarding.ACTIVO)
     propietario = crear_solicitud(2)
@@ -120,6 +140,25 @@ def test_aprobar_es_atomico_y_repetir_devuelve_409(monkeypatch):
     repetido = cliente.post(f"/api/v1/admin/applications/{propietario.id}/approve/")
     assert repetido.status_code == 409
     assert repetido.json()["code"] == "state_conflict"
+
+
+def test_aprobar_normaliza_solicitud_legacy_en_revision_con_parqueadero_borrador():
+    admin = crear_cuenta(908, rol=TipoRol.ADMINISTRADOR, estado=EstadoOnboarding.ACTIVO)
+    propietario = crear_solicitud(10)
+    parqueadero = Parqueadero.objects.get(propietario=propietario)
+    parqueadero.habilitacion_estado = EstadoHabilitacion.BORRADOR
+    parqueadero.save(update_fields=["habilitacion_estado"])
+
+    cuenta, _ = AdminService.aprobar(
+        admin,
+        propietario.id,
+        email_adapter=EmailResultadoFake(),
+    )
+
+    cuenta.refresh_from_db()
+    parqueadero.refresh_from_db()
+    assert cuenta.onboarding_estado == EstadoOnboarding.CONFIGURACION_PENDIENTE
+    assert parqueadero.habilitacion_estado == EstadoHabilitacion.APROBADO
 
 
 def test_rechazo_exige_motivo_y_permite_reeditar_todo_onboarding():
@@ -193,7 +232,7 @@ def test_deshabilitar_oculta_parqueadero_y_bloquea_login_refresh():
     sesion = APIClient()
     login = sesion.post(
         "/api/v1/auth/token/",
-        {"username": propietario.correo, "password": "Prueba-segura-123"},
+        {"correo": propietario.correo, "password": "Prueba-segura-123"},
         format="json",
     )
     assert login.status_code == 200
@@ -212,10 +251,34 @@ def test_deshabilitar_oculta_parqueadero_y_bloquea_login_refresh():
     assert sesion.post("/api/v1/auth/token/refresh/").status_code == 401
     assert APIClient().post(
         "/api/v1/auth/token/",
-        {"username": propietario.correo, "password": "Prueba-segura-123"},
+        {"correo": propietario.correo, "password": "Prueba-segura-123"},
         format="json",
     ).status_code == 401
     assert cliente_admin.post(f"/api/v1/admin/accounts/{propietario.id}/disable/").status_code == 409
+
+
+def test_rehabilitar_restaura_acceso_y_estado_de_revision():
+    admin = crear_cuenta(907, rol=TipoRol.ADMINISTRADOR, estado=EstadoOnboarding.ACTIVO)
+    propietario = crear_solicitud(9)
+    cliente = APIClient()
+    cliente.force_authenticate(admin)
+
+    assert cliente.post(f"/api/v1/admin/accounts/{propietario.id}/disable/").status_code == 200
+    respuesta = cliente.post(f"/api/v1/admin/accounts/{propietario.id}/enable/")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["onboarding_estado"] == EstadoOnboarding.REVISION_PENDIENTE
+    propietario.refresh_from_db()
+    propietario.persona.refresh_from_db()
+    assert propietario.is_active is True
+    assert propietario.persona.estado is True
+    assert propietario.onboarding_estado == EstadoOnboarding.REVISION_PENDIENTE
+    assert cliente.post(f"/api/v1/admin/accounts/{propietario.id}/enable/").status_code == 409
+    assert APIClient().post(
+        "/api/v1/auth/token/",
+        {"correo": propietario.correo, "password": "Prueba-segura-123"},
+        format="json",
+    ).status_code == 200
 
 
 @pytest.mark.django_db(transaction=True)

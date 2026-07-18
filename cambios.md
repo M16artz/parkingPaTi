@@ -1295,3 +1295,13 @@ Además:
 - No quedan WebSockets, Channels, Redis de disponibilidad ni endpoints OSM para parqueaderos.
 - No se implementan reservas ni pagos.
 - Documentos permanecen privados y los secretos están fuera de Git.
+
+## 22. Corrección de sesión y redirecciones por rol (2026-07-17)
+
+- Web limpia por completo la caché privada de React Query al iniciar y cerrar sesión para evitar datos residuales entre cuentas.
+- El login consulta `GET /api/v1/auth/me/` con el token nuevo antes de decidir el destino.
+- La ruta de onboarding valida primero rol y estado; un administrador no monta vistas ni endpoints de propietario.
+- Las rutas del propietario fuerzan `CONFIGURACION_PENDIENTE` hacia `/owner/configuration` y `ACTIVO` hacia `/owner/dashboard`.
+- Las rutas administrativas redirigen propietarios según su estado real, no siempre hacia onboarding.
+- Verificación real: `npm.cmd test` (22/22), `npm.cmd run lint` y `npm.cmd run build` exitosos.
+- Prueba interactiva en navegador: **No confirmado**, porque no había un navegador conectado en la sesión de verificación.

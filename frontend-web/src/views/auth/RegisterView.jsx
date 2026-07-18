@@ -1,180 +1,70 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Check, FileUp, MailCheck, MapPin, UserRound } from 'lucide-react';
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
-import { useMutation } from '@tanstack/react-query';
+import React from 'react';
+import { Check, LockKeyhole } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import logoSimple from '../../assets/logoSimple.png';
 import { useRegisterController } from '../../controllers/useRegisterController';
-import { LOJA_BOUNDS, LOJA_CENTER, estaEnLoja } from '../../config/loja';
-import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../../config/env';
-import { authService } from '../../services/authService';
 import { Button } from '../components/Button';
-import { Input } from '../components/Input';
+import { RegisterDialog } from '../components/register/RegisterDialog';
+import { DocumentStep, ParkingDataStep, PersonalDataStep } from '../components/register/RegisterSteps';
+import { RegisterStepper } from '../components/register/RegisterStepper';
 
-const STEPS = [
-  { id: 1, label: 'Datos personales', icon: UserRound },
-  { id: 2, label: 'Parqueadero', icon: MapPin },
-  { id: 3, label: 'Documento', icon: FileUp },
-];
-
-function RegistrationStepper({ current }) {
-  return (
-    <ol className="grid grid-cols-3" aria-label="Progreso del registro">
-      {STEPS.map(({ id, label, icon: Icon }, index) => {
-        const complete = id < current;
-        const active = id === current;
-        return (
-          <li key={id} className="relative flex flex-col items-center text-center">
-            {index > 0 && (
-              <span className={`absolute right-1/2 top-5 h-0.5 w-full ${id <= current ? 'bg-sky-600' : 'bg-slate-200'}`} aria-hidden="true" />
-            )}
-            <span
-              className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 ${active || complete ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 bg-white text-slate-400'}`}
-              aria-current={active ? 'step' : undefined}
-            >
-              {complete ? <Check size={19} /> : <Icon size={18} />}
-            </span>
-            <span className={`mt-2 text-xs font-bold sm:text-sm ${active ? 'text-sky-700' : 'text-slate-500'}`}>{label}</span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function LocationPicker({ position, onChange }) {
-  useMapEvents({
-    click(event) {
-      if (estaEnLoja(event.latlng.lat, event.latlng.lng)) {
-        onChange(event.latlng.lat.toFixed(6), event.latlng.lng.toFixed(6));
-      }
-    },
-  });
-  return position.latitud && position.longitud
-    ? <Marker position={[Number(position.latitud), Number(position.longitud)]} />
-    : null;
-}
+const RegisterNav = () => {
+  const navigate = useNavigate();
+  return <header className="sticky top-0 z-[900] border-b border-sky-100 bg-white/90 backdrop-blur-xl">
+    <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <button type="button" onClick={() => navigate('/')} className="flex items-center gap-2 rounded-xl font-headline text-lg font-black text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><img src={logoSimple} alt="" className="h-9 w-9 object-contain" /> ParkingPaTi</button>
+      <div className="flex items-center gap-3"><span className="hidden text-sm text-slate-600 sm:inline">¿Ya tienes una cuenta?</span><Button variant="outline" onClick={() => navigate('/login')}>Iniciar sesión</Button></div>
+    </div>
+  </header>;
+};
 
 export const RegisterView = () => {
+  const navigate = useNavigate();
   const register = useRegisterController();
-  const [createdEmail, setCreatedEmail] = useState('');
-  const resend = useMutation({ mutationFn: authService.resendVerification });
+  const renderStep = () => {
+    if (register.step === 1) return <PersonalDataStep register={register} />;
+    if (register.step === 2) return <ParkingDataStep register={register} />;
+    return <DocumentStep register={register} />;
+  };
 
-  if (createdEmail) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <MailCheck className="mx-auto text-primary" size={42} />
-          <h1 className="mt-4 text-2xl font-bold text-slate-900">Registro completado</h1>
-          <p className="mt-3 text-slate-600">Guardamos tus datos, parqueadero y documento. Enviamos el enlace de verificación a {createdEmail}.</p>
-          <Button className="mt-6" variant="outline" isLoading={resend.isPending} onClick={() => resend.mutate(createdEmail)}>
-            Reenviar correo
-          </Button>
-          <p className="mt-5 text-sm text-slate-500">
-            Después de verificarlo, <Link className="font-bold text-primary" to="/login">inicia sesión</Link>.
-          </p>
-        </section>
-      </main>
-    );
-  }
+  return <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-sky-100 via-white to-blue-100 font-body text-slate-800">
+    <RegisterNav />
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <header className="mx-auto max-w-3xl text-center">
+        <p className="text-sm font-black uppercase tracking-[0.16em] text-primary">Registro de propietario</p>
+        <h1 className="mt-3 font-headline text-3xl font-black text-slate-950 sm:text-4xl lg:text-5xl">Registra tu parqueadero</h1>
+        <p className="mx-auto mt-4 max-w-2xl leading-7 text-slate-600">Crea tu cuenta de propietario y completa la información necesaria para registrar tu parqueadero.</p>
+        <p className="mt-2 text-sm font-bold text-slate-500">El proceso consta de tres pasos y el registro deberá completar la validación correspondiente.</p>
+      </header>
 
-  const personalFields = [
-    ['nombres', 'Nombres', 'text'],
-    ['apellidos', 'Apellidos', 'text'],
-    ['identificacion', 'Identificación', 'text'],
-    ['correo', 'Correo', 'email'],
-    ['confirmarCorreo', 'Repetir correo', 'email'],
-    ['password', 'Contraseña', 'password'],
-    ['confirmarPassword', 'Repetir contraseña', 'password'],
-  ];
+      <div className="mx-auto mt-10 max-w-3xl"><RegisterStepper step={register.step} maxStep={register.maxStep} errors={register.errors} onStep={register.goToStep} /></div>
+      {register.recovered && <div className="mt-7 flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950 sm:flex-row sm:items-center sm:justify-between"><p><strong>Recuperamos el progreso de tu registro.</strong> Por seguridad debes ingresar nuevamente la identificación, las contraseñas y el archivo.</p><button type="button" onClick={register.discardDraft} className="shrink-0 font-bold text-primary underline-offset-4 hover:underline">Descartar borrador</button></div>}
 
-  return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
-      <section className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <header className="border-b border-slate-200 px-6 py-7 sm:px-10">
-          <p className="text-sm font-bold uppercase tracking-wider text-sky-700">Registro de propietario</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Completa tu solicitud</h1>
-          <div className="mx-auto mt-7 max-w-2xl"><RegistrationStepper current={register.step} /></div>
-        </header>
-
-        <form
-          className="px-6 py-7 sm:px-10"
-          onSubmit={register.step === 1 ? register.continuePersonal : register.step === 2 ? register.continueParking : (event) => register.handleSubmit(event, () => setCreatedEmail(register.formData.correo))}
-        >
-          {register.step === 1 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Datos personales y acceso</h2>
-              <p className="mt-1 text-sm text-slate-600">Estos datos identificarán al propietario del parqueadero.</p>
-              <div className="mt-6 grid gap-x-5 md:grid-cols-2">
-                <label className="mb-4 block text-sm font-bold text-slate-700">
-                  Tipo de identificación
-                  <select name="tipoIdentificacion" value={register.formData.tipoIdentificacion} onChange={register.handleChange} className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4">
-                    <option value="">Selecciona</option>
-                    <option value="CEDULA">Cédula</option>
-                    <option value="RUC">RUC</option>
-                    <option value="PASAPORTE">Pasaporte</option>
-                  </select>
-                  {register.errors.tipoIdentificacion && <span className="mt-1 block text-xs text-red-600">{register.errors.tipoIdentificacion}</span>}
-                </label>
-                {personalFields.map(([name, label, type]) => (
-                  <Input key={name} name={name} label={label} type={type} value={register.formData[name]} onChange={register.handleChange} error={register.errors[name]} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {register.step === 2 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Datos del parqueadero</h2>
-              <p className="mt-1 text-sm text-slate-600">Completa la dirección y haz clic en el mapa para marcar la ubicación exacta.</p>
-              <div className="mt-6 grid gap-x-5 md:grid-cols-2">
-                <Input name="nombreParqueadero" label="Nombre del parqueadero" value={register.formData.nombreParqueadero} onChange={register.handleChange} error={register.errors.nombreParqueadero} />
-                <Input name="callePrincipal" label="Calle principal" value={register.formData.callePrincipal} onChange={register.handleChange} error={register.errors.callePrincipal} />
-                <Input name="calleSecundaria" label="Calle secundaria" value={register.formData.calleSecundaria} onChange={register.handleChange} />
-                <Input name="numeroLote" label="Número de lote" value={register.formData.numeroLote} onChange={register.handleChange} />
-              </div>
-              <div className="overflow-hidden rounded-xl border border-slate-300">
-                <div className="h-80">
-                  <MapContainer center={LOJA_CENTER} zoom={13} maxBounds={LOJA_BOUNDS} maxBoundsViscosity={1} className="h-full w-full">
-                    <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} />
-                    <LocationPicker position={register.formData} onChange={register.setLocation} />
-                  </MapContainer>
-                </div>
-              </div>
-              {register.errors.ubicacion && <p className="mt-2 text-sm text-red-600">{register.errors.ubicacion}</p>}
-              <p className="mt-2 text-sm text-slate-600">
-                {register.formData.latitud ? `Ubicación seleccionada: ${register.formData.latitud}, ${register.formData.longitud}` : 'Aún no has seleccionado una ubicación.'}
-              </p>
-            </div>
-          )}
-
-          {register.step === 3 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Documento habilitante</h2>
-              <p className="mt-1 text-sm text-slate-600">El archivo se almacenará de forma privada. Formatos permitidos: PDF, JPG o PNG; máximo 5 MB.</p>
-              <label className="mt-7 flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center hover:border-sky-500 hover:bg-sky-50">
-                <FileUp className="text-sky-700" size={36} />
-                <span className="mt-3 font-bold text-slate-800">Seleccionar documento</span>
-                <span className="mt-1 text-sm text-slate-500">{register.file?.name || 'Ningún archivo seleccionado'}</span>
-                <input className="sr-only" type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => register.handleFile(event.target.files?.[0] || null)} />
-              </label>
-              {register.errors.archivo && <p className="mt-2 text-sm text-red-600">{register.errors.archivo}</p>}
-              <div className="mt-6 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
-                <p><strong className="text-slate-800">Propietario:</strong> {register.formData.nombres} {register.formData.apellidos}</p>
-                <p className="mt-1"><strong className="text-slate-800">Parqueadero:</strong> {register.formData.nombreParqueadero}</p>
-              </div>
-            </div>
-          )}
-
-          {register.errors.formulario && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{register.errors.formulario}</p>}
-
-          <footer className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-between">
-            {register.step > 1 ? <Button variant="outline" onClick={register.previousStep}>Volver</Button> : <Link className="self-center text-sm font-bold text-sky-700" to="/login">Ya tengo una cuenta</Link>}
-            <Button type="submit" isLoading={register.isSaving}>
-              {register.step === 3 ? 'Finalizar registro' : 'Continuar'}
-            </Button>
-          </footer>
-        </form>
+      <section className="mt-8 min-w-0 rounded-[30px] border border-slate-100 bg-white p-5 shadow-[0_25px_60px_-15px_rgba(11,19,41,0.15)] sm:p-8 lg:p-12">
+          <form className="mt-9" onSubmit={register.step === 3 ? register.requestSubmit : register.continueStep} noValidate>
+            {register.errors.formulario && <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">{register.errors.formulario}</div>}
+            <div key={register.step} className="motion-safe:animate-[owner-view-enter_200ms_ease-out]">{renderStep()}</div>
+            <footer className="mt-9 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-between">
+              {register.step === 1
+                ? <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate('/login')}>Volver al inicio de sesión</Button>
+                : <Button variant="outline" className="w-full sm:w-auto" disabled={register.isSaving} onClick={register.previousStep}>Atrás</Button>}
+              <Button type="submit" className="w-full sm:w-auto" isLoading={register.isSaving} loadingLabel="Enviando solicitud...">{register.step === 3 ? 'Enviar solicitud' : 'Continuar'}</Button>
+            </footer>
+          </form>
       </section>
+      <p className="mt-8 text-center text-sm text-slate-600">¿Ya tienes una cuenta? <button type="button" onClick={() => navigate('/login')} className="font-black text-primary underline-offset-4 hover:underline">Inicia sesión</button></p>
     </main>
-  );
+
+    <RegisterDialog open={register.confirmOpen} closeable={!register.isSaving} onClose={register.closeConfirm} title="Confirmar envío" actions={<><Button variant="outline" onClick={register.closeConfirm} disabled={register.isSaving}>Seguir revisando</Button><Button onClick={register.confirmSubmit} isLoading={register.isSaving} loadingLabel="Enviando solicitud...">Enviar solicitud</Button></>}>
+      <p>Revisa que los datos y el documento sean correctos. Al finalizar, enviaremos un enlace para verificar tu correo.</p>
+      <p className="mt-3 rounded-xl bg-amber-50 p-3 text-amber-900">La solicitud pasará automáticamente a revisión administrativa después de verificar el correo.</p>
+    </RegisterDialog>
+
+    <RegisterDialog open={Boolean(register.success)} closeable={false} onClose={() => {}} title="Registro recibido" actions={<><Button variant="outline" onClick={() => navigate('/')}>Volver al inicio</Button><Button onClick={() => navigate('/login')}>Ir al inicio de sesión</Button></>}>
+      <div className="grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Check aria-hidden="true" size={25} /></div>
+      <p className="mt-4">Guardamos el registro de <strong>{register.success?.parqueadero}</strong>. Enviamos el enlace de verificación a <strong className="break-all">{register.success?.correo}</strong>.</p>
+      <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-4"><p className="font-bold text-sky-950">Estado inicial: verificación de correo pendiente</p><p className="mt-1 text-sky-900">Próximo paso: verifica el correo. Después, la solicitud quedará en revisión administrativa sin repetir los datos iniciales.</p></div>
+      <p className="mt-4 inline-flex items-center gap-2 text-slate-500"><LockKeyhole aria-hidden="true" size={17} /> No vuelvas a enviar el formulario.</p>
+    </RegisterDialog>
+  </div>;
 };

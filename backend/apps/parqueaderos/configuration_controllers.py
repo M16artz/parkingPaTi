@@ -9,10 +9,12 @@ from apps.parqueaderos.configuration_serializers_dto import (
     EspacioConfiguracionResponseDTO,
     EspacioEditarDTO,
     EspaciosLoteDTO,
+    EstadoOperativoPropietarioDTO,
 )
 from apps.parqueaderos.configuration_services import (
     ConfiguracionFinalService,
     GestionEspacioService,
+    EstadoOperativoPropietarioService,
 )
 from core.permissions import EsPropietario
 
@@ -37,6 +39,25 @@ class ConfiguracionFinalAPIView(APIView):
         dto = ConfiguracionFinalDTO(data=request.data)
         dto.is_valid(raise_exception=True)
         resultado = ConfiguracionFinalService.configurar(request.user, **dto.validated_data)
+        return Response(ConfiguracionFinalResponseDTO(resultado).data)
+
+
+class EstadoOperativoPropietarioAPIView(APIView):
+    permission_classes = [EsPropietario]
+    serializer_class = EstadoOperativoPropietarioDTO
+
+    @extend_schema(
+        operation_id="owner_operational_status_update",
+        request=EstadoOperativoPropietarioDTO,
+        responses=ConfiguracionFinalResponseDTO,
+    )
+    def patch(self, request):
+        dto = EstadoOperativoPropietarioDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        resultado = EstadoOperativoPropietarioService.cambiar(
+            request.user,
+            dto.validated_data["estado"],
+        )
         return Response(ConfiguracionFinalResponseDTO(resultado).data)
 
 

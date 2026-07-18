@@ -1,14 +1,14 @@
 import React from 'react';
 import { FileCheck2, LogOut, Users } from 'lucide-react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { authService } from '../../services/authService';
+import { NavLink, Outlet } from 'react-router-dom';
+import { useLogoutController } from '../../controllers/useLogoutController';
 
 const enlaceClase = ({ isActive }) => `flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold ${
   isActive ? 'border-sky-700 text-sky-800' : 'border-transparent text-slate-600 hover:text-slate-900'
 }`;
 
 export const AdminLayout = () => {
-  const navigate = useNavigate();
+  const logout = useLogoutController();
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
@@ -22,7 +22,7 @@ export const AdminLayout = () => {
             type="button"
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            onClick={async () => { await authService.logout(); navigate('/login', { replace: true }); }}
+            onClick={logout}
           >
             <LogOut size={20} />
           </button>

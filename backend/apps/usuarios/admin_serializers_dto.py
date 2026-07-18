@@ -13,7 +13,7 @@ class AdminSolicitudQueryDTO(serializers.Serializer):
 
 class AdminCuentaQueryDTO(serializers.Serializer):
     onboarding_estado = serializers.ChoiceField(choices=EstadoOnboarding.choices, required=False)
-    activo = serializers.BooleanField(required=False)
+    activo = serializers.BooleanField(required=False, allow_null=True, default=None)
     q = serializers.CharField(required=False, max_length=150, trim_whitespace=True)
 
 

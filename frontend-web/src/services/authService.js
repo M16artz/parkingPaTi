@@ -1,15 +1,16 @@
 import { apiClient, tokenStorage } from './apiClient';
+import { crearCredencialesLogin } from '../utils/authLogin';
 
 const TIPOS = { CEDULA: 'CI', CI: 'CI', RUC: 'RUC', PASAPORTE: 'PASAPORTE' };
 
 export const authService = {
   async register(formData) {
     const { data } = await apiClient.post('/auth/register/', {
-      nombre: formData.nombres,
-      apellido: formData.apellidos,
+      nombre: formData.nombres.trim(),
+      apellido: formData.apellidos.trim(),
       tipo_identificacion: TIPOS[formData.tipoIdentificacion],
       identificacion: formData.identificacion,
-      correo: formData.correo,
+      correo: formData.correo.trim().toLowerCase(),
       password: formData.password,
     });
     return data;
@@ -18,17 +19,17 @@ export const authService = {
   async registerComplete(formData, archivo) {
     const payload = new FormData();
     const fields = {
-      nombre: formData.nombres,
-      apellido: formData.apellidos,
+      nombre: formData.nombres.trim(),
+      apellido: formData.apellidos.trim(),
       tipo_identificacion: TIPOS[formData.tipoIdentificacion],
       identificacion: formData.identificacion,
-      correo: formData.correo,
+      correo: formData.correo.trim().toLowerCase(),
       password: formData.password,
-      nombre_parqueadero: formData.nombreParqueadero,
-      descripcion: formData.descripcion,
-      calle_principal: formData.callePrincipal,
-      calle_secundaria: formData.calleSecundaria,
-      numero_lote: formData.numeroLote,
+      nombre_parqueadero: formData.nombreParqueadero.trim(),
+      descripcion: formData.descripcion.trim(),
+      calle_principal: formData.callePrincipal.trim(),
+      calle_secundaria: formData.calleSecundaria.trim(),
+      numero_lote: formData.numeroLote.trim(),
       latitud: formData.latitud,
       longitud: formData.longitud,
     };
@@ -49,7 +50,10 @@ export const authService = {
   },
 
   async login({ correo, password }) {
-    const { data } = await apiClient.post('/auth/token/', { username: correo, password });
+    const { data } = await apiClient.post(
+      '/auth/token/',
+      crearCredencialesLogin({ correo, password }),
+    );
     tokenStorage.setAccess(data.access);
     return data;
   },
@@ -57,6 +61,10 @@ export const authService = {
   async me() {
     const { data } = await apiClient.get('/auth/me/');
     return data;
+  },
+
+  clearLocalSession() {
+    tokenStorage.clear();
   },
 
   async logout() {

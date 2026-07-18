@@ -9,6 +9,10 @@ export const ownerConfigurationService = {
     const { data } = await apiClient.put('/owner/configuration/', payload);
     return data;
   },
+  async cambiarEstadoOperativo(estado) {
+    const { data } = await apiClient.patch('/owner/operational-status/', { estado });
+    return data;
+  },
   async agregarEspacios(cantidad) {
     const { data } = await apiClient.post('/owner/spaces/bulk/', { cantidad });
     return data;

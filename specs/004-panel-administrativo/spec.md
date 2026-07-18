@@ -10,11 +10,11 @@ Permitir a administradores revisar solicitudes/cuentas y ejecutar decisiones con
 - Datos personales, documento privado y marcador.
 - Aprobar y rechazar con confirmación; motivo obligatorio al rechazar.
 - Deshabilitar cuenta y ocultar parqueadero.
+- Rehabilitar una cuenta deshabilitada y restaurar el paso de onboarding coherente.
 - Correo de resultado sin revertir la decisión si falla.
 
 ## No incluye
 
-- Rehabilitación de cuentas, excluida por DP-06.
 - Configuración de espacios/tarifas.
 
 ## Criterios de aceptación

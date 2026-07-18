@@ -155,3 +155,13 @@ class AdminCuentaDeshabilitarAPIView(APIView):
     def post(self, request, cuenta_id):
         cuenta = AdminService.deshabilitar(request.user, cuenta_id)
         return Response(_respuesta_accion(cuenta, "Cuenta deshabilitada."))
+
+
+class AdminCuentaRehabilitarAPIView(APIView):
+    permission_classes = [EsAdministrador]
+    serializer_class = AdminAccionResponseDTO
+
+    @extend_schema(operation_id="admin_accounts_enable", request=None, responses=AdminAccionResponseDTO)
+    def post(self, request, cuenta_id):
+        cuenta = AdminService.rehabilitar(request.user, cuenta_id)
+        return Response(_respuesta_accion(cuenta, "Cuenta rehabilitada."))

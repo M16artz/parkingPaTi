@@ -15,6 +15,8 @@
 4. Implementar wizard web por pasos reanudables.
 5. Integrar selector Leaflet limitado por DP-01.
 6. Añadir envío y estado pendiente.
+7. Reconciliar el registro completo: parqueadero/documento pendientes y transición directa a revisión después de verificar correo.
+8. Unificar el acceso por `correo`, sincronizar `email` y dirigir el primer login aprobado a la configuración final.
 
 ## Dependencias
 

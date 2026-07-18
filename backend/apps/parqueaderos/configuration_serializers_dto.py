@@ -3,7 +3,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from apps.horarios.models import DiasSemana, HorarioAtencion
-from apps.parqueaderos.models import Espacio, EstadoEspacio
+from apps.parqueaderos.models import Espacio, EstadoEspacio, EstadoOperativo, EstadoOperativoManual
 from apps.tarifas.models import CategoriaTarifa, TipoCategoriaTarifa
 
 
@@ -94,6 +94,7 @@ class ConfiguracionFinalResponseDTO(serializers.Serializer):
     configuracion_completa = serializers.BooleanField()
     onboarding_estado = serializers.CharField()
     estado_operativo = serializers.CharField()
+    estado_operativo_manual = serializers.CharField(allow_null=True)
     total_espacios = serializers.IntegerField()
     espacios_disponibles = serializers.IntegerField()
     horarios = HorarioConfiguracionResponseDTO(many=True)
@@ -103,6 +104,12 @@ class ConfiguracionFinalResponseDTO(serializers.Serializer):
 
 class EspaciosLoteDTO(serializers.Serializer):
     cantidad = serializers.IntegerField(min_value=1, max_value=100)
+
+
+class EstadoOperativoPropietarioDTO(serializers.Serializer):
+    estado = serializers.ChoiceField(
+        choices=[EstadoOperativo.ABIERTO, *EstadoOperativoManual.values],
+    )
 
 
 class EspacioEditarDTO(serializers.Serializer):

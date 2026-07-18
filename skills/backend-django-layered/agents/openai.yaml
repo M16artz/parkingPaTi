@@ -1,4 +1,0 @@
-interface:
-  display_name: "Backend Django por capas"
-  short_description: "Implementar Django respetando capas"
-  default_prompt: "Aplica la arquitectura backend modular de ParkingPaTi."

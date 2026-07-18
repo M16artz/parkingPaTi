@@ -8,6 +8,7 @@ from apps.parqueaderos.configuration_controllers import (
     EspacioConfiguracionAPIView,
     EspacioReactivarAPIView,
     EspaciosLoteAPIView,
+    EstadoOperativoPropietarioAPIView,
 )
 from apps.parqueaderos.controllers import EspacioViewSet, ParqueaderoViewSet
 from apps.parqueaderos.public_controllers import (
@@ -27,6 +28,11 @@ urlpatterns = router.urls
 
 owner_configuration_urlpatterns = [
     path("configuration/", ConfiguracionFinalAPIView.as_view(), name="owner_configuration"),
+    path(
+        "operational-status/",
+        EstadoOperativoPropietarioAPIView.as_view(),
+        name="owner_operational_status",
+    ),
     path("spaces/bulk/", EspaciosLoteAPIView.as_view(), name="owner_spaces_bulk"),
     path(
         "spaces/<int:espacio_id>/",

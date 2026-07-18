@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Navigate, Outlet } from 'react-router-dom';
 import { authService } from '../../../services/authService';
-import { esSesionAdministradora } from '../../../utils/adminAccess';
+import { destinoSesion, esSesionAdministradora } from '../../../utils/adminAccess';
 
 export const AdminRoute = () => {
   const session = useQuery({
@@ -16,6 +16,6 @@ export const AdminRoute = () => {
     return <main className="min-h-screen grid place-items-center bg-slate-50">Validando sesión...</main>;
   }
   if (session.isError) return <Navigate to="/login" replace />;
-  if (!esSesionAdministradora(session.data)) return <Navigate to="/owner/onboarding" replace />;
+  if (!esSesionAdministradora(session.data)) return <Navigate to={destinoSesion(session.data)} replace />;
   return <Outlet />;
 };

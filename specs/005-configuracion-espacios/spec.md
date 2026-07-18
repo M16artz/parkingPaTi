@@ -22,6 +22,7 @@ Completar la configuración final del parqueadero y reparar la gestión integral
 ## Criterios de aceptación
 
 - Propietario aprobado no activa parqueadero sin configuración final.
+- El primer login en `CONFIGURACION_PENDIENTE` dirige a configuración y, al guardarla correctamente, cambia a `ACTIVO` y dirige al dashboard del propietario.
 - Operación masiva no deja parciales.
 - Conteos y estado agregado coinciden con espacios activos.
 - No se elimina físicamente desde la API.

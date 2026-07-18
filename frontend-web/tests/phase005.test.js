@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
   crearFormularioConfiguracion,
@@ -11,6 +12,7 @@ import {
 } from '../src/utils/ownerConfiguration.js';
 import { extraerErroresApi } from '../src/utils/apiError.js';
 import { destinoSesion } from '../src/utils/adminAccess.js';
+import { crearCredencialesLogin } from '../src/utils/authLogin.js';
 import {
   calcularOcupacion,
   obtenerHorarioHoy,
@@ -22,6 +24,17 @@ test('propietario aprobado entra a configuracion final obligatoria', () => {
   assert.equal(
     destinoSesion({ rol: 'PROPIETARIO', onboarding_estado: 'CONFIGURACION_PENDIENTE' }),
     '/owner/configuration',
+  );
+});
+
+test('login usa correo normalizado y dirige segun el estado de onboarding', () => {
+  assert.deepEqual(
+    crearCredencialesLogin({ correo: ' Propietaria@Example.Invalid ', password: 'secreta' }),
+    { correo: 'propietaria@example.invalid', password: 'secreta' },
+  );
+  assert.equal(
+    destinoSesion({ rol: 'PROPIETARIO', onboarding_estado: 'ACTIVO' }),
+    '/owner/dashboard',
   );
 });
 
@@ -100,4 +113,18 @@ test('precio cero no es positivo y errores anidados de API son legibles', () => 
     response: { data: { fields: { horarios: [{ non_field_errors: ['Horario inválido.'] }] } } },
   });
   assert.equal(errores.horarios, 'Horario inválido.');
+});
+
+test('inicio del propietario permite cierre manual y retorno al cálculo automático', async () => {
+  const [dashboard, home, service] = await Promise.all([
+    readFile(new URL('../src/views/owner/OwnerDashboardView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/components/owner/OwnerHome.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/services/ownerConfigurationService.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(home, /owner-operational-status/);
+  assert.match(home, /ABIERTO/);
+  assert.match(home, /CERRADO/);
+  assert.match(home, /FUERA_DE_SERVICIO/);
+  assert.match(dashboard, /type: 'status'/);
+  assert.match(service, /\/owner\/operational-status\//);
 });

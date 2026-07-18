@@ -9,6 +9,8 @@ Entregar consulta anónima de parqueaderos de Loja y reemplazar completamente We
 - Endpoint bbox y detalle público.
 - Solo parqueaderos aprobados, configurados y activos.
 - Mapa/lista/detalle web.
+- Experiencia anonima en `/parqueaderos` con busqueda local, filtros,
+  geolocalizacion voluntaria, distancias y espacios activos de solo lectura.
 - React Query cada 5 s con pausa en background.
 - Retiro de Consumers, Channels, Redis y clientes WebSocket.
 
@@ -23,6 +25,7 @@ Entregar consulta anónima de parqueaderos de Loja y reemplazar completamente We
 - Bbox inválido/fuera de Loja se valida.
 - No quedan rutas/imports/dependencias WebSocket.
 - Marcadores vienen de Django/PostgreSQL.
+- No se muestran ubicaciones, precios, estados ni imagenes simulados.
 
 ## Decisiones aplicadas
 

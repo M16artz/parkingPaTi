@@ -1,4 +1,0 @@
-interface:
-  display_name: "Móvil Expo React Native"
-  short_description: "Integrar cliente móvil público de ParkingPaTi"
-  default_prompt: "Implementa el cliente móvil anónimo según la fase activa."

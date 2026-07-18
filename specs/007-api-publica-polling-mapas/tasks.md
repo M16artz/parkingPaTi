@@ -1,6 +1,6 @@
 # Tareas de fase 007
 
-Estado: completada (14/14). Evidencia: `evidence.md`.
+Estado: completada (17/17). Evidencia: `evidence.md`.
 
 - [x] `docs` Confirmar DP-01 y estado de DP-12.
 - [x] `backend` Implementar repository bbox con índices y filtros públicos.
@@ -16,3 +16,9 @@ Estado: completada (14/14). Evidencia: `evidence.md`.
 - [x] `infra` Retirar Redis de disponibilidad/deploy.
 - [x] `tests` Probar bbox, visibilidad, polling y carga básica.
 - [x] `docs` Actualizar ADR/arquitectura/OpenAPI tras retiro.
+- [x] `backend` Exponer tarifa normal y espacios activos de solo lectura sin
+  datos de propietario, vehiculo o estancia.
+- [x] `web` Publicar `/parqueaderos` con busqueda, filtros, geolocalizacion
+  voluntaria, distancia, navegacion externa y modal accesible.
+- [x] `tests` Cubrir estados publicos, tarifa aplicada, filtros, distancias,
+  horarios, rutas y ausencia de datos simulados.

@@ -1,9 +1,13 @@
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.estancias.models import Estancia
 from apps.horarios.models import HorarioAtencion
 from apps.parqueaderos.models import (
     Direccion,
+    Espacio,
+    EstadoEspacio,
     EstadoHabilitacion,
     EstadoOperativo,
     Parqueadero,
@@ -89,13 +93,21 @@ def test_listado_anonimo_filtra_bbox_y_visibilidad():
     crear_parqueadero(704, habilitacion=EstadoHabilitacion.PENDIENTE)
     crear_parqueadero(705, configurado=False)
     crear_parqueadero(706, estado=EstadoOperativo.INACTIVO)
-    crear_parqueadero(707, estado=EstadoOperativo.FUERA_DE_SERVICIO)
+    fuera_servicio = crear_parqueadero(707, estado=EstadoOperativo.FUERA_DE_SERVICIO)
     crear_parqueadero(708, cuenta_activa=False)
 
     respuesta = APIClient().get(PUBLIC_URL, {"bbox": LOJA_BBOX})
     assert respuesta.status_code == 200
-    assert {item["id"] for item in respuesta.data["results"]} == {visible.id, cerrado.id}
-    assert {item["status"] for item in respuesta.data["results"]} == {"OPEN", "CLOSED"}
+    assert {item["id"] for item in respuesta.data["results"]} == {
+        visible.id,
+        cerrado.id,
+        fuera_servicio.id,
+    }
+    assert {item["status"] for item in respuesta.data["results"]} == {
+        "OPEN",
+        "CLOSED",
+        "OUT_OF_SERVICE",
+    }
     item = next(item for item in respuesta.data["results"] if item["id"] == visible.id)
     assert item["latitude"] == pytest.approx(-3.99)
     assert item["longitude"] == pytest.approx(-79.2)
@@ -123,9 +135,9 @@ def test_consulta_repite_disponibilidad_actual_sin_cache_backend():
     assert segunda.data["results"][0]["available_spaces"] == 2
 
 
-def test_detalle_publico_expone_horarios_y_tarifas_sin_espacios():
+def test_detalle_publico_expone_horarios_tarifas_y_espacios_solo_lectura():
     parqueadero = crear_parqueadero(709, estado=EstadoOperativo.LLENO)
-    CategoriaTarifa.objects.create(
+    normal = CategoriaTarifa.objects.create(
         parqueadero=parqueadero,
         codigo=TipoCategoriaTarifa.NORMAL,
         nombre_visible="Normal",
@@ -144,13 +156,44 @@ def test_detalle_publico_expone_horarios_y_tarifas_sin_espacios():
         hora_apertura="08:00",
         hora_cierre="18:00",
     )
+    libre = Espacio.objects.create(
+        parqueadero=parqueadero,
+        nombre="E001",
+        estado=EstadoEspacio.LIBRE,
+        tarifa_predeterminada=normal,
+    )
+    ocupado = Espacio.objects.create(
+        parqueadero=parqueadero,
+        nombre="E002",
+        estado=EstadoEspacio.OCUPADO,
+        tarifa_predeterminada=normal,
+    )
+    Espacio.objects.create(
+        parqueadero=parqueadero,
+        nombre="ELIMINADO",
+        estado=EstadoEspacio.INHABILITADO,
+        tarifa_predeterminada=normal,
+        is_active=False,
+    )
+    Estancia.objects.create(
+        espacio=ocupado,
+        tarifa=normal,
+        tarifa_tipo_snapshot=TipoCategoriaTarifa.DESCUENTO,
+        precio_hora_snapshot="0.75",
+        inicio=timezone.now(),
+    )
 
     respuesta = APIClient().get(f"{PUBLIC_URL}{parqueadero.id}/")
     assert respuesta.status_code == 200
     assert respuesta.data["status"] == "FULL"
+    assert respuesta.data["normal_rate"] == "1.25"
     assert [rate["code"] for rate in respuesta.data["rates"]] == ["NORMAL"]
     assert respuesta.data["schedules"][0]["day"] == "LUNES"
-    assert "espacios" not in respuesta.data
+    assert [space["name"] for space in respuesta.data["spaces"]] == [libre.nombre, ocupado.nombre]
+    assert respuesta.data["spaces"][0]["status"] == "FREE"
+    assert respuesta.data["spaces"][1]["status"] == "OCCUPIED"
+    assert respuesta.data["spaces"][1]["rate_code"] == "DESCUENTO"
+    assert respuesta.data["spaces"][1]["price_per_hour"] == "0.75"
     assert "propietario" not in respuesta.data
 
 

@@ -218,6 +218,41 @@ def test_matriz_conteos_y_estado_agregado():
     assert parqueadero.estado_operativo == EstadoOperativo.INACTIVO
 
 
+def test_propietario_controla_cierre_manual_y_retorna_a_estado_automatico():
+    cuenta, parqueadero = crear_propietario(11)
+    configurar(cuenta, 2)
+    api = APIClient()
+    api.force_authenticate(cuenta)
+
+    cerrado = api.patch(
+        "/api/v1/owner/operational-status/",
+        {"estado": "CERRADO"},
+        format="json",
+    )
+    assert cerrado.status_code == 200
+    assert cerrado.data["estado_operativo"] == EstadoOperativo.CERRADO
+    assert cerrado.data["estado_operativo_manual"] == EstadoOperativo.CERRADO
+
+    espacio = Espacio.objects.filter(parqueadero=parqueadero).first()
+    GestionEspacioService.editar(cuenta, espacio.id, estado=EstadoEspacio.INHABILITADO)
+    parqueadero.refresh_from_db()
+    assert parqueadero.estado_operativo == EstadoOperativo.CERRADO
+
+    automatico = api.patch(
+        "/api/v1/owner/operational-status/",
+        {"estado": "ABIERTO"},
+        format="json",
+    )
+    assert automatico.status_code == 200
+    assert automatico.data["estado_operativo"] == EstadoOperativo.ABIERTO
+    assert automatico.data["estado_operativo_manual"] is None
+    assert api.patch(
+        "/api/v1/owner/operational-status/",
+        {"estado": "LLENO"},
+        format="json",
+    ).status_code == 400
+
+
 def test_no_se_puede_ocupar_directamente_ni_borrar_con_estancia_activa():
     cuenta, parqueadero = crear_propietario(8)
     configurar(cuenta, 1)

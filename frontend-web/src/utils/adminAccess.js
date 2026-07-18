@@ -6,3 +6,8 @@ export const destinoSesion = (sesion) => {
   if (sesion?.onboarding_estado === 'ACTIVO') return '/owner/dashboard';
   return '/owner/onboarding';
 };
+
+export const redireccionRutaPropietario = (sesion, rutaActual) => {
+  const destino = destinoSesion(sesion);
+  return rutaActual === destino ? null : destino;
+};
