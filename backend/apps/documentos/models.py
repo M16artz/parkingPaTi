@@ -15,7 +15,7 @@ class DocumentoHabilitacion(models.Model):
         related_name="documento_habilitacion",
     )
     drive_file_id = models.CharField(max_length=255, unique=True)
-    drive_web_view_link = models.URLField(max_length=500)
+    drive_web_view_link = models.URLField(max_length=500, blank=True, default="")
     nombre_archivo = models.CharField(max_length=255)
     nombre_original = models.CharField(max_length=255)
     mime_type = models.CharField(max_length=100)

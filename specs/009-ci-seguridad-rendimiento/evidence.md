@@ -29,3 +29,7 @@ Antes de reintentar fase 009 debe cerrarse fase 008 con evidencia de:
 
 DP-12 continúa pendiente, pero no es el bloqueo inmediato para iniciar 009. No
 se asumirá un proveedor productivo de tiles durante el desbloqueo.
+
+El 2026-07-13 se autorizó una excepción limitada para preparar staging mínimo
+de fase 008. Esta excepción no inicia fase 009; el bloqueo permanece hasta que
+el smoke Android cierre fase 008 con evidencia.

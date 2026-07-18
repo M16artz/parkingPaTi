@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -23,6 +24,7 @@ from apps.usuarios.serializers_dto import (
     MensajeDTO,
     ReenviarVerificacionDTO,
     RegistroDTO,
+    RegistroCompletoDTO,
     RegistroResponseDTO,
     VerificarCorreoDTO,
     VerificarCorreoResponseDTO,
@@ -118,6 +120,37 @@ class RegistroAPIView(APIView):
                 "cuenta": CuentaDetalleDTO(cuenta).data,
                 "email_enviado": email_enviado,
                 "detail": "Cuenta creada. Revisa tu correo para verificarla.",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class RegistroCompletoAPIView(APIView):
+    """Crea cuenta, parqueadero y documento al finalizar el stepper publico."""
+
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+    serializer_class = RegistroCompletoDTO
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
+
+    @extend_schema(request=RegistroCompletoDTO, responses={201: RegistroResponseDTO})
+    def post(self, request):
+        dto = RegistroCompletoDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        cuenta, email_enviado = RegistroService.registrar_completo(
+            datos_persona=dto.to_datos_persona(),
+            datos_cuenta=dto.to_datos_cuenta(),
+            datos_parqueadero=dto.to_parqueadero_datos(),
+            datos_direccion=dto.to_direccion_datos(),
+            datos_ubicacion=dto.to_ubicacion_datos(),
+            archivo=dto.validated_data["archivo"],
+        )
+        return Response(
+            {
+                "cuenta": CuentaDetalleDTO(cuenta).data,
+                "email_enviado": email_enviado,
+                "detail": "Registro completado. Revisa tu correo para verificar la cuenta.",
             },
             status=status.HTTP_201_CREATED,
         )

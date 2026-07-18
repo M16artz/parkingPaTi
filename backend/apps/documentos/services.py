@@ -8,7 +8,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 
 from apps.documentos.models import EstadoDocumento
 from apps.documentos.repositories import DocumentoRepository
-from apps.documentos.storage_backends import GoogleDriveStorage
+from apps.documentos.storage_backends import LocalPrivateStorage, get_document_storage
 from apps.usuarios.models import EstadoOnboarding
 from core.permissions import es_administrador
 
@@ -56,7 +56,7 @@ class DocumentoService:
         }:
             raise ValidationError("El documento no puede modificarse en el estado actual.")
 
-        storage = storage or GoogleDriveStorage()
+        storage = storage or get_document_storage()
         nombre_seguro = nombre_drive_privado(cuenta, archivo.name)
         nuevo = storage.upload(nombre_seguro, archivo)
         anterior_id = None
@@ -89,7 +89,7 @@ class DocumentoService:
 
         if anterior_id:
             try:
-                storage.delete(anterior_id)
+                get_document_storage(anterior_id).delete(anterior_id)
             except Exception:
                 logger.exception("No se pudo retirar la version anterior de un documento")
         return documento
@@ -126,13 +126,22 @@ class DocumentoService:
             EstadoOnboarding.RECHAZADO,
         }:
             raise ValidationError("El documento no puede eliminarse en el estado actual.")
-        storage = storage or GoogleDriveStorage()
+        storage = storage or get_document_storage(documento.drive_file_id)
         try:
             storage.delete(documento.drive_file_id)
         except Exception as exc:
             logger.exception("No se pudo eliminar un documento de Drive")
             raise ValidationError("No se pudo eliminar el archivo del almacenamiento.") from exc
         DocumentoRepository.eliminar(documento)
+
+    @staticmethod
+    def abrir_documento_local(documento):
+        if not documento.drive_file_id.startswith(LocalPrivateStorage.PREFIX):
+            raise ValidationError("El documento no esta almacenado localmente.")
+        try:
+            return get_document_storage(documento.drive_file_id).open(documento.drive_file_id)
+        except FileNotFoundError as exc:
+            raise NotFound("El archivo privado no se encuentra en el almacenamiento.") from exc
 
     @staticmethod
     def _verificar_permiso(documento, cuenta_solicitante):

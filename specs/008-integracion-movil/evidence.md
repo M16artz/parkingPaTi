@@ -61,3 +61,64 @@ Cuando exista la URL, se configurará únicamente en un entorno local ignorado o
 en el gestor del entorno de build; no se versionará un valor real en el
 repositorio. Solo después de adjuntar evidencia de estas validaciones podrá
 marcarse el smoke en `tasks.md` y declararse completada la fase.
+
+## Preparación mínima de staging autorizada
+
+Miguel Armas autorizó preparar Django + PostgreSQL de staging únicamente para
+cerrar el smoke de fase 008, sin ejecutar ni cerrar fase 010.
+
+Preparación versionada:
+
+- `render.yaml`: Blueprint sin secretos para Django en Render.
+- `backend/.python-version`: Python 3.13 aprobado.
+- Settings de producción: HTTPS detrás del proxy y SSL PostgreSQL configurable.
+- `docs/qa/mobile-staging-smoke.md`: creación externa y procedimiento de smoke.
+
+Esto no cierra el bloqueo: aún deben crearse Supabase/Render, cargar variables
+reales externamente, disponer datos visibles y ejecutar Android con Node 22.
+
+Verificaciones de la preparación:
+
+```text
+pytest -q (desde backend/): 56 passed
+pytest test_production_settings.py + test_health.py: 3 passed
+manage.py check con settings production: 0 issues
+makemigrations --check --dry-run: no changes
+render.yaml: YAML válido; variables sync:false sin valores
+```
+
+`manage.py check --deploy` informó HSTS aún no configurado y clave de diagnóstico
+insuficiente. La clave fue deliberadamente inerte; Render genera la real. HSTS
+queda como riesgo de hardening, sin asumir su política antes de fase 009/010.
+
+Una primera invocación de Pytest desde la raíz no cargó `backend/pytest.ini` y
+falló durante collection. Al repetir el comando reproducible desde `backend/`,
+la suite completa pasó; no fue un fallo de código.
+
+## Preparación local para validación de usabilidad (2026-07-15)
+
+- Vite dispone de proxy local `/api` y `/health` hacia Django, configurable con
+  `VITE_DEV_API_TARGET` y sin IP privada versionada.
+- `scripts/setup-local.cmd` valida Node 22/Python 3.13, recrea el venv roto,
+  instala lockfiles y migra PostgreSQL sin crear `.env`.
+- `scripts/start-local.cmd` inicia Django y web en una sola consola y detiene
+  ambos procesos con `Ctrl+C`.
+- README raíz/web/móvil diferencia la validación web de Expo Go y conserva el
+  requisito móvil de staging HTTPS.
+
+Resultados reales:
+
+```text
+frontend-web: 14 tests PASS; lint PASS; build PASS.
+Vite proxy /health -> Django local :8017: PASS {"status":"ok"}.
+frontend-movil: Expo 54.0.36 compatible; typecheck PASS; 3 suites/10 tests
+PASS; export Android PASS (1102 módulos, 3.1 MB).
+Django temporal: manage.py check PASS; makemigrations --check PASS.
+Backend pytest: bloqueado en esta sesión porque PostgreSQL local exige una
+contraseña y no existe backend/.env configurado para el proceso de validación.
+```
+
+El `backend/venv` local no se pudo completar mientras seguía activo un servidor
+Django preexistente en `localhost:8017` (PID observado: 81672), que bloqueó DLL y
+archivos `.pyd` en Windows. El script ahora detecta procesos que usan ese venv y
+exige cerrarlos antes de recrearlo; no se detuvo el proceso del usuario.

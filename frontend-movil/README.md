@@ -26,6 +26,12 @@ npm.cmd run check:expo
 npm.cmd start
 ```
 
+`npm.cmd start` inicia Metro y muestra el QR para Expo Go. Expo Go ejecuta este
+cliente móvil, no `frontend-web`. El teléfono y el equipo deben compartir red;
+si la red bloquea LAN puede usarse `npx.cmd expo start --tunnel`, con una carga
+más lenta. La API configurada sigue siendo el staging HTTPS exigido por la
+fase: el túnel de Metro no convierte un Django local en backend público.
+
 La app consulta lista bbox y detalle en Django, valida el JSON contra los tipos
 de `docs/openapi.yaml` y refresca cada 5 segundos solo con pantalla y app
 activas. Los estados de carga, error, vacío, retry y desconexión son visibles.

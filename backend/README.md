@@ -56,6 +56,10 @@ La API se publica bajo `/api/v1/`; OpenAPI esta disponible en
 - El refresh web reside en cookie HttpOnly; nombre, `Secure` y `SameSite` se
   controlan con las variables `JWT_*` de la plantilla.
 - Los limites `LOJA_*` de la plantilla corresponden a DP-01.
+- Staging Render usa `config.settings.production`, respeta HTTPS del proxy y
+  puede exigir SSL PostgreSQL mediante `DB_SSL_REQUIRE=True`.
+- El Blueprint mínimo de fase 008 está en `render.yaml`; sus variables marcadas
+  `sync: false` se completan solo en Render.
 
 ## Flujo de onboarding
 

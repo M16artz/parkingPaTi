@@ -15,6 +15,29 @@ export const authService = {
     return data;
   },
 
+  async registerComplete(formData, archivo) {
+    const payload = new FormData();
+    const fields = {
+      nombre: formData.nombres,
+      apellido: formData.apellidos,
+      tipo_identificacion: TIPOS[formData.tipoIdentificacion],
+      identificacion: formData.identificacion,
+      correo: formData.correo,
+      password: formData.password,
+      nombre_parqueadero: formData.nombreParqueadero,
+      descripcion: formData.descripcion,
+      calle_principal: formData.callePrincipal,
+      calle_secundaria: formData.calleSecundaria,
+      numero_lote: formData.numeroLote,
+      latitud: formData.latitud,
+      longitud: formData.longitud,
+    };
+    Object.entries(fields).forEach(([key, value]) => payload.append(key, value ?? ''));
+    payload.append('archivo', archivo);
+    const { data } = await apiClient.post('/auth/register/complete/', payload);
+    return data;
+  },
+
   async verifyEmail(token) {
     const { data } = await apiClient.post('/auth/verify-email/', { token });
     return data;

@@ -2,6 +2,7 @@ import hashlib
 import logging
 import secrets
 from datetime import timedelta
+from pathlib import Path
 
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
@@ -12,6 +13,11 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.documentos.models import EstadoDocumento
+from apps.documentos.repositories import DocumentoRepository
+from apps.documentos.services import nombre_drive_privado
+from apps.documentos.storage_backends import get_document_storage
+from apps.parqueaderos.repositories import ParqueaderoRepository
 from apps.usuarios.email_adapters import GmailSmtpEmailAdapter
 from apps.usuarios.models import EstadoOnboarding, TipoRol
 from apps.usuarios.repositories import (
@@ -81,6 +87,68 @@ class RegistroService:
                 persona=persona,
                 rol=nombre_rol,
             )
+
+        email_enviado = VerificacionCorreoService.emitir(cuenta, email_adapter=email_adapter)
+        return cuenta, email_enviado
+
+    @staticmethod
+    def registrar_completo(
+        datos_persona,
+        datos_cuenta,
+        datos_parqueadero,
+        datos_direccion,
+        datos_ubicacion,
+        archivo,
+        storage=None,
+        email_adapter=None,
+    ):
+        from core.geo import validar_coordenadas_loja
+
+        if CuentaRepository.existe_username_o_correo(
+            datos_cuenta["username"], datos_cuenta["correo"]
+        ):
+            raise ValidationError("El nombre de usuario o el correo ya estÃ¡n registrados.")
+        if PersonaRepository.obtener_por_identificacion(datos_persona["identificacion"]):
+            raise ValidationError("Ya existe una persona registrada con esa identificaciÃ³n.")
+
+        validar_coordenadas_loja(datos_ubicacion["latitud"], datos_ubicacion["longitud"])
+        storage = storage or get_document_storage()
+        nuevo_archivo = None
+        try:
+            with transaction.atomic():
+                persona = PersonaRepository.crear(**datos_persona)
+                cuenta = CuentaRepository.crear(
+                    username=datos_cuenta["username"],
+                    correo=datos_cuenta["correo"],
+                    password=datos_cuenta["password"],
+                    persona=persona,
+                    rol=TipoRol.PROPIETARIO,
+                )
+                ParqueaderoRepository.crear(
+                    cuenta,
+                    datos_direccion,
+                    datos_ubicacion,
+                    **datos_parqueadero,
+                )
+                nombre_seguro = nombre_drive_privado(cuenta, archivo.name)
+                nuevo_archivo = storage.upload(nombre_seguro, archivo)
+                DocumentoRepository.crear(
+                    cuenta=cuenta,
+                    drive_file_id=nuevo_archivo.file_id,
+                    drive_web_view_link=nuevo_archivo.web_view_link,
+                    nombre_archivo=nombre_seguro,
+                    nombre_original=Path(archivo.name).name,
+                    mime_type=archivo.content_type,
+                    size_bytes=archivo.size,
+                    estado=EstadoDocumento.PENDIENTE,
+                )
+        except Exception:
+            if nuevo_archivo is not None:
+                try:
+                    storage.delete(nuevo_archivo.file_id)
+                except Exception:
+                    logger.exception("No se pudo compensar el documento del registro completo")
+            raise
 
         email_enviado = VerificacionCorreoService.emitir(cuenta, email_adapter=email_adapter)
         return cuenta, email_enviado

@@ -12,7 +12,7 @@ def env_list(name, default=""):
 
 
 def postgres_database_config(default_name="", default_user="", default_host=""):
-    return {
+    config = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME", default_name),
         "USER": os.getenv("DB_USER", default_user),
@@ -21,6 +21,9 @@ def postgres_database_config(default_name="", default_user="", default_host=""):
         "PORT": os.getenv("DB_PORT", "5432"),
         "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "0")),
     }
+    if os.getenv("DB_SSL_REQUIRE", "False").lower() in {"1", "true", "yes"}:
+        config["OPTIONS"] = {"sslmode": "require"}
+    return config
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
@@ -123,6 +126,12 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in {"1", "true", "yes
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "")
 EMAIL_VERIFICATION_TTL_SECONDS = int(os.getenv("EMAIL_VERIFICATION_TTL_SECONDS", "86400"))
+
+_default_document_storage = "local" if os.getenv("DJANGO_SETTINGS_MODULE", "").endswith(".development") else "drive"
+PRIVATE_DOCUMENT_STORAGE = os.getenv("PRIVATE_DOCUMENT_STORAGE", _default_document_storage)
+PRIVATE_DOCUMENT_ROOT = Path(
+    os.getenv("PRIVATE_DOCUMENT_ROOT", str(BASE_DIR / "private_documents"))
+).resolve()
 
 CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')
 CORS_ALLOW_CREDENTIALS = True

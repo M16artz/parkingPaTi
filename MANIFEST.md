@@ -62,6 +62,8 @@ Los ADR históricos vacíos `001-008` se conservan; no son decisiones operativas
 - `docs/qa/definition-of-done.md`: terminado por tarea/fase.
 - `docs/qa/test-strategy.md`: pirámide y seguridad/rendimiento.
 - `docs/qa/acceptance-final.md`: flujo y escenarios finales.
+- `docs/qa/mobile-staging-smoke.md`: procedimiento externo para cerrar el smoke
+  Android de fase 008 sin ejecutar fase 010.
 
 ## Fases
 

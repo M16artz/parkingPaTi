@@ -6,6 +6,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.documentos.serializers_dto import DocumentoEscrituraDTO
 from apps.usuarios.models import Cuenta, EstadoOnboarding, Persona, TipoIdentificacion, TipoRol
 
 
@@ -129,6 +130,41 @@ class RegistroDTO(serializers.Serializer):
             "username": correo,
             "correo": correo,
             "password": self.validated_data["password"],
+        }
+
+
+class RegistroCompletoDTO(RegistroDTO):
+    nombre_parqueadero = serializers.CharField(max_length=150)
+    descripcion = serializers.CharField(required=False, allow_blank=True)
+    calle_principal = serializers.CharField(max_length=200)
+    calle_secundaria = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    numero_lote = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    latitud = serializers.DecimalField(max_digits=9, decimal_places=6)
+    longitud = serializers.DecimalField(max_digits=9, decimal_places=6)
+    archivo = serializers.FileField(write_only=True)
+
+    def validate_archivo(self, value):
+        documento = DocumentoEscrituraDTO(data={"archivo": value})
+        documento.is_valid(raise_exception=True)
+        return documento.validated_data["archivo"]
+
+    def to_parqueadero_datos(self):
+        return {
+            "nombre": self.validated_data["nombre_parqueadero"],
+            "descripcion": self.validated_data.get("descripcion", ""),
+        }
+
+    def to_direccion_datos(self):
+        return {
+            "calle_principal": self.validated_data["calle_principal"],
+            "calle_secundaria": self.validated_data.get("calle_secundaria", ""),
+            "numero_lote": self.validated_data.get("numero_lote", ""),
+        }
+
+    def to_ubicacion_datos(self):
+        return {
+            "latitud": self.validated_data["latitud"],
+            "longitud": self.validated_data["longitud"],
         }
 
 

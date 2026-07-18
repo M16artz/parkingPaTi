@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { LOJA_BOUNDS, estaEnLoja } from '../src/config/loja.js';
-import { validateRegister } from '../src/utils/validators/authValidator.js';
+import {
+  validateParkingRegistration,
+  validateRegister,
+  validateRegistrationDocument,
+} from '../src/utils/validators/authValidator.js';
 
 test('registro exige confirmaciones coincidentes', () => {
   const result = validateRegister({
@@ -30,4 +34,26 @@ test('selector usa el bbox aprobado de Loja', () => {
   assert.deepEqual(LOJA_BOUNDS, [[-4.08, -79.277], [-3.895, -79.13]]);
   assert.equal(estaEnLoja(-3.99, -79.2), true);
   assert.equal(estaEnLoja(-4.2, -79.2), false);
+});
+
+test('segundo paso exige parqueadero, calle principal y ubicacion', () => {
+  const invalid = validateParkingRegistration({ nombreParqueadero: '', callePrincipal: '' });
+  assert.equal(invalid.isValid, false);
+  assert.ok(invalid.errors.nombreParqueadero);
+  assert.ok(invalid.errors.callePrincipal);
+  assert.ok(invalid.errors.ubicacion);
+
+  const valid = validateParkingRegistration({
+    nombreParqueadero: 'Parking Centro',
+    callePrincipal: 'Bolivar',
+    latitud: '-3.990000',
+    longitud: '-79.200000',
+  });
+  assert.equal(valid.isValid, true);
+});
+
+test('paso final exige documento permitido de hasta 5 MB', () => {
+  assert.equal(validateRegistrationDocument(null).isValid, false);
+  assert.equal(validateRegistrationDocument({ type: 'text/plain', size: 10 }).isValid, false);
+  assert.equal(validateRegistrationDocument({ type: 'application/pdf', size: 1024 }).isValid, true);
 });

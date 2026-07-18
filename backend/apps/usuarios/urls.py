@@ -14,6 +14,7 @@ from apps.usuarios.controllers import (
     MeAPIView,
     ReenviarVerificacionAPIView,
     RegistroAPIView,
+    RegistroCompletoAPIView,
     VerificarCorreoAPIView,
 )
 from apps.usuarios.onboarding_controllers import (
@@ -42,6 +43,7 @@ auth_urlpatterns = [
     path("logout/", LogoutAPIView.as_view(), name="auth_logout"),
     path("me/", MeAPIView.as_view(), name="auth_me"),
     path("register/", RegistroAPIView.as_view(), name="auth_register"),
+    path("register/complete/", RegistroCompletoAPIView.as_view(), name="auth_register_complete"),
     path("verify-email/", VerificarCorreoAPIView.as_view(), name="auth_verify_email"),
     path("resend-verification/", ReenviarVerificacionAPIView.as_view(), name="auth_resend_verification"),
     path("admin/crear-cuenta/", AdminCrearCuentaAPIView.as_view(), name="auth_admin_crear_cuenta"),
