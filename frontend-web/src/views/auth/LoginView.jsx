@@ -1,297 +1,61 @@
-// ============================================================================
-// 1. IMPORTACIONES
-// ============================================================================
-import React, { useState, useEffect } from 'react';
-import { User, Lock, Mail, Car } from 'lucide-react';
-
-// Componentes Atómicos Reutilizables
-import { Button } from '../components/Button'; // Ajustado según tu árbol de carpetas
-import { Input } from '../components/Input';
-
-// Controladores Custom Hooks Desacoplados
-import { useLoginController } from '../../controllers/useLoginController'; // Ruta corregida con ../../
-import { useRegisterController } from '../../controllers/useRegisterController'; // Ruta corregida con ../../
-
-// Assets e Imágenes de la Vista
+import React, { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, ArrowRight, Car, ClipboardList } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import portadaLogin from '../../assets/portadaLogin.png';
+import { useLoginController } from '../../controllers/useLoginController';
+import { authService } from '../../services/authService';
+import { destinoSesion } from '../../utils/adminAccess';
+import { LoginForm } from '../components/auth/AuthForms';
 
-// ============================================================================
-// 2. DEFINICIÓN DEL COMPONENTE
-// ============================================================================
-export const LoginView = () => {
-  // Estados de maquetación y animación visual
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Inyección de los controladores limpios de Login y Registro
-  const loginCtrl = useLoginController();
-  const registerCtrl = useRegisterController();
-
-  // Control de animación de entrada fluida
+const LoginAccessView = () => {
+  const navigate = useNavigate();
+  const login = useLoginController();
+  const session = useQuery({ queryKey: ['auth', 'me'], queryFn: authService.me, retry: false, staleTime: 0 });
   useEffect(() => {
-    setIsLoaded(true);
-  }, []);
+    if (session.isSuccess) navigate(destinoSesion(session.data), { replace: true });
+  }, [navigate, session.data, session.isSuccess]);
+  if (session.isPending || session.isSuccess) return <main className="grid min-h-screen place-items-center bg-sky-100 font-body text-sky-900"><span className="font-headline font-bold">ParkingPaTi · Validando sesión…</span></main>;
 
-  // Callbacks de éxito para las APIs
-  const handleLoginSuccess = (data) => {
-    alert("¡Login validado correctamente de forma limpia! Datos listos para la API: " + JSON.stringify(data));
-  };
+  return <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-sky-100 via-white to-blue-100 p-3 font-body sm:p-6 lg:grid lg:place-items-center">
+    <section className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] bg-white shadow-[0_30px_80px_-20px_rgba(15,23,42,0.35)] motion-safe:animate-[owner-view-enter_260ms_ease-out] lg:grid lg:min-h-[620px] lg:grid-cols-2 xl:min-h-[720px]">
+      <button type="button" onClick={() => navigate('/')} className="absolute left-4 top-4 z-30 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white/90 px-3 text-sm font-bold text-slate-800 shadow-sm backdrop-blur hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"><ArrowLeft aria-hidden="true" size={18} /> Volver al inicio</button>
+      <div className="relative min-h-56 overflow-hidden lg:order-2 lg:min-h-full"><img src={portadaLogin} alt="Parqueadero iluminado durante la noche" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-b from-sky-950/35 to-slate-950/85" /><div className="relative z-10 flex min-h-56 flex-col items-center justify-center px-8 pt-12 text-center text-white lg:min-h-full lg:pt-0"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/15 backdrop-blur"><Car aria-hidden="true" size={30} /></span><h2 className="mt-5 font-headline text-3xl font-bold">¡Hola, bienvenido!</h2><p className="mt-3 text-sky-100">¿Aún no tienes una cuenta?</p><button type="button" onClick={() => navigate('/login?mode=register')} className="mt-6 min-h-12 rounded-xl border border-white/70 px-7 font-bold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Crear una cuenta</button></div></div>
+      <div className="flex items-center p-6 pt-10 sm:p-10 lg:order-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto xl:p-14"><LoginForm controller={login} onSubmit={(event) => login.handleSubmit(event, (data) => navigate(destinoSesion(data), { replace: true }))} onRegister={() => navigate('/login?mode=register')} /></div>
+    </section>
+  </main>;
+};
 
-  const handleRegisterSuccess = (data) => {
-    alert("¡Registro validado correctamente de forma limpia! Datos listos para la API.");
-  };
-
-  return (
-    <div 
-      className={
-        "w-full " +
-        "min-h-screen " +
-        "overflow-x-hidden " +
-        "bg-bg " + 
-        "flex items-center justify-center " +
-        "p-6 " +
-        "select-none"
-      }
-    >
-      <div 
-        className={`
-          relative 
-          bg-white 
-          w-full max-w-[1400px] h-[85vh] 
-          rounded-[32px] overflow-hidden 
-          border-none 
-          flex 
-          shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] 
-          transition-all duration-[400ms] ease-out 
-          ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-1/4 opacity-0'}
-        `}
-      >
-        
-        {/* ========================================================= */}
-        {/* 1. SIGN IN FORM PANEL (Fondo Blanco)                      */}
-        {/* ========================================================= */}
-        <div 
-          className={`
-            w-1/2 h-full 
-            bg-white 
-            flex flex-col items-center justify-center 
-            px-16 
-            transition-all duration-500 ease-in-out 
-            z-10 
-            ${isSignUp ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}
-          `}
-        >
-          {/* Logo y Branding */}
-          <div className="flex flex-col items-center justify-center mb-6 text-primary gap-2">
-            <Car size={40} />
-            <span className="text-xl font-bold font-headline text-primary tracking-wide">
-              ParkingPaTi
-            </span>
-          </div>
-          
-          <h1 className="text-5xl font-bold font-body text-tertiary mb-10 tracking-tight text-center">
-            Iniciar Sesión
-          </h1>
-          
-          {/* Formulario e Inputs Envalidados */}
-          <form 
-            onSubmit={(e) => loginCtrl.handleSubmit(e, handleLoginSuccess)}
-            className="w-full max-w-md flex flex-col items-center gap-4"
-          >
-            {/* Campo Correo */}
-            <div className="w-full flex flex-col gap-1.5">
-              <label className="text-sm font-bold text-slate-600 text-left self-start">
-                Correo electrónico <span className="text-red-500 font-black ml-0.5">*</span>
-              </label>
-              <Input 
-                name="correo"
-                value={loginCtrl.formData.correo}
-                onChange={loginCtrl.handleChange}
-                placeholder="ejemplo@correo.com" 
-                icon={Mail} 
-              />
-              {loginCtrl.errors.correo && (
-                <span className="text-xs font-bold text-red-500 px-1 text-left self-start animate-fadeIn">{loginCtrl.errors.correo}</span>
-              )}
-            </div>
-
-            {/* Campo Contraseña */}
-            <div className="w-full flex flex-col gap-1.5">
-              <label className="text-sm font-bold text-slate-600 text-left self-start">
-                Contraseña <span className="text-red-500 font-black ml-0.5">*</span>
-              </label>
-              <Input 
-                type="password" 
-                name="password"
-                value={loginCtrl.formData.password}
-                onChange={loginCtrl.handleChange}
-                placeholder="••••••••" 
-                icon={Lock} 
-              />
-              {loginCtrl.errors.password && (
-                <span className="text-xs font-bold text-red-500 px-1 text-left self-start animate-fadeIn">{loginCtrl.errors.password}</span>
-              )}
-            </div>
-            
-            <Button 
-              type="submit"
-              variant="primary" 
-              className="w-full py-4 text-base font-bold rounded-2xl mt-4 shadow-md shadow-primary/10"
-            >
-              Iniciar Sesión
-            </Button>
-
-            <a 
-              href="#forgot" 
-              className="text-sm text-gray-400 hover:text-primary transition-colors mt-8 font-label"
-            >
-              ¿Olvidaste tu contraseña?
-            </a>
-          </form>
+const RegisterAccessView = () => {
+  const navigate = useNavigate();
+  return <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-sky-100 via-white to-blue-100 p-3 font-body sm:p-6 lg:grid lg:place-items-center">
+    <section className="relative mx-auto grid min-h-[620px] w-full max-w-6xl overflow-hidden rounded-[2rem] bg-white shadow-[0_30px_80px_-20px_rgba(15,23,42,0.35)] motion-safe:animate-[owner-view-enter_260ms_ease-out] lg:grid-cols-2 xl:min-h-[720px]">
+      <button type="button" onClick={() => navigate('/')} className="absolute left-4 top-4 z-30 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white/90 px-3 text-sm font-bold text-slate-800 shadow-sm backdrop-blur hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"><ArrowLeft aria-hidden="true" size={18} /> Volver al inicio</button>
+      <div className="auth-register-image relative min-h-64 overflow-hidden lg:min-h-full">
+        <img src={portadaLogin} alt="Entrada iluminada de un parqueadero" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-sky-950/30 to-slate-950/85" />
+        <div className="relative z-10 flex min-h-64 flex-col items-center justify-center px-8 pt-12 text-center text-white lg:min-h-full lg:pt-0">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/15 backdrop-blur"><Car aria-hidden="true" size={30} /></span>
+          <h2 className="mt-5 font-headline text-3xl font-bold">Registra tu parqueadero</h2>
+          <p className="mt-3 max-w-sm text-sky-100">Crea tu cuenta de propietario y envía la información necesaria para iniciar el proceso.</p>
         </div>
-
-        {/* ========================================================= */}
-        {/* 2. SIGN UP FORM PANEL (Fondo Blanco)                      */}
-        {/* ========================================================= */}
-        <div 
-          className={`
-            w-1/2 h-full 
-            bg-white 
-            flex flex-col items-center justify-center 
-            px-16 
-            transition-all duration-500 ease-in-out 
-            z-10 
-            ${isSignUp ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}
-          `}
-        >
-          {/* Logo y Branding */}
-          <div className="flex flex-col items-center justify-center mb-6 text-primary gap-2">
-            <Car size={40} />
-            <span className="text-xl font-bold font-headline text-primary tracking-wide">
-              ParkingPaTi
-            </span>
-          </div>
-          
-          <h1 className="text-5xl font-bold font-body text-tertiary mb-8 tracking-tight text-center">
-            Crear Cuenta
-          </h1>
-          
-          {/* Formulario de registro Envalidado */}
-          <form 
-            onSubmit={(e) => registerCtrl.handleSubmit(e, handleRegisterSuccess)}
-            className="w-full max-w-md flex flex-col items-center gap-4"
-          >
-            {/* Campo Nombres */}
-            <div className="w-full flex flex-col gap-1.5">
-              <label className="text-sm font-bold text-slate-600 text-left self-start">
-                Nombres <span className="text-red-500 font-black ml-0.5">*</span>
-              </label>
-              <Input 
-                name="nombres"
-                value={registerCtrl.formData.nombres}
-                onChange={registerCtrl.handleChange}
-                placeholder="Tus nombres" 
-                icon={User} 
-              />
-              {registerCtrl.errors.nombres && (
-                <span className="text-xs font-bold text-red-500 px-1 text-left self-start animate-fadeIn">{registerCtrl.errors.nombres}</span>
-              )}
-            </div>
-
-            {/* Campo Apellidos */}
-            <div className="w-full flex flex-col gap-1.5">
-              <label className="text-sm font-bold text-slate-600 text-left self-start">
-                Apellidos <span className="text-red-500 font-black ml-0.5">*</span>
-              </label>
-              <Input 
-                name="apellidos"
-                value={registerCtrl.formData.apellidos}
-                onChange={registerCtrl.handleChange}
-                placeholder="Tus apellidos" 
-                icon={User} 
-              />
-              {registerCtrl.errors.apellidos && (
-                <span className="text-xs font-bold text-red-500 px-1 text-left self-start animate-fadeIn">{registerCtrl.errors.apellidos}</span>
-              )}
-            </div>
-            
-            <Button 
-              type="submit"
-              variant="primary" 
-              className="w-full py-4 text-base font-bold rounded-2xl mt-4 shadow-md shadow-primary/10"
-            >
-              Registrarse
-            </Button>
-
-            <p className="text-xs text-gray-400 text-center mt-8 max-w-xs leading-relaxed font-body">
-              Al crear una cuenta aceptas los{" "}
-              <span className="text-primary cursor-pointer hover:underline">Términos de Servicio</span> y las{" "}
-              <span className="text-primary cursor-pointer hover:underline">Políticas de Privacidad</span> de ParkingPaTi.
-            </p>
-          </form>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 3. SLIDING OVERLAY PANEL (Panel Deslizable con Portada)   */}
-        {/* ========================================================= */}
-        <div 
-          className={`
-            absolute top-0 left-1/2 
-            w-1/2 h-full 
-            bg-primary 
-            transition-all duration-500 ease-in-out 
-            z-20 overflow-hidden 
-            flex flex-col items-center justify-end 
-            pb-48 px-16 
-            text-center text-white 
-            ${isSignUp ? '-translate-x-full rounded-l-[32px] rounded-r-0' : 'translate-x-0 rounded-r-[32px] rounded-l-0'}
-          `}
-          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-        >
-          {/* Imagen de Portada de Fondo */}
-          <img 
-            src={portadaLogin} 
-            alt="Portada Login" 
-            className="absolute inset-0 w-full h-full object-cover z-0 select-none pointer-events-none"
-          />
-
-          {/* Capa de Degradado sobre la Imagen */}
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/30 to-tertiary/60 z-10" />
-          
-          {/* Contenido Dinámico según Estado de Registro/Login */}
-          <div 
-            className="relative z-20 flex flex-col items-center gap-4 transform-none select-text"
-            style={{ textRendering: 'geometricPrecision', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}
-          >
-            {!isSignUp ? (
-              <>
-                <h2 className="text-5xl font-bold font-headline leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
-                  ¡Hola, Bienvenido!
-                </h2>
-                <button 
-                  onClick={() => setIsSignUp(true)}
-                  className="mt-2 px-14 py-3.5 bg-transparent border-2 border-white text-white rounded-2xl text-base font-bold font-label outline-none focus:outline-none hover:bg-white hover:text-primary hover:scale-105 shadow-lg transition-all duration-200"
-                >
-                  REGISTRARSE
-                </button>
-              </>
-            ) : (
-              <>
-                <h2 className="text-5xl font-bold font-headline leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
-                  ¡Te extrañamos!
-                </h2>
-                <button 
-                  onClick={() => setIsSignUp(false)}
-                  className="mt-2 px-14 py-3.5 bg-transparent border-2 border-white text-white rounded-2xl text-base font-bold font-label outline-none focus:outline-none hover:bg-white hover:text-primary hover:scale-105 shadow-lg transition-all duration-200"
-                >
-                  INGRESAR
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
       </div>
-    </div>
-  );
+      <div className="auth-register-content flex items-center p-6 sm:p-10 xl:p-14">
+        <div className="mx-auto w-full max-w-md text-center">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-sky-100 text-primary"><ClipboardList aria-hidden="true" size={30} /></span>
+          <p className="mt-6 text-sm font-black uppercase tracking-widest text-sky-700">Registro de propietario</p>
+          <h1 className="mt-2 font-headline text-3xl font-bold text-slate-950 sm:text-4xl">Comienza tu registro</h1>
+          <p className="mt-4 leading-7 text-slate-600">El formulario completo se encuentra en una página independiente con tres pasos: datos personales, ubicación del parqueadero y documento.</p>
+          <button type="button" onClick={() => navigate('/register')} className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 font-bold text-white shadow-sm transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Continuar al registro <ArrowRight aria-hidden="true" size={19} /></button>
+          <p className="mt-6 text-sm text-slate-600">¿Ya tienes una cuenta? <button type="button" onClick={() => navigate('/login', { replace: true })} className="font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Iniciar sesión</button></p>
+        </div>
+      </div>
+    </section>
+  </main>;
+};
+
+export const LoginView = () => {
+  const [searchParams] = useSearchParams();
+  if (searchParams.get('mode') === 'register') return <RegisterAccessView />;
+  return <LoginAccessView />;
 };

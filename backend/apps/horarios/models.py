@@ -1,37 +1,32 @@
 from django.db import models
-from apps.parqueaderos.models import Parqueadero
+from django.db.models import F, Q
 
 
 class DiasSemana(models.TextChoices):
     LUNES = "LUNES", "Lunes"
     MARTES = "MARTES", "Martes"
-    MIERCOLES = "MIERCOLES", "Miércoles"
+    MIERCOLES = "MIERCOLES", "Miercoles"
     JUEVES = "JUEVES", "Jueves"
     VIERNES = "VIERNES", "Viernes"
-    SABADO = "SABADO", "Sábado"
+    SABADO = "SABADO", "Sabado"
     DOMINGO = "DOMINGO", "Domingo"
 
 
 class HorarioAtencion(models.Model):
-    #Relación 1..* con Parqueadero (un parqueadero tiene uno o más horarios).
- 
     parqueadero = models.ForeignKey(
-        Parqueadero,
+        "parqueaderos.Parqueadero",
         on_delete=models.CASCADE,
-        related_name="horarios"
+        related_name="horarios",
     )
-    dia = models.CharField(
-        max_length=20,
-        choices=DiasSemana.choices
-    )
+    dia = models.CharField(max_length=20, choices=DiasSemana.choices)
     hora_apertura = models.TimeField()
     hora_cierre = models.TimeField()
 
     class Meta:
-        # Un parqueadero no puede tener dos horarios para el mismo día
-        unique_together = ("parqueadero", "dia")
-        indexes = [
-            models.Index(fields=["dia"]),
+        indexes = [models.Index(fields=["parqueadero", "dia"])]
+        constraints = [
+            models.UniqueConstraint(fields=["parqueadero", "dia"], name="schedule_unique_day_per_park"),
+            models.CheckConstraint(condition=Q(hora_apertura__lt=F("hora_cierre")), name="schedule_open_before_close"),
         ]
 
     def __str__(self):

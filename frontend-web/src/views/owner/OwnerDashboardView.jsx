@@ -1,325 +1,117 @@
-// ============================================================================
-// 1. IMPORTACIONES Y DEPENDENCIAS
-// ============================================================================
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, Key, Car, LogOut } from 'lucide-react'; 
-import { useNavigate } from 'react-router-dom';
-
-// Importación de tu foto local desde la carpeta assets
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Building2, Car, Grid3X3, LayoutDashboard, LogOut, Settings } from 'lucide-react';
 import userPhoto from '../../assets/user.png';
-
-// Vistas modulares internas
-import { OwnerInfoGeneral } from '../components/owner/OwnerInfoGeneral';
-import { OwnerConfigGeneral } from '../components/owner/OwnerConfigGeneral';
+import { useLogoutController } from '../../controllers/useLogoutController';
+import { authService } from '../../services/authService';
+import { ownerConfigurationService } from '../../services/ownerConfigurationService';
+import { parqueaderoService } from '../../services/parqueaderoService';
+import { extraerErroresApi } from '../../utils/apiError';
 import { OwnerConfigEspacios } from '../components/owner/OwnerConfigEspacios';
+import { OwnerConfigGeneral } from '../components/owner/OwnerConfigGeneral';
+import { OwnerHome } from '../components/owner/OwnerHome';
+import { OwnerInfoGeneral } from '../components/owner/OwnerInfoGeneral';
+import { StayDialog } from '../components/owner/StayDialog';
 
-// ============================================================================
-// 2. CONSTANTES DE CONFIGURACIÓN DE LA NAVEGACIÓN LATERAL
-// ============================================================================
 const NAV_ITEMS = [
-  { key: 'infoGeneral', icon: LayoutDashboard, label: 'CONFIGURACION INFORMACION', index: 0 },
-  { key: 'configGeneral', icon: Settings, label: 'CONFIGURACION GENERAL', index: 1 },
-  { key: 'configEspacios', icon: Key, label: 'CONFIGURACION ESPACIOS', index: 2 },
+  { key: 'inicio', icon: LayoutDashboard, label: 'Inicio' },
+  { key: 'infoGeneral', icon: Building2, label: 'Información del parqueadero' },
+  { key: 'configGeneral', icon: Settings, label: 'Configuración operativa' },
+  { key: 'configEspacios', icon: Grid3X3, label: 'Gestión de espacios' },
 ];
+const TITLES = { inicio: 'Panel de control', infoGeneral: 'Información del parqueadero', configGeneral: 'Configuración operativa', configEspacios: 'Gestión de espacios' };
 
-// ============================================================================
-// 3. COMPONENTE PRINCIPAL (PANEL DE CONTROL / DASHBOARD)
-// ============================================================================
 export const OwnerDashboardView = () => {
-  const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('infoGeneral');
+  const logout = useLogoutController();
+  const queryClient = useQueryClient();
+  const [activeView, setActiveView] = useState('inicio');
+  const [message, setMessage] = useState('');
+  const [stayDialog, setStayDialog] = useState(null);
+  const session = useQuery({ queryKey: ['auth', 'me'], queryFn: authService.me, staleTime: 30_000 });
+  const parking = useQuery({ queryKey: ['owner', 'parking'], queryFn: async () => (await parqueaderoService.obtenerMios())[0] });
+  const configuration = useQuery({ queryKey: ['owner', 'configuration'], queryFn: ownerConfigurationService.obtener, refetchInterval: 5_000 });
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['owner', 'configuration'] }),
+      queryClient.invalidateQueries({ queryKey: ['owner', 'parking'] }),
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] }),
+    ]);
+  };
+  const mutation = useMutation({
+    mutationFn: ({ type, payload }) => {
+      if (type === 'configuration') return ownerConfigurationService.guardar(payload);
+      if (type === 'status') return ownerConfigurationService.cambiarEstadoOperativo(payload);
+      if (type === 'add') return ownerConfigurationService.agregarEspacios(payload);
+      if (type === 'edit') return ownerConfigurationService.editarEspacio(payload.id, payload.data);
+      if (type === 'delete') return ownerConfigurationService.eliminarEspacio(payload);
+      if (type === 'reactivate') return ownerConfigurationService.reactivarEspacio(payload);
+      return Promise.reject(new Error('Operación no soportada'));
+    },
+    onSuccess: async (_, variables) => {
+      const successMessages = {
+        configuration: 'Configuración operativa guardada.',
+        status: 'Estado operativo actualizado.',
+      };
+      setMessage(successMessages[variables.type] || 'Espacios actualizados.');
+      await refresh();
+    },
+    onError: (error) => { const errors = extraerErroresApi(error); setMessage(errors.formulario || Object.values(errors)[0] || 'No se pudo completar la operación.'); },
+  });
+  const stayMutation = useMutation({
+    mutationFn: ({ type, space, rateId }) => {
+      if (type === 'start') return ownerConfigurationService.iniciarEstancia(space.id, rateId);
+      if (type === 'current') return ownerConfigurationService.obtenerEstanciaActual(space.id);
+      if (type === 'finish') return ownerConfigurationService.finalizarEstancia(space.id);
+      return Promise.reject(new Error('Operación no soportada'));
+    },
+    onSuccess: async (stay, variables) => {
+      if (variables.type === 'current') { setStayDialog({ mode: 'current', space: variables.space, stay }); return; }
+      if (variables.type === 'finish') { setStayDialog({ mode: 'final', space: variables.space, stay }); setMessage('Estancia finalizada.'); }
+      else { setStayDialog(null); setMessage('Estancia iniciada.'); }
+      await refresh();
+    },
+    onError: (error) => setMessage(extraerErroresApi(error).formulario || 'No se pudo completar la estancia.'),
+  });
+  const isLoading = session.isPending || parking.isPending || configuration.isPending;
+  const isError = session.isError || parking.isError || configuration.isError || (!parking.isPending && !parking.data);
+  const fullName = [session.data?.persona?.nombre, session.data?.persona?.apellido].filter(Boolean).join(' ') || 'Propietario';
+  const activeIndex = NAV_ITEMS.findIndex((item) => item.key === activeView);
 
-  // Encontrar el índice dinámico para acoplar la cápsula flotante animada
-  const activeIndex = NAV_ITEMS.find(item => item.key === activeView)?.index ?? 0;
+  const navigation = NAV_ITEMS.map((item) => { const Icon = item.icon; const selected = item.key === activeView; return <button key={item.key} type="button" onClick={() => setActiveView(item.key)} className={`relative z-10 flex min-h-16 w-full items-center gap-4 rounded-l-full px-7 text-left text-sm font-bold transition-colors ${selected ? 'text-sky-800' : 'text-white/75 hover:text-white'}`} aria-current={selected ? 'page' : undefined}><Icon size={20} /><span>{item.label}</span></button>; });
 
-  return (
-    <div 
-      className={
-        "w-screen " + 
-        "h-screen " + 
-        "flex " + 
-        "p-6 " + 
-        "bg-bg " +               // Tu azulito/celeste bajito de fondo exterior
-        "select-none " + 
-        "overflow-hidden " + 
-        "font-sans " + 
-        "antialiased"
-      }
-    >
-      
-      {/* CONTENEDOR ENCAPSULADO CON BORDES REDONDEADOS Y SOMBRA ELEVADA */}
-      <div 
-        className={
-          "w-full " + 
-          "h-full " + 
-          "flex " + 
-          "bg-white " +            // Fondo interior blanco puro
-          "rounded-[32px] " + 
-          "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] " + 
-          "overflow-hidden"
-        }
-      >
-        
-        {/* ----------------------------------------------------------------- */}
-        {/* ASIDE: BARRA LATERAL AZUL DE NAVEGACIÓN ORIGINAL                  */}
-        {/* ----------------------------------------------------------------- */}
-        <aside 
-          className={
-            "w-[290px] " + 
-            "bg-primary " + 
-            "bg-gradient-to-b " + 
-            "from-primary " + 
-            "to-[#466fd3] " + 
-            "flex " + 
-            "flex-col " + 
-            "pt-12 " + 
-            "pb-8 " + 
-            "px-0 " + 
-            "text-white " + 
-            "relative " + 
-            "transform-gpu " + 
-            "z-10 " + 
-            "overflow-hidden " + 
-            "shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)]"
-          }
-        >
-          
-          {/* SECCIÓN DEL USUARIO (Foto circular y datos alineados) */}
-          <div 
-            className={
-              "flex " + 
-              "flex-col " + 
-              "items-center " + 
-              "px-6 " + 
-              "mb-10 " + 
-              "text-center"
-            }
-          >
-            {/* Contenedor de la Foto Circular */}
-            <div 
-              className={
-                "w-24 " + 
-                "h-24 " + 
-                "rounded-full " + 
-                "border-2 " + 
-                "border-teal-400 " + 
-                "p-1 " + 
-                "mb-4 " + 
-                "overflow-hidden " + 
-                "bg-white/10 " + 
-                "shadow-lg"
-              }
-            >
-              {/* Aquí se carga tu imagen user.png de assets */}
-              <img 
-                src={userPhoto} 
-                alt="User Profile" 
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
+  let content = null;
+  if (!isLoading && !isError) {
+    const data = configuration.data;
+    const spaceProps = {
+      spaces: data.espacios,
+      rates: data.tarifas,
+      pending: mutation.isPending || stayMutation.isPending,
+      onAdd: (cantidad) => mutation.mutate({ type: 'add', payload: cantidad }),
+      onEdit: (space, payload) => mutation.mutate({ type: 'edit', payload: { id: space.id, data: payload } }),
+      onDisable: (space) => mutation.mutate({ type: 'edit', payload: { id: space.id, data: { estado: 'INHABILITADO' } } }),
+      onDelete: (space) => mutation.mutate({ type: 'delete', payload: space.id }),
+      onReactivate: (space) => mutation.mutate({ type: 'reactivate', payload: space.id }),
+      onStartStay: (space) => setStayDialog({ mode: 'start', space }),
+      onViewStay: (space) => stayMutation.mutate({ type: 'current', space }),
+    };
+    if (activeView === 'inicio') content = <OwnerHome session={session.data} parqueadero={parking.data} configuration={data} pending={mutation.isPending} onChangeStatus={(status) => mutation.mutate({ type: 'status', payload: status })} onNavigate={setActiveView} />;
+    if (activeView === 'infoGeneral') content = <OwnerInfoGeneral parqueadero={parking.data} />;
+    if (activeView === 'configGeneral') content = <OwnerConfigGeneral data={data} pending={mutation.isPending} onSave={(payload) => mutation.mutate({ type: 'configuration', payload })} />;
+    if (activeView === 'configEspacios') content = <OwnerConfigEspacios {...spaceProps} />;
+  }
 
-            {/* Nombre con tipografía grande y legible corregida */}
-            <h3 
-              className={
-                "text-2xl " + 
-                "font-black " + 
-                "tracking-wide " + 
-                "font-headline " + 
-                "uppercase " + 
-                "shadow-sm"
-              }
-            >
-              María Buri
-            </h3>
-            {/* Correo Electrónico Agrandado */}
-            <span 
-              className={
-                "text-base " +         // ¡Cambiado de text-xs a text-base para que sea más grande!
-                "font-semibold " +     // Un toque más grueso para mejorar el contraste
-                "text-white/80 " +     // Un blanco un poco más brillante (80% de opacidad)
-                "font-body " + 
-                "mt-1.5"
-              }
-            >
-              maria.buri@gmail.com
-            </span>
-          </div>
-
-          {/* CONTENEDOR ENVOLVENTE DE LA NAV CON TRUCO DE CÁPSULA FLOTANTE */}
-          <div className="relative w-full pl-6 flex flex-col gap-1 transform-gpu">
-            
-            {/* Fondo Blanco de Acople Animado Detrás de la Opción Activa */}
-            <div 
-              className={
-                "absolute " + 
-                "right-0 " + 
-                "w-[266px] " + 
-                "h-[64px] " + 
-                "bg-white " + 
-                "rounded-l-[32px] " + 
-                "transition-all " + 
-                "duration-300 " + 
-                "ease-out " + 
-                "transform-gpu"
-              }
-              style={{ 
-                top: `${activeIndex * 68}px`,
-                willChange: 'transform',
-                marginRight: '-1px'
-              }}
-            >
-              {/* Curvatura Interna Superior acoplada al fondo blanco */}
-              <div className="absolute right-0 -top-[21px] w-[21px] h-[21px] overflow-hidden pointer-events-none">
-                <div className="w-full h-full rounded-br-[21px] shadow-[5px_5px_0_6px_#ffffff]" />
-              </div>
-              {/* Curvatura Interna Inferior acoplada al fondo blanco */}
-              <div className="absolute right-0 -bottom-[21px] w-[21px] h-[21px] overflow-hidden pointer-events-none">
-                <div className="w-full h-full rounded-tr-[21px] shadow-[5px_-5px_0_6px_#ffffff]" />
-              </div>
-            </div>
-
-            {/* GENERACIÓN ITERATIVA DE BOTONES DE ACCESO DE LA NAV */}
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeView === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setActiveView(item.key)}
-                  className={
-                    "z-10 " + 
-                    "flex " + 
-                    "items-center " + 
-                    "justify-between " + 
-                    "pl-8 " + 
-                    "pr-4 " + 
-                    "h-[64px] " + 
-                    "rounded-l-[32px] " + 
-                    "font-bold " + 
-                    "text-[13px] " + 
-                    "tracking-wider " + 
-                    "w-full " + 
-                    "text-left " + 
-                    "group " + 
-                    "transition-colors " + 
-                    "duration-300 " + 
-                    "border-none " + 
-                    "outline-none " + 
-                    "focus:outline-none " + 
-                    (isActive ? 'text-primary' : 'text-white/70 hover:text-white')
-                  }
-                >
-                  <div className="flex items-center gap-4">
-                    <item.icon 
-                      size={20} 
-                      className={
-                        "transition-colors " + 
-                        "duration-200 " + 
-                        (isActive ? 'text-primary' : 'text-white/50 group-hover:text-white')
-                      } 
-                    />
-                    <span>{item.label}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* BOTÓN DE CIERRE DE SESIÓN (Log Out) */} 
-          <button
-            type="button"
-            onClick={() => navigate('/login')}
-            className={
-              "flex " + 
-              "items-center " + 
-              "gap-4 " + 
-              "px-8 " + 
-              "py-4 " + 
-              "rounded-2xl " + 
-              "font-bold " + 
-              "text-[13px] " + 
-              "tracking-wider " + 
-              "text-white/50 " + 
-              "hover:bg-white/5 " + 
-              "hover:text-white " + 
-              "transition-all " + 
-              "mt-auto " + 
-              "mx-6 " + 
-              "group " + 
-              "text-left " + 
-              "transform-gpu"
-            }
-          >
-            <LogOut size={18} className="text-white/40 group-hover:text-white transition-colors" />
-            <span>LOG OUT</span>
-          </button>
-        </aside>
-
-        {/* ----------------------------------------------------------------- */}
-        {/* MAIN: ÁREA CENTRAL DE CONTENIDO VARIABLE                          */}
-        {/* ----------------------------------------------------------------- */}
-        <main 
-          className={
-            "flex-1 " + 
-            "pt-6 " + 
-            "pb-12 " + 
-            "px-12 " + 
-            "flex " + 
-            "flex-col " + 
-            "overflow-y-auto " + 
-            "bg-white " + 
-            "transform-gpu " + 
-            "z-0"
-          }
-        >
-          
-          {/* ENCABEZADO: Título dinámico a la izquierda y LOGO CORPORATIVO realzado a la derecha */}
-          <header 
-            className={
-              "w-full " + 
-              "flex " + 
-              "items-center " + 
-              "justify-between " + 
-              "mb-8 " + 
-              "transform-gpu"
-            }
-          >
-            {/* Título de la sección activa */}
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight  font-headline mt-4">
-              {activeView === 'infoGeneral' && "Panel de Control"}
-              {activeView === 'configGeneral' && "Configuración General"}
-              {activeView === 'configEspacios' && "Gestión de Espacios"}
-            </h1>
-
-            {/* LOGO CORPORATIVO (Grande y elevado en la esquina superior derecha) */}
-            <div 
-              className={
-                "flex " + 
-                "items-center " + 
-                "gap-3 " + 
-                "pointer-events-none " + 
-                "select-none " + 
-                "text-primary " + 
-                "mt-2"
-              }
-            >
-              <Car size={36} className="text-primary" />
-              <span className="text-2xl font-black tracking-wide font-headline">
-                ParkingPaTi
-              </span>
-            </div>
-          </header>
-
-          {/* VISTAS MODULARES CONMUTABLES */}
-          <section className="w-full flex-1 transform-gpu">
-            {activeView === 'infoGeneral' && <OwnerInfoGeneral />}
-            {activeView === 'configGeneral' && <OwnerConfigGeneral />}
-            {activeView === 'configEspacios' && <OwnerConfigEspacios />}
-          </section>
-
-        </main>
-
-      </div>
+  return <div className="min-h-screen bg-sky-100 p-2 font-sans antialiased sm:p-4 lg:h-screen lg:p-6">
+    <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-[1800px] overflow-hidden rounded-3xl bg-white shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] lg:h-full lg:min-h-0">
+      <aside className="relative hidden w-[290px] shrink-0 flex-col overflow-hidden bg-gradient-to-b from-sky-800 to-blue-700 py-8 text-white shadow-xl lg:flex">
+        <div className="mb-8 flex flex-col items-center px-6 text-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-teal-300 bg-white/10 p-1 shadow-lg"><img src={userPhoto} alt="Perfil del propietario" className="h-full w-full rounded-full object-cover" /></div><h2 className="mt-4 text-lg font-black uppercase">{fullName}</h2><p className="mt-1 max-w-full truncate text-xs text-white/75">{session.data?.correo}</p></div>
+        <nav className="relative ml-6" aria-label="Secciones del propietario"><span className="absolute right-0 h-16 w-[266px] rounded-l-full bg-white transition-transform duration-300 ease-out" style={{ transform: `translateY(${activeIndex * 64}px)` }} />{navigation}</nav>
+        <button type="button" onClick={logout} className="mx-6 mt-auto flex min-h-12 items-center gap-4 rounded-xl px-5 text-sm font-bold text-white/70 transition hover:bg-white/10 hover:text-white"><LogOut size={19} /> Cerrar sesión</button>
+      </aside>
+      <main className="min-w-0 flex-1 overflow-y-auto bg-white">
+        <header className="sticky top-0 z-[500] border-b border-slate-100 bg-white/95 px-4 py-4 backdrop-blur sm:px-7 lg:px-10"><div className="flex items-center justify-between gap-4"><h1 className="text-xl font-black text-slate-900 sm:text-2xl lg:text-3xl">{TITLES[activeView]}</h1><div className="flex shrink-0 items-center gap-2 text-sky-700"><Car size={28} /><span className="hidden text-lg font-black sm:inline">ParkingPaTi</span></div></div><nav className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Secciones del propietario">{NAV_ITEMS.map((item) => { const Icon = item.icon; const selected = activeView === item.key; return <button key={item.key} type="button" onClick={() => setActiveView(item.key)} className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-xs font-bold transition ${selected ? 'bg-sky-700 text-white shadow' : 'bg-slate-100 text-slate-700'}`}><Icon size={17} />{item.label}</button>; })}<button type="button" onClick={logout} className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-700" aria-label="Cerrar sesión"><LogOut size={18} /></button></nav></header>
+        <section className="p-4 sm:p-7 lg:p-10">{message && <p className="mb-5 rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold shadow-sm" role="status">{message}</p>}{isLoading && <div className="grid min-h-72 place-items-center text-slate-600">Cargando panel...</div>}{isError && <div className="grid min-h-72 place-items-center text-center"><div><p className="font-bold text-red-700">No se pudo cargar la información del parqueadero.</p><button className="mt-3 font-bold text-sky-700" type="button" onClick={refresh}>Reintentar</button></div></div>}{content}</section>
+      </main>
     </div>
-  );
+    <StayDialog mode={stayDialog?.mode} space={stayDialog?.space} rates={configuration.data?.tarifas || []} stay={stayDialog?.stay} pending={stayMutation.isPending} onClose={() => setStayDialog(null)} onStart={(rateId) => stayMutation.mutate({ type: 'start', space: stayDialog.space, rateId })} onFinish={() => stayMutation.mutate({ type: 'finish', space: stayDialog.space })} />
+  </div>;
 };

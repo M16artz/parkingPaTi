@@ -4,7 +4,7 @@
     "slug": "frontend-movil",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logoSimpleM.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logoM.png",
@@ -17,12 +17,13 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#041333",
-        "foregroundImage": "./assets/logoSimpleM.png"
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ]
   }
 }

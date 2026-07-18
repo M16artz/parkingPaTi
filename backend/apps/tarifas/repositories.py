@@ -1,96 +1,53 @@
-"""
-Patrón Repository para tarifas usando Multi-Table Inheritance.
-"""
-
-from apps.tarifas.models import DescuentoTarifa, EstrategiaTarifa, IncrementoTarifa
+from apps.tarifas.models import CategoriaTarifa, TipoCategoriaTarifa
 from core.repositories import actualizar_generico
 
 
-class EstrategiaTarifaRepository:
+class CategoriaTarifaRepository:
     @staticmethod
-    def listar(parqueadero_id=None):
-        queryset = EstrategiaTarifa.objects.select_related("parqueadero").all()
-        if parqueadero_id:
+    def listar(parqueadero_id=None, solo_activas=False):
+        queryset = CategoriaTarifa.objects.select_related("parqueadero").all()
+        if parqueadero_id is not None:
             queryset = queryset.filter(parqueadero_id=parqueadero_id)
-        return queryset
+        if solo_activas:
+            queryset = queryset.filter(activa=True)
+        return queryset.order_by("parqueadero_id", "codigo")
 
     @staticmethod
-    def obtener_por_id(estrategia_id):
-        return EstrategiaTarifa.objects.select_related("parqueadero").filter(id=estrategia_id).first()
+    def listar_por_parqueadero(parqueadero_id):
+        return CategoriaTarifaRepository.listar(parqueadero_id=parqueadero_id)
 
     @staticmethod
-    def obtener_por_parqueadero(parqueadero_id):
-        return EstrategiaTarifa.objects.filter(parqueadero_id=parqueadero_id).first()
+    def obtener_por_id(categoria_id):
+        return CategoriaTarifa.objects.select_related("parqueadero").filter(id=categoria_id).first()
 
     @staticmethod
-    def crear(parqueadero, precio_hora):
-        return EstrategiaTarifa.objects.create(
-            parqueadero=parqueadero,
-            precio_hora=precio_hora
+    def obtener_por_codigo(parqueadero_id, codigo):
+        return CategoriaTarifa.objects.filter(parqueadero_id=parqueadero_id, codigo=codigo).first()
+
+    @staticmethod
+    def obtener_normal(parqueadero_id):
+        return CategoriaTarifaRepository.obtener_por_codigo(parqueadero_id, TipoCategoriaTarifa.NORMAL)
+
+    @staticmethod
+    def crear(parqueadero, **datos):
+        return CategoriaTarifa.objects.create(parqueadero=parqueadero, **datos)
+
+    @staticmethod
+    def actualizar(categoria, **datos):
+        return actualizar_generico(
+            categoria,
+            campos_permitidos={"nombre_visible", "precio_hora", "activa"},
+            **datos,
         )
 
     @staticmethod
-    def actualizar(estrategia, **datos):
-        return actualizar_generico(estrategia, campos_permitidos={"precio_hora"}, **datos)
+    def eliminar(categoria):
+        categoria.delete()
 
     @staticmethod
-    def eliminar(estrategia):
-        estrategia.delete()
-
-
-class IncrementoTarifaRepository:
-    @staticmethod
-    def listar(parqueadero_id=None):
-        queryset = IncrementoTarifa.objects.select_related("parqueadero").all()
-        if parqueadero_id:
-            queryset = queryset.filter(parqueadero_id=parqueadero_id)
-        return queryset
-
-    @staticmethod
-    def obtener_por_id(incremento_id):
-        return IncrementoTarifa.objects.select_related("parqueadero").filter(id=incremento_id).first()
-
-    @staticmethod
-    def crear(parqueadero, precio_hora, porcentaje):
-        return IncrementoTarifa.objects.create(
-            parqueadero=parqueadero,
-            precio_hora=precio_hora,
-            porcentaje=porcentaje
+    def bloquear_por_parqueadero(parqueadero_id):
+        return list(
+            CategoriaTarifa.objects.select_for_update()
+            .filter(parqueadero_id=parqueadero_id)
+            .order_by("codigo")
         )
-
-    @staticmethod
-    def actualizar(incremento, **datos):
-        return actualizar_generico(incremento, campos_permitidos={"precio_hora", "porcentaje"}, **datos)
-
-    @staticmethod
-    def eliminar(incremento):
-        incremento.delete()
-
-
-class DescuentoTarifaRepository:
-    @staticmethod
-    def listar(parqueadero_id=None):
-        queryset = DescuentoTarifa.objects.select_related("parqueadero").all()
-        if parqueadero_id:
-            queryset = queryset.filter(parqueadero_id=parqueadero_id)
-        return queryset
-
-    @staticmethod
-    def obtener_por_id(descuento_id):
-        return DescuentoTarifa.objects.select_related("parqueadero").filter(id=descuento_id).first()
-
-    @staticmethod
-    def crear(parqueadero, precio_hora, porcentaje):
-        return DescuentoTarifa.objects.create(
-            parqueadero=parqueadero,
-            precio_hora=precio_hora,
-            porcentaje=porcentaje
-        )
-
-    @staticmethod
-    def actualizar(descuento, **datos):
-        return actualizar_generico(descuento, campos_permitidos={"precio_hora", "porcentaje"}, **datos)
-
-    @staticmethod
-    def eliminar(descuento):
-        descuento.delete()

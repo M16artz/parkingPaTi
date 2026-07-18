@@ -1,3 +1,2 @@
 -r base.txt
-uvicorn[standard]==0.32.0
 gunicorn==23.0.0

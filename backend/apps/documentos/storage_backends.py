@@ -1,104 +1,101 @@
-"""
-Adaptador de almacenamiento a Google Drive.
-
-NOTA DE SUPUESTO IMPORTANTE: no existe un backend directo equivalente a
-S3Boto3Storage para Google Drive. Este adaptador es una implementacion
-minima de referencia usando la libreria google-api-python-client; en un
-entorno real se recomienda envolver esta clase con manejo de reintentos y
-cuotas de la API de Drive (ver docs/auditoria-tecnica.md, hallazgo de
-Compatibilidad sobre Google Drive).
-
-Esta clase se mantiene deliberadamente aislada en su propio archivo dentro
-de apps/documentos/ y NO en settings/, para que el resto del backend nunca
-dependa directamente de la API de Google - solo de esta interfaz.
-"""
-
 import os
+import uuid
+from dataclasses import dataclass
+from pathlib import Path
 
-from django.core.files.storage import Storage
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 
-class GoogleDriveStorage(Storage):
-    """
-    Implementacion minima de un backend de almacenamiento sobre Google Drive.
-    Requiere credenciales de una cuenta de servicio configuradas via
-    variables de entorno (GOOGLE_DRIVE_CREDENTIALS_PATH, GOOGLE_DRIVE_FOLDER_ID).
+@dataclass(frozen=True)
+class DriveUpload:
+    file_id: str
+    web_view_link: str
 
-    NOTA: esta clase requiere las dependencias google-api-python-client y
-    google-auth, que NO se incluyen en requirements/base.txt por defecto
-    para no forzar su instalacion si el equipo decide usar otro proveedor
-    de almacenamiento en el futuro. Instalar con:
-        pip install google-api-python-client google-auth --break-system-packages
-    """
 
+class LocalPrivateStorage:
+    """Almacenamiento privado de desarrollo, sin ruta HTTP publica."""
+
+    PREFIX = "local:"
+
+    def __init__(self, root=None):
+        self.root = Path(root or settings.PRIVATE_DOCUMENT_ROOT).resolve()
+
+    def upload(self, name, content):
+        self.root.mkdir(parents=True, exist_ok=True)
+        safe_name = Path(name).name
+        storage_name = f"{uuid.uuid4().hex}_{safe_name}"
+        destination = (self.root / storage_name).resolve()
+        if destination.parent != self.root:
+            raise ValueError("La ruta del documento no es valida.")
+
+        temporary = destination.with_suffix(f"{destination.suffix}.tmp")
+        try:
+            with temporary.open("wb") as target:
+                for chunk in content.chunks():
+                    target.write(chunk)
+            temporary.replace(destination)
+        except Exception:
+            temporary.unlink(missing_ok=True)
+            raise
+        return DriveUpload(file_id=f"{self.PREFIX}{storage_name}", web_view_link="")
+
+    def delete(self, file_id):
+        self._path(file_id).unlink(missing_ok=True)
+
+    def open(self, file_id):
+        return self._path(file_id).open("rb")
+
+    def _path(self, file_id):
+        if not file_id.startswith(self.PREFIX):
+            raise ValueError("El identificador no pertenece al almacenamiento local.")
+        destination = (self.root / file_id.removeprefix(self.PREFIX)).resolve()
+        if destination.parent != self.root:
+            raise ValueError("La ruta del documento no es valida.")
+        return destination
+
+
+class GoogleDriveStorage:
     def __init__(self):
-        # Antes usaba python-decouple (una segunda libreria de env-loading
-        # distinta a python-dotenv, usada en settings/base.py). Se unifica
-        # en os.environ, que ya viene poblado por load_dotenv() al importar
-        # settings - evita divergencias sobre desde donde se busca el .env.
         self.folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
+        self.credentials_path = os.environ.get("GOOGLE_DRIVE_CREDENTIALS_PATH", "")
         self._service = None
 
     def _get_service(self):
+        if not self.folder_id or not self.credentials_path:
+            raise ImproperlyConfigured("Google Drive no esta configurado.")
         if self._service is None:
             from google.oauth2 import service_account
             from googleapiclient.discovery import build
 
-            credentials_path = os.environ["GOOGLE_DRIVE_CREDENTIALS_PATH"]
             credentials = service_account.Credentials.from_service_account_file(
-                credentials_path, scopes=["https://www.googleapis.com/auth/drive.file"]
+                self.credentials_path,
+                scopes=["https://www.googleapis.com/auth/drive.file"],
             )
-            self._service = build("drive", "v3", credentials=credentials)
+            self._service = build("drive", "v3", credentials=credentials, cache_discovery=False)
         return self._service
 
-    def _save(self, name, content):
+    def upload(self, name, content):
         from googleapiclient.http import MediaIoBaseUpload
 
-        service = self._get_service()
-        file_metadata = {"name": name, "parents": [self.folder_id]}
         media = MediaIoBaseUpload(content, mimetype=content.content_type, resumable=True)
-
-        archivo = service.files().create(
-            body=file_metadata, media_body=media, fields="id, webViewLink"
+        result = self._get_service().files().create(
+            body={"name": name, "parents": [self.folder_id]},
+            media_body=media,
+            fields="id,webViewLink",
         ).execute()
+        return DriveUpload(file_id=result["id"], web_view_link=result["webViewLink"])
 
-        # Hacer público para que cualquiera con el enlace pueda verlo
-        service.permissions().create(
-            fileId=archivo["id"],
-            body={"type": "anyone", "role": "reader"}
-        ).execute()
+    def delete(self, file_id):
+        self._get_service().files().delete(fileId=file_id).execute()
 
-        return archivo["id"]
 
-    def delete(self, name):
-        """Elimina el archivo de Google Drive dado su file ID."""
-        service = self._get_service()
-        try:
-            service.files().delete(fileId=name).execute()
-        except Exception as e:
-            # Registrar error pero no propagar para no romper el flujo
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error al eliminar archivo de Drive {name}: {e}")
-            raise
-
-    def exists(self, name):
-        # Implementación real: consultar a Drive
-        if not name:
-            return False
-        service = self._get_service()
-        try:
-            service.files().get(fileId=name).execute()
-            return True
-        except Exception:
-            return False
-
-    def _open(self, name, mode="rb"):
-        raise NotImplementedError(
-            "La lectura directa de archivos no esta implementada en este adaptador; "
-            "usar el campo `ruta` del modelo Documento para obtener el enlace publico."
-        )
-
-    def url(self, name):
-        return f"https://drive.google.com/file/d/{name}/view"
-    
+def get_document_storage(file_id=None):
+    if file_id and file_id.startswith(LocalPrivateStorage.PREFIX):
+        return LocalPrivateStorage()
+    backend = settings.PRIVATE_DOCUMENT_STORAGE.lower()
+    if backend == "local":
+        return LocalPrivateStorage()
+    if backend == "drive":
+        return GoogleDriveStorage()
+    raise ImproperlyConfigured("PRIVATE_DOCUMENT_STORAGE debe ser 'local' o 'drive'.")

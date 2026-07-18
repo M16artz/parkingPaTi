@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: parkingpati-api-staging
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements/prod.txt && python manage.py migrate --noinput
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /health/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+      - key: DJANGO_LOG_LEVEL
+        value: INFO
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_CONN_MAX_AGE
+        value: "0"
+      - key: DB_SSL_REQUIRE
+        value: "True"

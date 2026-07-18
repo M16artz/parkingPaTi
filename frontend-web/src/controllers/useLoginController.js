@@ -1,54 +1,76 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { validateLogin } from '../utils/validators/authValidator';
+import { authService } from '../services/authService';
+import { extraerErroresApi } from '../utils/apiError';
 
 export const useLoginController = () => {
-  // Estado inicial del formulario de Login
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     correo: '',
-    password: ''
+    password: '',
   });
 
-  // Estado para capturar los errores de validación
   const [errors, setErrors] = useState({});
+  // NUEVO: antes no existía ningún estado de carga porque no había
+  // ninguna llamada asíncrona real que esperar.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const limpiarCachePrivada = () => {
+    queryClient.removeQueries({
+      predicate: (query) => query.queryKey[0] !== 'auth',
+    });
+  };
 
-  // Manejador genérico para los inputs de la vista
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Limpieza de error en tiempo real mientras el usuario escribe
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  // Manejador del envío del formulario
-  const handleSubmit = (e, onSuccess) => {
+  // handleSubmit ahora es async y llama de verdad a POST /api/auth/token/.
+  // Antes: validaba y ejecutaba onSuccess(formData) sin tocar la red.
+  const handleSubmit = async (e, onSuccess) => {
     if (e) e.preventDefault();
 
-    // Ejecutamos la validación del paquete de utilitarios
     const { isValid, errors: validationErrors } = validateLogin(formData);
-
     if (!isValid) {
       setErrors(validationErrors);
-      return false; // Detiene el flujo si hay errores
+      return false;
     }
 
     setErrors({});
-    console.log("Login válido, enviando a la API de servicios...", formData);
-    
-    // Aquí se llamará al servicio en el siguiente paso
-    if (onSuccess) onSuccess(formData);
-    return true;
+    setIsSubmitting(true);
+
+    try {
+      // Una misma pestaña puede iniciar sesión con cuentas de roles distintos.
+      // Elimina primero toda la información privada de la cuenta anterior y usa
+      // /auth/me/ como fuente autoritativa antes de decidir la redirección.
+      limpiarCachePrivada();
+      await authService.login({ ...formData, correo: formData.correo.trim() });
+      const sesion = await authService.me();
+      queryClient.setQueryData(['auth', 'me'], sesion);
+      if (onSuccess) onSuccess(sesion);
+      return true;
+    } catch (error) {
+      authService.clearLocalSession();
+      limpiarCachePrivada();
+      // Mapea el envelope {error, detail, code} de core/exceptions.py a
+      // errores por campo / mensaje general del formulario.
+      setErrors(extraerErroresApi(error));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
     formData,
     errors,
+    isSubmitting,
     handleChange,
-    handleSubmit
+    handleSubmit,
   };
 };

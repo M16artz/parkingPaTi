@@ -1,41 +1,40 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
-// Pantallas
-import WelcomeScreen from '../screens/WelcomeScreen';
+import { createStackNavigator } from '@react-navigation/stack';
+import { COLORS } from '../constants/theme';
 import ListScreen from '../screens/ListScreen';
 import MapScreen from '../screens/MapScreen';
-import OwnerDashboard from '../screens/OwnerDashboard';
-import ParkingInfoScreen from '../screens/ParkingInfoScreen';
-import ManageSpacesScreen from '../screens/ManageSpacesScreen';
+import ParkingDetailScreen from '../screens/ParkingDetailScreen';
 
-import { COLORS } from '../constants/theme';
+export type RootStackParamList = {
+    PublicParkings: undefined;
+    ParkingDetail: { parkingId: number };
+};
 
-const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
+export type PublicTabsParamList = {
+    Map: undefined;
+    List: undefined;
+};
 
-// Sub-Dashboard para los Conductores (Mapa y Lista juntos)
-function DriverTabs() {
+const Stack = createStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<PublicTabsParamList>();
+
+function PublicTabs() {
     return (
         <Tab.Navigator
-            screenOptions={{
-                tabBarActiveTintColor: COLORS.primary,
+            screenOptions={({ route }) => ({
                 headerStyle: { backgroundColor: COLORS.tertiary },
-                headerTintColor: '#FFF',
-            }}
+                headerTintColor: COLORS.white,
+                tabBarActiveTintColor: COLORS.primary,
+                tabBarIcon: ({ color, size }) => (
+                    <Ionicons name={route.name === 'Map' ? 'map-outline' : 'list-outline'} color={color} size={size} />
+                ),
+            })}
         >
-            <Tab.Screen
-                name="Mapa"
-                component={MapScreen}
-                options={{ title: '📍 Mapa Loja' }}
-            />
-            <Tab.Screen
-                name="Lista"
-                component={ListScreen}
-                options={{ title: '📋 Lista de Parqueaderos' }}
-            />
+            <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Mapa de Loja' }} />
+            <Tab.Screen name="List" component={ListScreen} options={{ title: 'Parqueaderos' }} />
         </Tab.Navigator>
     );
 }
@@ -44,38 +43,14 @@ export default function AppNavigator() {
     return (
         <NavigationContainer>
             <Stack.Navigator
-                initialRouteName="Welcome"
+                initialRouteName="PublicParkings"
                 screenOptions={{
-                    headerStyle: { backgroundColor: COLORS.primary },
-                    headerTintColor: '#FFF',
-                    headerTitleStyle: { fontWeight: 'bold' },
+                    headerStyle: { backgroundColor: COLORS.tertiary },
+                    headerTintColor: COLORS.white,
                 }}
             >
-                <Stack.Screen
-                    name="Welcome"
-                    component={WelcomeScreen}
-                    options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                    name="DriverHome"
-                    component={DriverTabs}
-                    options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                    name="OwnerDashboard"
-                    component={OwnerDashboard}
-                    options={{ title: 'Panel de Control' }}
-                />
-                <Stack.Screen
-                    name="ParkingInfo"
-                    component={ParkingInfoScreen}
-                    options={{ title: 'Información General' }}
-                />
-                <Stack.Screen
-                    name="ManageSpaces"
-                    component={ManageSpacesScreen}
-                    options={{ title: 'Gestión de Espacios' }}
-                />
+                <Stack.Screen name="PublicParkings" component={PublicTabs} options={{ headerShown: false }} />
+                <Stack.Screen name="ParkingDetail" component={ParkingDetailScreen} options={{ title: 'Detalle' }} />
             </Stack.Navigator>
         </NavigationContainer>
     );

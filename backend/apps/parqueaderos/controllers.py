@@ -1,13 +1,10 @@
-"""
-Controladores REST para parqueaderos y espacios.
-"""
-
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
-from apps.parqueaderos.repositories import EspacioRepository
+from apps.parqueaderos.models import EstadoHabilitacion
 from apps.parqueaderos.serializers_dto import (
     EspacioCambiarEstadoDTO,
     EspacioCrearDTO,
@@ -17,32 +14,28 @@ from apps.parqueaderos.serializers_dto import (
     ParqueaderoDetalleDTO,
     ParqueaderoResumenDTO,
 )
-
-from core.permissions import es_administrador
 from apps.parqueaderos.services import EspacioService, ParqueaderoService
 from core.pagination import PaginacionManualMixin
-from core.permissions import EsAdministrador
+from core.permissions import EsAdministrador, es_administrador
 
 
 class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
+    serializer_class = ParqueaderoDetalleDTO
+    lookup_value_regex = r"\d+"
+
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
         return [IsAuthenticated()]
 
     def list(self, request):
-        # Antes devolvia el queryset completo sin paginar (hallazgo 4.7):
-        # con muchos parqueaderos registrados, cada GET /api/parqueaderos/
-        # traia toda la tabla en una sola respuesta.
-        parqueaderos = ParqueaderoService.listar_disponibles()
-        return self.paginar(request, parqueaderos, ParqueaderoResumenDTO)
+        return self.paginar(request, ParqueaderoService.listar_disponibles(), ParqueaderoResumenDTO)
 
     def create(self, request):
         dto = ParqueaderoCrearDTO(data=request.data)
         dto.is_valid(raise_exception=True)
-
         parqueadero = ParqueaderoService.crear(
-            propietario=request.user, # Argumento actualizado a "propietario"
+            propietario=request.user,
             direccion_datos=dto.to_direccion_datos(),
             ubicacion_datos=dto.to_ubicacion_datos(),
             **dto.to_parqueadero_datos(),
@@ -51,24 +44,38 @@ class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         parqueadero = ParqueaderoService.obtener(pk)
-        # Si no está validado y el usuario no es propietario ni admin, error 404
-        if not parqueadero.validado and not (
-            request.user.is_authenticated and
-            (es_administrador(request.user) or parqueadero.propietario_id == request.user.id)
-        ):
+        es_publico = parqueadero.habilitacion_estado == EstadoHabilitacion.APROBADO
+        tiene_acceso = request.user.is_authenticated and (
+            es_administrador(request.user) or parqueadero.propietario_id == request.user.id
+        )
+        if not es_publico and not tiene_acceso:
             return Response({"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
+    @extend_schema(request=ParqueaderoActualizarDTO, responses=ParqueaderoDetalleDTO)
     def update(self, request, pk=None):
         dto = ParqueaderoActualizarDTO(data=request.data)
         dto.is_valid(raise_exception=True)
-        parqueadero = ParqueaderoService.actualizar(pk, request.user, **dto.validated_data)
+        parqueadero = ParqueaderoService.actualizar_datos_generales(
+            pk,
+            request.user,
+            dto.to_parqueadero_datos(),
+            dto.to_direccion_datos(),
+            dto.to_ubicacion_datos(),
+        )
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
+    @extend_schema(request=ParqueaderoActualizarDTO, responses=ParqueaderoDetalleDTO)
     def partial_update(self, request, pk=None):
         dto = ParqueaderoActualizarDTO(data=request.data, partial=True)
         dto.is_valid(raise_exception=True)
-        parqueadero = ParqueaderoService.actualizar(pk, request.user, **dto.validated_data)
+        parqueadero = ParqueaderoService.actualizar_datos_generales(
+            pk,
+            request.user,
+            dto.to_parqueadero_datos(),
+            dto.to_direccion_datos(),
+            dto.to_ubicacion_datos(),
+        )
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
     def destroy(self, request, pk=None):
@@ -80,53 +87,49 @@ class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
         parqueadero = ParqueaderoService.validar(pk)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def mios(self, request):
+        return Response(ParqueaderoDetalleDTO(ParqueaderoService.listar_propios(request.user), many=True).data)
+
 
 class EspacioViewSet(PaginacionManualMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
+    serializer_class = EspacioDTO
+    lookup_value_regex = r"\d+"
 
     def list(self, request):
         parqueadero_id = request.query_params.get("parqueadero")
         if not parqueadero_id:
-            return Response(
-                {"detail": "Debes indicar ?parqueadero=<id>."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "Debes indicar ?parqueadero=<id>."}, status=status.HTTP_400_BAD_REQUEST)
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
-        if not parqueadero.validado and not (
-            request.user.is_authenticated and
-            (es_administrador(request.user) or parqueadero.propietario_id == request.user.id)
-        ):
-            return Response({"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND)
-        espacios = EspacioService.listar_por_parqueadero(parqueadero_id)
-        return self.paginar(request, espacios, EspacioDTO)
+        ParqueaderoService._verificar_propietario(parqueadero, request.user)
+        return self.paginar(request, EspacioService.listar_por_parqueadero(parqueadero_id), EspacioDTO)
 
     def create(self, request):
         dto = EspacioCrearDTO(data=request.data)
         dto.is_valid(raise_exception=True)
-        
         espacio = EspacioService.crear(
             parqueadero_id=dto.validated_data["parqueadero"],
-            numero_espacio=dto.validated_data["numero_espacio"],
-            cuenta_solicitante=request.user      # <-- Cambio aquí
+            nombre=dto.validated_data["nombre"],
+            cuenta_solicitante=request.user,
         )
         return Response(EspacioDTO(espacio).data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, pk=None):
-        espacio = EspacioRepository.obtener_por_id(pk)
-        if espacio is None:
-            return Response({"detail": "Espacio no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        espacio = EspacioService.obtener(pk)
+        ParqueaderoService._verificar_propietario(espacio.parqueadero, request.user)
         return Response(EspacioDTO(espacio).data)
 
     def update(self, request, pk=None):
         dto = EspacioCambiarEstadoDTO(data=request.data)
         dto.is_valid(raise_exception=True)
-        espacio = EspacioService.cambiar_estado(pk, dto.validated_data["estado"], request.user)
+        espacio = EspacioService.actualizar(pk, request.user, **dto.validated_data)
         return Response(EspacioDTO(espacio).data)
 
     def partial_update(self, request, pk=None):
         dto = EspacioCambiarEstadoDTO(data=request.data, partial=True)
         dto.is_valid(raise_exception=True)
-        espacio = EspacioService.cambiar_estado(pk, dto.validated_data["estado"], request.user)
+        espacio = EspacioService.actualizar(pk, request.user, **dto.validated_data)
         return Response(EspacioDTO(espacio).data)
 
     def destroy(self, request, pk=None):
