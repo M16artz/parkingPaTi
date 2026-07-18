@@ -142,6 +142,10 @@ def test_api_exige_propiedad_normal_y_datos_validos():
     repetido["horarios"].append(repetido["horarios"][0])
     assert api.put("/api/v1/owner/configuration/", repetido, format="json").status_code == 400
 
+    precio_cero = payload_configuracion()
+    precio_cero["tarifas"][0]["precio_hora"] = "0"
+    assert api.put("/api/v1/owner/configuration/", precio_cero, format="json").status_code == 400
+
     configurar(cuenta)
     espacio_ajeno = Espacio.objects.filter(parqueadero__propietario=cuenta).first()
     api.force_authenticate(otra)
@@ -237,3 +241,38 @@ def test_no_se_puede_ocupar_directamente_ni_borrar_con_estancia_activa():
     assert api.delete(f"/api/v1/owner/spaces/{espacio.id}/").status_code == 409
     espacio.refresh_from_db()
     assert espacio.is_active is True
+
+
+def test_propietario_actualiza_solo_identidad_del_parqueadero():
+    cuenta, parqueadero = crear_propietario(9)
+    api = APIClient()
+    api.force_authenticate(cuenta)
+    response = api.patch(
+        f"/api/v1/parqueaderos/{parqueadero.id}/",
+        {
+            "nombre": "Parking Loja Centro",
+            "descripcion": "Atencion segura en el centro.",
+        },
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.data["nombre"] == "Parking Loja Centro"
+    assert response.data["direccion"]["calle_principal"] == "Bolivar"
+    assert response.data["ubicacion"]["latitud"] == "-3.990000"
+    assert response.data["updated_at"] is not None
+
+
+def test_actualizacion_general_rechaza_cambios_de_direccion_o_coordenadas():
+    cuenta, parqueadero = crear_propietario(10)
+    api = APIClient()
+    api.force_authenticate(cuenta)
+    assert api.patch(
+        f"/api/v1/parqueaderos/{parqueadero.id}/",
+        {"calle_principal": "10 de Agosto"},
+        format="json",
+    ).status_code == 400
+    assert api.patch(
+        f"/api/v1/parqueaderos/{parqueadero.id}/",
+        {"latitud": "-3.995000", "longitud": "-79.201000"},
+        format="json",
+    ).status_code == 400

@@ -1,5 +1,14 @@
 # Evidencia de fase 006
 
+## Tarifa visible de estancia activa - 2026-07-17
+
+- La respuesta de configuración incluye `estancia_tarifa_codigo` y
+  `estancia_precio_hora` desde el snapshot de la única estancia activa.
+- La grilla usa esos valores cuando el espacio está `OCUPADO` y conserva la
+  tarifa predeterminada para espacios no ocupados.
+- Prueba de integración incluida para una estancia con tarifa `DESCUENTO`.
+- Verificación conjunta fases 005-006: 20 pruebas backend aprobadas.
+
 ## Estado
 
 Fase completada: 12 de 12 tareas verificadas.

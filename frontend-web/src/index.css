@@ -64,6 +64,46 @@
     min-height: 44px;
     min-width: 44px;
   }
+
+  .owner-view-enter {
+    animation: owner-view-enter 260ms ease-out both;
+  }
+
+  /* Texto operativo de configuración; los títulos conservan su paleta. */
+  .owner-configuration-copy :where(
+    p, span, label, input, select, option, textarea, button,
+    dt, dd, li, a, th, td, legend
+  ):not(.owner-configuration-title) {
+    color: #1f2124 !important;
+  }
+
+  .owner-configuration-copy :where(input, textarea)::placeholder {
+    color: #1f2124 !important;
+    opacity: 0.72;
+  }
+
+  /* Recupera el gris original sobre fondos de marca, estado o validación. */
+  .owner-configuration-copy :where(
+    [class*="bg-sky-"], [class*="bg-blue-"], [class*="bg-cyan-"],
+    [class*="bg-red-"], [class*="bg-rose-"], [class*="bg-amber-"],
+    [class*="bg-orange-"], [class*="bg-yellow-"], [class*="bg-green-"],
+    [class*="bg-emerald-"], [class*="bg-teal-"], [class*="bg-indigo-"],
+    [class*="bg-violet-"], [class*="bg-purple-"]
+  ):not(h1):not(h2):not(h3):not(.owner-configuration-title),
+  .owner-configuration-copy :where(
+    [class*="bg-sky-"], [class*="bg-blue-"], [class*="bg-cyan-"],
+    [class*="bg-red-"], [class*="bg-rose-"], [class*="bg-amber-"],
+    [class*="bg-orange-"], [class*="bg-yellow-"], [class*="bg-green-"],
+    [class*="bg-emerald-"], [class*="bg-teal-"], [class*="bg-indigo-"],
+    [class*="bg-violet-"], [class*="bg-purple-"]
+  ) :where(p, span, label, input, select, option, textarea, button, dt, dd, li, a, th, td, legend) {
+    color: var(--color-secondary) !important;
+  }
+}
+
+@keyframes owner-view-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Ajustes globales del scrollbar para mejorar la UI general */

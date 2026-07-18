@@ -50,7 +50,7 @@ export const parqueaderoService = {
     return data;
   },
 
-  /** PATCH /api/parqueaderos/{id}/ - nombre, estado, disponibilidad */
+  /** PATCH /api/parqueaderos/{id}/ - nombre y descripcion; ubicacion es solo lectura */
   async actualizar(id, datos) {
     const { data } = await apiClient.patch(`/parqueaderos/${id}/`, datos);
     return data;

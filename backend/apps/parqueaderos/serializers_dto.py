@@ -50,13 +50,37 @@ class ParqueaderoDetalleDTO(serializers.ModelSerializer):
             "id", "nombre", "descripcion", "habilitacion_estado", "motivo_rechazo",
             "estado_operativo", "total_espacios", "espacios_disponibles",
             "configuracion_completa", "direccion", "ubicacion", "espacios", "propietario",
+            "approved_at", "updated_at",
         ]
-        read_only_fields = ["id", "habilitacion_estado", "motivo_rechazo", "propietario"]
+        read_only_fields = fields
 
 
 class ParqueaderoActualizarDTO(serializers.Serializer):
+    CAMPOS_UBICACION = {
+        "calle_principal", "calle_secundaria", "numero_lote", "latitud", "longitud"
+    }
     nombre = serializers.CharField(max_length=150, required=False)
     descripcion = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if self.CAMPOS_UBICACION.intersection(self.initial_data):
+            raise serializers.ValidationError({
+                "ubicacion": "La ubicacion aprobada es de solo lectura para el propietario."
+            })
+        return attrs
+
+    def to_parqueadero_datos(self):
+        return {
+            campo: self.validated_data[campo]
+            for campo in ("nombre", "descripcion")
+            if campo in self.validated_data
+        }
+
+    def to_direccion_datos(self):
+        return {}
+
+    def to_ubicacion_datos(self):
+        return {}
 
 
 class ParqueaderoCrearDTO(serializers.Serializer):

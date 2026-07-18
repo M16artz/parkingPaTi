@@ -1,0 +1,1038 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+OwnerConfigEspacios.jsx
+OwnerConfigGeneral.jsx
+OwnerDashboardView.jsx
+OwnerInfoGeneral.jsx
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="OwnerConfigEspacios.jsx">
+// ============================================================================
+// 1. IMPORTACIONES
+// ============================================================================
+import React, { useState } from 'react';
+import { Save, Grid, Layers, DollarSign, X, Check, Car } from 'lucide-react';
+import { Button } from '../Button';
+// 🛡️ Importación de tu validador dedicado
+import { validateEspacioConfig } from '../../../utils/validators/ownerConfigEValidator'; 
+
+export const OwnerConfigEspacios = () => {
+  // --- ESTADOS PRINCIPALES Y DE CONTROL ---
+  const [numEspacios, setNumEspacios] = useState('12'); 
+  const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Estado para simular la base de datos de los espacios del parqueadero
+  const [espacios, setEspacios] = useState(
+    Array.from({ length: 12 }, (_, i) => ({
+      id: String(i + 1).padStart(2, '0'),
+      estado: 'LIBRE', 
+      tarifa: 'GENERAL' 
+    }))
+  );
+
+  // --- ESTADOS PARA EL MODAL ---
+  const [selectedEspacio, setSelectedEspacio] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // NUEVOS COLORES HEX REQUERIDOS: Libre (#00bf63), Ocupado (#0a878b), Inhabilitado (#ff7c00)
+  const estadoOptions = [
+    { value: 'LIBRE', label: 'Libre', color: 'bg-[#00bf63] text-white ring-emerald-100 hover:bg-[#00a354]' },
+    { value: 'OCUPADO', label: 'Ocupado', color: 'bg-[#0a878b] text-white ring-teal-100 hover:bg-[#086f72]' },
+    { value: 'INHABILITADO', label: 'Inhabilitado', color: 'bg-[#ff7c00] text-white ring-orange-200 hover:bg-[#e06d00]' }
+  ];
+
+  const tarifaOptions = [
+    { value: 'GENERAL', label: 'Tarifa General', desc: 'Estándar por hora', precio: '$1.00' },
+    { value: 'PREFERENCIAL', label: 'Preferencial', desc: 'Tercera Edad / Discapacidad', precio: '$0.50' },
+    { value: 'PESADOS', label: 'Vehículos Grandes', desc: '4x4 / Pesados', precio: '$1.50' }
+  ];
+
+  // --- MANEJADORES DE EVENTOS BLINDADOS ---
+  const handleNumEspaciosChange = (value) => {
+    // 🌟 FILTRO RADICAL: Elimina de inmediato letras, signos negativos y caracteres especiales
+    const inputValue = value.replace(/[^0-9]/g, '');
+    setNumEspacios(inputValue); 
+
+    // Limpiamos errores previos al escribir
+    if (errors.numEspacios) {
+      setErrors(prev => ({ ...prev, numEspacios: null }));
+    }
+
+    // Ejecutamos tu validador externo para comprobar límites (ej. máx 200)
+    const validation = validateEspacioConfig({ numEspacios: inputValue });
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return; // Frena la regeneración del arreglo si el valor es inválido o desborda
+    }
+
+    const targetLength = inputValue === '' ? 1 : Math.max(1, parseInt(inputValue, 10));
+    
+    setEspacios(prev => {
+      return Array.from({ length: targetLength }, (_, i) => {
+        if (prev[i]) return prev[i];
+        return {
+          id: String(i + 1).padStart(2, '0'),
+          estado: 'LIBRE',
+          tarifa: 'GENERAL'
+        };
+      });
+    });
+  };
+
+  const handleBlurInput = () => {
+    if (numEspacios === '' || parseInt(numEspacios, 10) < 1) {
+      handleNumEspaciosChange('1');
+    }
+  };
+
+  const openEditModal = (espacio) => {
+    setSelectedEspacio({ ...espacio });
+    setIsModalOpen(true);
+  };
+
+  const saveEspacioChanges = () => {
+    setEspacios(prev => prev.map(esp => esp.id === selectedEspacio.id ? selectedEspacio : esp));
+    setIsModalOpen(false);
+  };
+
+  const handleSaveAll = async () => {
+    setErrors({});
+    
+    // Doble verificación con el validador antes de enviar
+    const validation = validateEspacioConfig({ numEspacios });
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      console.log("Guardando Distribución de Espacios:", espacios);
+      alert("¡Distribución y estados de espacios guardados con éxito!");
+    } catch (err) {
+      setErrors({ formulario: "Ocurrió un error al intentar guardar los cambios." });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-[98%] mx-auto flex flex-col gap-8 text-left animate-fadeIn">
+      
+      {/* CARD PRINCIPAL */}
+      <div className="bg-bg p-10 rounded-[32px] border border-slate-100 space-y-8">
+        
+        {/* CABECERA DE LA SECCIÓN */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/60">
+          <div className="flex items-center gap-3.5">
+            <Grid size={24} className="text-primary shrink-0" />
+            <h2 className="text-xl font-black text-slate-800 font-headline uppercase tracking-wide">
+              Distribución de Espacios
+            </h2>
+          </div>
+          
+          {/* Input de Espacios Totales Blindado */}
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border border-slate-200 shadow-sm">
+              <span className="text-sm font-bold text-slate-500 font-body select-none">
+                Nº Espacios Totales:
+              </span>
+              <input 
+                type="text" 
+                inputMode="numeric" 
+                value={numEspacios}
+                onChange={(e) => handleNumEspaciosChange(e.target.value)}
+                onBlur={handleBlurInput}
+                className="w-16 text-center font-black text-lg text-slate-800 bg-transparent outline-none font-body"
+              />
+            </div>
+            {/* Mensaje de error renderizado dinámicamente desde el validador */}
+            {errors.numEspacios && (
+              <span className="text-xs font-bold text-red-500 pr-1 animate-shake">
+                {errors.numEspacios}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <p className="text-base text-slate-500 font-body">
+          Haz clic sobre cualquier celda para gestionar su disponibilidad en tiempo real y asignarle una estructura tarifaria específica.
+        </p>
+
+        {/* RECUADRO INTERNO BLANCO */}
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
+            {espacios.map((espacio) => {
+              let bgClass = "bg-[#00bf63] hover:bg-[#00a354] shadow-emerald-100"; 
+              if (espacio.estado === 'OCUPADO') {
+                bgClass = "bg-[#0a878b] hover:bg-[#086f72] shadow-teal-100";     
+              } else if (espacio.estado === 'INHABILITADO') {
+                bgClass = "bg-[#ff7c00] hover:bg-[#e06d00] shadow-orange-100";   
+              }
+
+              const infoTarifa = tarifaOptions.find(t => t.value === espacio.tarifa);
+              const precioTexto = infoTarifa ? infoTarifa.precio : "$0.00";
+
+              return (
+                <button
+                  key={espacio.id}
+                  type="button"
+                  onClick={() => openEditModal(espacio)}
+                  className={`${bgClass} h-28 rounded-2xl flex flex-col items-center justify-center text-white transition-all duration-200 hover:scale-[1.04] active:scale-95 shadow-md focus:outline-none p-3 gap-1 relative`}
+                >
+                  {/* BUBBLE DEL PRECIO */}
+                  <span className="absolute top-2 right-2 bg-white text-slate-800 text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm pointer-events-none">
+                    {precioTexto}
+                  </span>
+
+                  <Car size={22} className="opacity-95 mt-3" />
+                  
+                  <div className="flex items-center justify-center gap-2 w-full text-center mt-1">
+                    <span className="text-2xl font-black tracking-wider font-headline shrink-0">
+                      {espacio.id}
+                    </span>
+                    <span className="text-xs font-black tracking-wide uppercase font-body bg-white/20 px-1.5 py-0.5 rounded underline decoration-white decoration-2 underline-offset-4">
+                      {espacio.estado === 'INHABILITADO' ? 'INHAB' : espacio.tarifa.substring(0, 4)}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* BOTÓN MAESTRO DE ACCIÓN GLOBAL */}
+      <div className="flex flex-col items-end gap-2 mt-2">
+        {errors.formulario && (
+          <span className="text-sm font-bold text-red-500 bg-red-50 border border-red-200 py-1.5 px-4 rounded-xl">
+            {errors.formulario}
+          </span>
+        )}
+        <Button 
+          variant="primary"
+          disabled={isSaving || !!errors.numEspacios}
+          onClick={handleSaveAll}
+          className="w-full sm:w-auto px-16 py-4.5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Save size={20} /> {isSaving ? 'Guardando...' : 'Guardar Distribución Completa'}
+        </Button>
+      </div>
+
+      {/* MODAL MÁS ANCHO FLOTANTE */}
+      {isModalOpen && selectedEspacio && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
+          <div className="bg-white w-full max-w-xl rounded-[28px] shadow-2xl border border-slate-100 overflow-hidden animate-scaleUp">
+            
+            {/* CABECERA MODAL */}
+            <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Layers size={18} className="text-primary" />
+                <h3 className="text-lg font-black text-slate-800 font-headline uppercase">
+                  Configurar Espacio {selectedEspacio.id}
+                </h3>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              
+              {/* APARTADO 1: ESTADO DEL ESPACIO */}
+              <div className="space-y-2.5">
+                <label className="block text-sm font-black text-slate-700 font-body uppercase tracking-wider">
+                  1. Estado del Espacio
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {estadoOptions.map((opt) => {
+                    const isCurrent = selectedEspacio.estado === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setSelectedEspacio(prev => ({ ...prev, estado: opt.value }))}
+                        className={`py-3 rounded-xl text-sm font-black transition-all border focus:outline-none ${isCurrent ? opt.color + " border-transparent ring-4" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* APARTADO 2: ELEGIR TARIFAS */}
+              <div className="space-y-2.5">
+                <label className="block text-sm font-black text-slate-700 font-body uppercase tracking-wider">
+                  2. Estructura Tarifaria Aplicada
+                </label>
+                <div className="flex flex-col gap-2.5">
+                  {tarifaOptions.map((opt) => {
+                    const isCurrent = selectedEspacio.tarifa === opt.value;
+                    return (
+                      <div
+                        key={opt.value}
+                        onClick={() => setSelectedEspacio(prev => ({ ...prev, tarifa: opt.value }))}
+                        className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all group ${isCurrent ? "bg-blue-50/60 border-primary shadow-sm" : "bg-white border-slate-200 hover:bg-slate-50/50"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isCurrent ? "bg-primary text-white" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"}`}>
+                            <DollarSign size={18} />
+                          </div>
+                          <div className="text-left">
+                            <p className={`text-base font-bold ${isCurrent ? 'text-primary' : 'text-slate-700'}`}>
+                              {opt.label}
+                            </p>
+                            <p className="text-xs text-slate-400 font-body">
+                              {opt.desc}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <span className={`text-base font-black ${isCurrent ? 'text-primary' : 'text-slate-500'}`}>
+                            {opt.precio}
+                          </span>
+                          {isCurrent && <Check size={18} className="text-primary" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* PIE DEL MODAL */}
+            <div className="bg-slate-50 px-6 py-4 flex justify-end border-t border-slate-100">
+              <button
+                type="button"
+                onClick={saveEspacioChanges}
+                className="bg-primary text-white font-bold text-sm px-8 py-3 rounded-xl shadow-md hover:bg-primary/90 transition-all focus:outline-none"
+              >
+                Confirmar Cambios
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+</file>
+
+<file path="OwnerConfigGeneral.jsx">
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom'; 
+import { Save, Clock, DollarSign, Activity, ChevronDown, Check, AlertTriangle, Copy } from 'lucide-react';
+import { Input } from '../Input'; 
+import { Button } from '../Button';
+import { useOwnerConfigGController } from '../../../controllers/useOwnerConfigGController';
+
+const SelectorHora24h = ({ value, onChange, disabled }) => {
+  const [hora, minuto] = (value || "00:00").split(':');
+  const horasOpciones = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minutosOpciones = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+  return (
+    <div className={`flex items-center gap-1.5 p-2 bg-white border border-slate-200 rounded-2xl shadow-sm transition-all ${disabled ? 'bg-slate-100 opacity-60' : 'hover:border-slate-300'}`}>
+      <select
+        disabled={disabled}
+        value={hora}
+        onChange={(e) => onChange(`${e.target.value}:${minuto}`)}
+        className="bg-transparent text-lg font-black text-slate-700 focus:outline-none cursor-pointer disabled:cursor-not-allowed px-1"
+      >
+        {horasOpciones.map(h => <option key={h} value={h}>{h}</option>)}
+      </select>
+      <span className="text-slate-400 font-black text-lg select-none">:</span>
+      <select
+        disabled={disabled}
+        value={minuto}
+        onChange={(e) => onChange(`${hora}:${e.target.value}`)}
+        className="bg-transparent text-lg font-black text-slate-700 focus:outline-none cursor-pointer disabled:cursor-not-allowed px-1"
+      >
+        {minutosOpciones.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+    </div>
+  );
+};
+
+export const OwnerConfigGeneral = () => {
+  const configCtrl = useOwnerConfigGController();
+  const [isOpenEnumMenu, setIsOpenEnumMenu] = useState(false);
+
+  const enumOptions = [
+    { value: 'ABIERTO', label: '🟢 ABIERTO', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    { value: 'CERRADO', label: '🔴 CERRADO', color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    { value: 'LLENO', label: '🟠 LLENO', color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    { value: 'FUERA DE SERVICIO', label: '⚫ FUERA DE SERVICIO', color: 'text-slate-700 bg-slate-50 border-slate-200' }
+  ];
+
+  const currentEnum = enumOptions.find(opt => opt.value === configCtrl.disponibilidad) || enumOptions[0];
+  const esBotonMaestroHabilitado = configCtrl.maestroInicio && configCtrl.maestroFin;
+
+  return (
+    <div className="w-full max-w-[98%] mx-auto flex flex-col gap-8 text-left animate-fadeIn">
+      
+      {/* SECCIÓN 1: ESTADO DE DISPONIBILIDAD */}
+      <div className="bg-bg p-10 rounded-[32px] space-y-6 border border-slate-100">
+        <div className="flex items-center gap-3.5 pb-3 border-b border-slate-200/60">
+          <Activity size={24} className="text-primary shrink-0" />
+          <h2 className="text-xl font-black text-slate-800 font-headline uppercase tracking-wide">Estado de Disponibilidad</h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 pt-2">
+          <div className="lg:col-span-4 space-y-1">
+            <label className="block text-lg font-bold text-slate-700 font-body">Estado en vivo</label>
+            <p className="text-sm text-slate-400 font-body leading-relaxed">Los conductores verán este estado inmediatamente en el mapa de la app.</p>
+          </div>
+          <div className="lg:col-span-8 relative">
+            <button
+              type="button"
+              onClick={() => setIsOpenEnumMenu(!isOpenEnumMenu)}
+              className="w-full py-4 px-6 bg-white border border-slate-200 rounded-2xl font-bold text-base text-slate-700 shadow-sm flex items-center justify-between cursor-pointer transition-all hover:border-slate-300 focus:outline-none"
+            >
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-1.5 text-sm rounded-full border font-black ${currentEnum.color}`}>
+                  {currentEnum.label}
+                </span>
+              </div>
+              <ChevronDown size={20} className={`text-slate-400 transition-transform duration-300 ${isOpenEnumMenu ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpenEnumMenu && (
+              <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] z-40 overflow-hidden p-2 space-y-1 animate-slideUp">
+                {enumOptions.map((option) => {
+                  const isSelected = configCtrl.disponibilidad === option.value;
+                  return (
+                    <div 
+                      key={option.value} 
+                      onClick={() => { configCtrl.setDisponibilidad(option.value); setIsOpenEnumMenu(false); }} 
+                      className={`px-4 py-3.5 rounded-xl flex items-center justify-between cursor-pointer transition-all font-body ${isSelected ? 'bg-slate-50 text-primary font-black' : 'text-slate-600 hover:bg-slate-50/80 font-bold'}`}
+                    >
+                      <span className="text-base tracking-wide">{option.label}</span>
+                      {isSelected && <Check size={18} className="text-primary" />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN 2: HORARIOS DE ATENCIÓN */}
+      <div className="bg-bg p-10 rounded-[32px] space-y-6 border border-slate-100">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-4 border-b border-slate-200/60">
+          <div className="flex items-center gap-3.5">
+            <Clock size={24} className="text-primary shrink-0" />
+            <h2 className="text-xl font-black text-slate-800 font-headline uppercase tracking-wide">Horarios de Operación *</h2>
+          </div>
+          <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 flex flex-wrap items-center gap-3 self-start lg:self-auto">
+            <span className="text-xs font-black uppercase text-slate-500 font-body pl-1">Horario Rápido:</span>
+            <div className="flex items-center gap-2">
+              <SelectorHora24h value={configCtrl.maestroInicio || "00:00"} onChange={configCtrl.setMaestroInicio} />
+              <span className="text-xs text-slate-400 font-bold">a</span>
+              <SelectorHora24h value={configCtrl.maestroFin || "00:00"} onChange={configCtrl.setMaestroFin} />
+            </div>
+            <button
+              type="button"
+              disabled={!esBotonMaestroHabilitado}
+              onClick={configCtrl.aplicarHorarioATodos}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs font-label transition-all cursor-pointer ${esBotonMaestroHabilitado ? 'bg-primary text-white shadow-md shadow-primary/10 hover:bg-primary/90 hover:scale-[1.02]' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+            >
+              <Copy size={13} /> Aplicar a todos
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-2">
+          {Object.keys(configCtrl.horarios).map((key) => {
+            const dia = configCtrl.horarios[key];
+            const hasError = !!configCtrl.errors[key];
+            return (
+              <div key={key} className="flex flex-col gap-2">
+                <div className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${hasError ? 'border-red-400 bg-red-50/5' : dia.activo ? 'bg-white border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.02)]' : 'bg-white/50 border-slate-100 opacity-60'}`}>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={dia.activo} 
+                        onChange={(e) => configCtrl.handleDayChange(key, 'activo', e.target.checked)} 
+                        className="rounded-lg text-primary h-5 w-5 border-slate-300 cursor-pointer" 
+                      />
+                      <span className="text-xl font-bold text-slate-800 font-body block">{dia.label} {dia.activo && <span className="text-red-500 text-sm">*</span>}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+                    <SelectorHora24h disabled={!dia.activo} value={dia.inicio} onChange={(v) => configCtrl.handleDayChange(key, 'inicio', v)} />
+                    <span className="text-slate-400 font-bold font-body text-base px-1">hasta las</span>
+                    <SelectorHora24h disabled={!dia.activo} value={dia.fin} onChange={(v) => configCtrl.handleDayChange(key, 'fin', v)} />
+                  </div>
+                </div>
+                {hasError && <span className="text-sm font-bold text-red-500 px-4 mb-2">{configCtrl.errors[key]}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECCIÓN 3: TARIFAS POR HORA BLINDADA 🛡️ */}
+      <div className="bg-bg p-10 rounded-[32px] space-y-6 border border-slate-100">
+        <div className="flex items-center gap-3.5 pb-3 border-b border-slate-200/60">
+          <DollarSign size={24} className="text-primary shrink-0" />
+          <h2 className="text-xl font-black text-slate-800 font-headline uppercase tracking-wide">Estructura Tarifaria</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 text-left">
+          
+          {/* 1. TARIFA ESTÁNDAR / GENERAL */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <span className="text-xs font-black tracking-wider uppercase text-slate-400 block">Estándar *</span>
+            <label className="text-xs font-bold text-slate-500 block -mb-2">Tarifa General por Hora ($) *</label>
+            <input 
+              type="text"
+              inputMode="decimal"
+              value={configCtrl.tarifas.general || ''} 
+              onChange={(e) => {
+                const valorLimpio = e.target.value
+                  .replace(/[^0-9.]/g, '') 
+                  .replace(/(\..*?)\..*/g, '$1'); 
+                configCtrl.handleTarifaChange('general', valorLimpio);
+              }} 
+              placeholder="0.00" 
+              className="w-full py-3 px-4 rounded-xl border border-gray-200 outline-none font-body text-slate-700 bg-white shadow-sm focus:border-primary transition-all font-bold text-sm"
+            />
+            {configCtrl.errors.tarifa_general && <span className="text-sm font-bold text-red-500 block">{configCtrl.errors.tarifa_general}</span>}
+          </div>
+
+          {/* 2. TARIFA PREFERENCIAL */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <span className="text-xs font-black tracking-wider uppercase text-blue-500 block">Preferencial</span>
+            <label className="text-xs font-bold text-slate-500 block -mb-2">Tercera Edad / Discapacidad ($)</label>
+            <input 
+              type="text"
+              inputMode="decimal"
+              value={configCtrl.tarifas.descuento || ''} 
+              onChange={(e) => {
+                const valorLimpio = e.target.value
+                  .replace(/[^0-9.]/g, '')
+                  .replace(/(\..*?)\..*/g, '$1');
+                configCtrl.handleTarifaChange('descuento', valorLimpio);
+              }} 
+              placeholder="0.00" 
+              className="w-full py-3 px-4 rounded-xl border border-gray-200 outline-none font-body text-slate-700 bg-white shadow-sm focus:border-primary transition-all font-bold text-sm"
+            />
+          </div>
+
+          {/* 3. TARIFA PESADOS */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <span className="text-xs font-black tracking-wider uppercase text-amber-600 block">Pesados</span>
+            <label className="text-xs font-bold text-slate-500 block -mb-2">Vehículos Grandes / 4x4 ($)</label>
+            <input 
+              type="text"
+              inputMode="decimal"
+              value={configCtrl.tarifas.grandes || ''} 
+              onChange={(e) => {
+                const valorLimpio = e.target.value
+                  .replace(/[^0-9.]/g, '')
+                  .replace(/(\..*?)\..*/g, '$1');
+                configCtrl.handleTarifaChange('grandes', valorLimpio);
+              }} 
+              placeholder="0.00" 
+              className="w-full py-3 px-4 rounded-xl border border-gray-200 outline-none font-body text-slate-700 bg-white shadow-sm focus:border-primary transition-all font-bold text-sm"
+            />
+          </div>
+
+        </div>
+      </div>
+
+      {/* BOTÓN MAESTRO DE ACCIÓN */}
+      <div className="flex flex-col items-end gap-3 mt-4">
+        {configCtrl.errors.formulario && (
+          <span className="text-base font-black text-red-500 bg-red-50 border border-red-200 py-2 px-6 rounded-xl animate-shake">
+             {configCtrl.errors.formulario}
+          </span>
+        )}
+        <Button 
+          variant="primary"
+          onClick={configCtrl.preSubmitCheck}
+          disabled={configCtrl.isSaving}
+          className="w-full sm:w-auto px-16 py-4.5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl transition-all"
+        >
+          Guardar Cambios del Sistema
+        </Button>
+      </div>
+
+      {/* ================================================================= */}
+      {/* ESCAPE PLAN: PORTALES DE REACT PARA ARRANCAR LOS MODALES       */}
+      {/* ================================================================= */}
+      
+      {/* MODAL 1: CONFIRMACIÓN */}
+      {configCtrl.showConfirmModal && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
+          <div className="bg-white rounded-[32px] max-w-md w-full p-8 shadow-[0_24px_70px_rgba(0,0,0,0.3)] text-center space-y-6 border border-slate-100 animate-scaleUp">
+            <div className="mx-auto w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-100">
+              <AlertTriangle size={32} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-wide">¿Confirmar Cambios?</h3>
+              <p className="text-base text-slate-500 leading-relaxed">¿Estás seguro de que deseas aplicar esta nueva configuración horaria y tarifaria al sistema en vivo?</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => configCtrl.setShowConfirmModal(false)}
+                className="w-full py-4 bg-slate-50 border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => configCtrl.executeSubmit()}
+                className="w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all cursor-pointer"
+              >
+                Sí, guardar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body 
+      )}
+
+      {/* MODAL 2: ÉXITO */}
+      {configCtrl.showSuccessModal && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
+          <div className="bg-white rounded-[32px] max-w-md w-full p-8 shadow-[0_24px_70px_rgba(0,0,0,0.3)] text-center space-y-6 border border-slate-100 animate-scaleUp">
+            <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-100">
+              <Check size={36} className="stroke-[3]" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-wide">¡Cambios Guardados!</h3>
+              <p className="text-base text-slate-500 leading-relaxed">La configuración general del parqueadero se ha actualizado exitosamente en la base de datos.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => configCtrl.setShowSuccessModal(false)}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-800 transition-all cursor-pointer pt-2"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>,
+        document.body 
+      )}
+
+    </div>
+  );
+};
+</file>
+
+<file path="OwnerDashboardView.jsx">
+// ============================================================================
+// 1. IMPORTACIONES Y DEPENDENCIAS
+// ============================================================================
+import React, { useState } from 'react';
+import { LayoutDashboard, Settings, Key, Car, LogOut } from 'lucide-react'; 
+import { useNavigate } from 'react-router-dom';
+
+// Importación de tu foto local desde la carpeta assets
+import userPhoto from '../../assets/user.png';
+
+// Vistas modulares internas
+import { OwnerInfoGeneral } from '../components/owner/OwnerInfoGeneral';
+import { OwnerConfigGeneral } from '../components/owner/OwnerConfigGeneral';
+import { OwnerConfigEspacios } from '../components/owner/OwnerConfigEspacios';
+
+// ============================================================================
+// 2. CONSTANTES DE CONFIGURACIÓN DE LA NAVEGACIÓN LATERAL
+// ============================================================================
+const NAV_ITEMS = [
+  { key: 'infoGeneral', icon: LayoutDashboard, label: 'CONFIGURACION INFORMACION', index: 0 },
+  { key: 'configGeneral', icon: Settings, label: 'CONFIGURACION GENERAL', index: 1 },
+  { key: 'configEspacios', icon: Key, label: 'CONFIGURACION ESPACIOS', index: 2 },
+];
+
+// ============================================================================
+// 3. COMPONENTE PRINCIPAL (PANEL DE CONTROL / DASHBOARD)
+// ============================================================================
+export const OwnerDashboardView = () => {
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState('infoGeneral');
+
+  // Encontrar el índice dinámico para acoplar la cápsula flotante animada
+  const activeIndex = NAV_ITEMS.find(item => item.key === activeView)?.index ?? 0;
+
+  return (
+    <div 
+      className={
+        "w-screen " + 
+        "h-screen " + 
+        "flex " + 
+        "p-6 " + 
+        "bg-bg " +               // Tu azulito/celeste bajito de fondo exterior
+        "select-none " + 
+        "overflow-hidden " + 
+        "font-sans " + 
+        "antialiased"
+      }
+    >
+      
+      {/* CONTENEDOR ENCAPSULADO CON BORDES REDONDEADOS Y SOMBRA ELEVADA */}
+      <div 
+        className={
+          "w-full " + 
+          "h-full " + 
+          "flex " + 
+          "bg-white " +            // Fondo interior blanco puro
+          "rounded-[32px] " + 
+          "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] " + 
+          "overflow-hidden"
+        }
+      >
+        
+        {/* ----------------------------------------------------------------- */}
+        {/* ASIDE: BARRA LATERAL AZUL DE NAVEGACIÓN ORIGINAL                  */}
+        {/* ----------------------------------------------------------------- */}
+        <aside 
+          className={
+            "w-[290px] " + 
+            "bg-primary " + 
+            "bg-gradient-to-b " + 
+            "from-primary " + 
+            "to-[#466fd3] " + 
+            "flex " + 
+            "flex-col " + 
+            "pt-12 " + 
+            "pb-8 " + 
+            "px-0 " + 
+            "text-white " + 
+            "relative " + 
+            "transform-gpu " + 
+            "z-10 " + 
+            "overflow-hidden " + 
+            "shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)]"
+          }
+        >
+          
+          {/* SECCIÓN DEL USUARIO (Foto circular y datos alineados) */}
+          <div 
+            className={
+              "flex " + 
+              "flex-col " + 
+              "items-center " + 
+              "px-6 " + 
+              "mb-10 " + 
+              "text-center"
+            }
+          >
+            {/* Contenedor de la Foto Circular */}
+            <div 
+              className={
+                "w-24 " + 
+                "h-24 " + 
+                "rounded-full " + 
+                "border-2 " + 
+                "border-teal-400 " + 
+                "p-1 " + 
+                "mb-4 " + 
+                "overflow-hidden " + 
+                "bg-white/10 " + 
+                "shadow-lg"
+              }
+            >
+              {/* Aquí se carga tu imagen user.png de assets */}
+              <img 
+                src={userPhoto} 
+                alt="User Profile" 
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+
+            {/* Nombre con tipografía grande y legible corregida */}
+            <h3 
+              className={
+                "text-2xl " + 
+                "font-black " + 
+                "tracking-wide " + 
+                "font-headline " + 
+                "uppercase " + 
+                "shadow-sm"
+              }
+            >
+              María Buri
+            </h3>
+            {/* Correo Electrónico Agrandado */}
+            <span 
+              className={
+                "text-base " +         // ¡Cambiado de text-xs a text-base para que sea más grande!
+                "font-semibold " +     // Un toque más grueso para mejorar el contraste
+                "text-white/80 " +     // Un blanco un poco más brillante (80% de opacidad)
+                "font-body " + 
+                "mt-1.5"
+              }
+            >
+              maria.buri@gmail.com
+            </span>
+          </div>
+
+          {/* CONTENEDOR ENVOLVENTE DE LA NAV CON TRUCO DE CÁPSULA FLOTANTE */}
+          <div className="relative w-full pl-6 flex flex-col gap-1 transform-gpu">
+            
+            {/* Fondo Blanco de Acople Animado Detrás de la Opción Activa */}
+            <div 
+              className={
+                "absolute " + 
+                "right-0 " + 
+                "w-[266px] " + 
+                "h-[64px] " + 
+                "bg-white " + 
+                "rounded-l-[32px] " + 
+                "transition-all " + 
+                "duration-300 " + 
+                "ease-out " + 
+                "transform-gpu"
+              }
+              style={{ 
+                top: `${activeIndex * 68}px`,
+                willChange: 'transform',
+                marginRight: '-1px'
+              }}
+            >
+              {/* Curvatura Interna Superior acoplada al fondo blanco */}
+              <div className="absolute right-0 -top-[21px] w-[21px] h-[21px] overflow-hidden pointer-events-none">
+                <div className="w-full h-full rounded-br-[21px] shadow-[5px_5px_0_6px_#ffffff]" />
+              </div>
+              {/* Curvatura Interna Inferior acoplada al fondo blanco */}
+              <div className="absolute right-0 -bottom-[21px] w-[21px] h-[21px] overflow-hidden pointer-events-none">
+                <div className="w-full h-full rounded-tr-[21px] shadow-[5px_-5px_0_6px_#ffffff]" />
+              </div>
+            </div>
+
+            {/* GENERACIÓN ITERATIVA DE BOTONES DE ACCESO DE LA NAV */}
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeView === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveView(item.key)}
+                  className={
+                    "z-10 " + 
+                    "flex " + 
+                    "items-center " + 
+                    "justify-between " + 
+                    "pl-8 " + 
+                    "pr-4 " + 
+                    "h-[64px] " + 
+                    "rounded-l-[32px] " + 
+                    "font-bold " + 
+                    "text-[13px] " + 
+                    "tracking-wider " + 
+                    "w-full " + 
+                    "text-left " + 
+                    "group " + 
+                    "transition-colors " + 
+                    "duration-300 " + 
+                    "border-none " + 
+                    "outline-none " + 
+                    "focus:outline-none " + 
+                    (isActive ? 'text-primary' : 'text-white/70 hover:text-white')
+                  }
+                >
+                  <div className="flex items-center gap-4">
+                    <item.icon 
+                      size={20} 
+                      className={
+                        "transition-colors " + 
+                        "duration-200 " + 
+                        (isActive ? 'text-primary' : 'text-white/50 group-hover:text-white')
+                      } 
+                    />
+                    <span>{item.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* BOTÓN DE CIERRE DE SESIÓN (Log Out) */} 
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className={
+              "flex " + 
+              "items-center " + 
+              "gap-4 " + 
+              "px-8 " + 
+              "py-4 " + 
+              "rounded-2xl " + 
+              "font-bold " + 
+              "text-[13px] " + 
+              "tracking-wider " + 
+              "text-white/50 " + 
+              "hover:bg-white/5 " + 
+              "hover:text-white " + 
+              "transition-all " + 
+              "mt-auto " + 
+              "mx-6 " + 
+              "group " + 
+              "text-left " + 
+              "transform-gpu"
+            }
+          >
+            <LogOut size={18} className="text-white/40 group-hover:text-white transition-colors" />
+            <span>LOG OUT</span>
+          </button>
+        </aside>
+
+        {/* ----------------------------------------------------------------- */}
+        {/* MAIN: ÁREA CENTRAL DE CONTENIDO VARIABLE                          */}
+        {/* ----------------------------------------------------------------- */}
+        <main 
+          className={
+            "flex-1 " + 
+            "pt-6 " + 
+            "pb-12 " + 
+            "px-12 " + 
+            "flex " + 
+            "flex-col " + 
+            "overflow-y-auto " + 
+            "bg-white " + 
+            "transform-gpu " + 
+            "z-0"
+          }
+        >
+          
+          {/* ENCABEZADO: Título dinámico a la izquierda y LOGO CORPORATIVO realzado a la derecha */}
+          <header 
+            className={
+              "w-full " + 
+              "flex " + 
+              "items-center " + 
+              "justify-between " + 
+              "mb-8 " + 
+              "transform-gpu"
+            }
+          >
+            {/* Título de la sección activa */}
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight  font-headline mt-4">
+              {activeView === 'infoGeneral' && "Panel de Control"}
+              {activeView === 'configGeneral' && "Configuración General"}
+              {activeView === 'configEspacios' && "Gestión de Espacios"}
+            </h1>
+
+            {/* LOGO CORPORATIVO (Grande y elevado en la esquina superior derecha) */}
+            <div 
+              className={
+                "flex " + 
+                "items-center " + 
+                "gap-3 " + 
+                "pointer-events-none " + 
+                "select-none " + 
+                "text-primary " + 
+                "mt-2"
+              }
+            >
+              <Car size={36} className="text-primary" />
+              <span className="text-2xl font-black tracking-wide font-headline">
+                ParkingPaTi
+              </span>
+            </div>
+          </header>
+
+          {/* VISTAS MODULARES CONMUTABLES */}
+          <section className="w-full flex-1 transform-gpu">
+            {activeView === 'infoGeneral' && <OwnerInfoGeneral />}
+            {activeView === 'configGeneral' && <OwnerConfigGeneral />}
+            {activeView === 'configEspacios' && <OwnerConfigEspacios />}
+          </section>
+
+        </main>
+
+      </div>
+    </div>
+  );
+};
+</file>
+
+<file path="OwnerInfoGeneral.jsx">
+import React from 'react';
+import { MoreHorizontal } from 'lucide-react';
+
+export const OwnerInfoGeneral = () => {
+  // Datos simulados para recrear las barras del gráfico de rendimiento
+  const performanceData = [
+    { label: 'Lun', val: 85.3, h: 'h-[140px]' },
+    { label: 'Mar', val: 64.7, h: 'h-[100px]' },
+    { label: 'Mié', val: 84.2, h: 'h-[135px]' },
+    { label: 'Jue', val: 45.6, h: 'h-[75px]' },
+    { label: 'Vie', val: 43.5, h: 'h-[70px]' },
+    { label: 'Sáb', val: 74.4, h: 'h-[120px]' },
+  ];
+
+  return (
+    <div className="grid grid-cols-12 gap-6 text-left items-start">
+      
+      {/* SECCIÓN IZQUIERDA: BIENVENIDA Y GRÁFICOS */}
+      <div className="col-span-8 flex flex-col gap-6">
+        
+        
+
+        
+      </div>
+
+      
+    </div>
+  );
+};
+</file>
+
+</files>

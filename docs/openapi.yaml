@@ -1571,13 +1571,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoCrearDTO'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoCrearDTO'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoCrearDTO'
         required: true
       security:
       - jwtAuth: []
@@ -1649,13 +1649,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoActualizarDTO'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoActualizarDTO'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoActualizarDTO'
         required: true
       security:
       - jwtAuth: []
@@ -1693,13 +1693,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoActualizarDTO'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoActualizarDTO'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedParqueaderoDetalleDTO'
+              $ref: '#/components/schemas/ParqueaderoActualizarDTO'
       security:
       - jwtAuth: []
       responses:
@@ -2730,6 +2730,18 @@ components:
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
           nullable: true
+        estancia_tarifa_codigo:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Tarifa snapshot aplicada a la estancia activa.
+        estancia_precio_hora:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+          description: Precio snapshot aplicado a la estancia activa.
         is_active:
           type: boolean
         deleted_at:
@@ -2738,6 +2750,8 @@ components:
           nullable: true
       required:
       - id
+      - estancia_precio_hora
+      - estancia_tarifa_codigo
       - nombre
       - tarifa_codigo
       - tarifa_precio_hora
@@ -3206,6 +3220,14 @@ components:
       - latitud
       - longitud
       - nombre
+    ParqueaderoActualizarDTO:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+        descripcion:
+          type: string
     ParqueaderoDetalleDTO:
       type: object
       properties:
@@ -3252,6 +3274,15 @@ components:
         propietario:
           type: integer
           readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
       required:
       - direccion
       - espacios
@@ -3261,6 +3292,7 @@ components:
       - nombre
       - propietario
       - ubicacion
+      - updated_at
     PatchedCategoriaTarifaDTO:
       type: object
       properties:
@@ -3686,6 +3718,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          minimum: 0.01
         activa:
           type: boolean
           default: true

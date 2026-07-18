@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 
+from apps.estancias.models import Estancia, EstadoEstancia
 from apps.parqueaderos.models import (
     Direccion,
     Espacio,
@@ -112,11 +113,20 @@ class ParqueaderoRepository:
 
     @staticmethod
     def actualizar_datos_iniciales(parqueadero, direccion_datos, ubicacion_datos, **datos):
+        return ParqueaderoRepository.actualizar_datos_generales(
+            parqueadero,
+            datos,
+            direccion_datos,
+            ubicacion_datos,
+        )
+
+    @staticmethod
+    def actualizar_datos_generales(parqueadero, parqueadero_datos, direccion_datos, ubicacion_datos):
         with transaction.atomic():
             actualizar_generico(
                 parqueadero,
                 campos_permitidos={"nombre", "descripcion", "motivo_rechazo"},
-                **datos,
+                **parqueadero_datos,
             )
             actualizar_generico(
                 parqueadero.direccion,
@@ -142,9 +152,15 @@ class ParqueaderoRepository:
 class EspacioRepository:
     @staticmethod
     def listar_por_parqueadero(parqueadero_id, incluir_inactivos=False):
-        queryset = Espacio.objects.select_related("parqueadero", "tarifa_predeterminada").filter(
-            parqueadero_id=parqueadero_id
-        )
+        queryset = Espacio.objects.select_related("parqueadero", "tarifa_predeterminada").prefetch_related(
+            Prefetch(
+                "estancias",
+                queryset=Estancia.objects.filter(estado=EstadoEstancia.ACTIVA).only(
+                    "id", "espacio_id", "tarifa_tipo_snapshot", "precio_hora_snapshot"
+                ),
+                to_attr="estancias_activas",
+            )
+        ).filter(parqueadero_id=parqueadero_id)
         if not incluir_inactivos:
             queryset = queryset.filter(is_active=True)
         return queryset.order_by("id")

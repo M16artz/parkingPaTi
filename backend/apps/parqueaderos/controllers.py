@@ -2,6 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from apps.parqueaderos.models import EstadoHabilitacion
 from apps.parqueaderos.serializers_dto import (
@@ -51,16 +52,30 @@ class ParqueaderoViewSet(PaginacionManualMixin, viewsets.ViewSet):
             return Response({"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND)
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
+    @extend_schema(request=ParqueaderoActualizarDTO, responses=ParqueaderoDetalleDTO)
     def update(self, request, pk=None):
         dto = ParqueaderoActualizarDTO(data=request.data)
         dto.is_valid(raise_exception=True)
-        parqueadero = ParqueaderoService.actualizar(pk, request.user, **dto.validated_data)
+        parqueadero = ParqueaderoService.actualizar_datos_generales(
+            pk,
+            request.user,
+            dto.to_parqueadero_datos(),
+            dto.to_direccion_datos(),
+            dto.to_ubicacion_datos(),
+        )
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
+    @extend_schema(request=ParqueaderoActualizarDTO, responses=ParqueaderoDetalleDTO)
     def partial_update(self, request, pk=None):
         dto = ParqueaderoActualizarDTO(data=request.data, partial=True)
         dto.is_valid(raise_exception=True)
-        parqueadero = ParqueaderoService.actualizar(pk, request.user, **dto.validated_data)
+        parqueadero = ParqueaderoService.actualizar_datos_generales(
+            pk,
+            request.user,
+            dto.to_parqueadero_datos(),
+            dto.to_direccion_datos(),
+            dto.to_ubicacion_datos(),
+        )
         return Response(ParqueaderoDetalleDTO(parqueadero).data)
 
     def destroy(self, request, pk=None):

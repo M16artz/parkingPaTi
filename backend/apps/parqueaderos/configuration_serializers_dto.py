@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from apps.horarios.models import DiasSemana, HorarioAtencion
@@ -19,7 +21,7 @@ class HorarioConfiguracionDTO(serializers.Serializer):
 class TarifaConfiguracionDTO(serializers.Serializer):
     codigo = serializers.ChoiceField(choices=TipoCategoriaTarifa.choices)
     nombre_visible = serializers.CharField(max_length=80, required=False, allow_blank=False)
-    precio_hora = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
+    precio_hora = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=Decimal("0.01"))
     activa = serializers.BooleanField(required=False, default=True)
 
 
@@ -60,6 +62,16 @@ class EspacioConfiguracionResponseDTO(serializers.ModelSerializer):
         decimal_places=2,
         allow_null=True,
     )
+    estancia_tarifa_codigo = serializers.SerializerMethodField()
+    estancia_precio_hora = serializers.SerializerMethodField()
+
+    def get_estancia_tarifa_codigo(self, espacio):
+        activas = getattr(espacio, "estancias_activas", [])
+        return activas[0].tarifa_tipo_snapshot if activas else None
+
+    def get_estancia_precio_hora(self, espacio):
+        activas = getattr(espacio, "estancias_activas", [])
+        return activas[0].precio_hora_snapshot if activas else None
 
     class Meta:
         model = Espacio
@@ -70,6 +82,8 @@ class EspacioConfiguracionResponseDTO(serializers.ModelSerializer):
             "tarifa_predeterminada",
             "tarifa_codigo",
             "tarifa_precio_hora",
+            "estancia_tarifa_codigo",
+            "estancia_precio_hora",
             "is_active",
             "deleted_at",
         ]

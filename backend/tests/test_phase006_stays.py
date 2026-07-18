@@ -103,6 +103,23 @@ def test_inicio_usa_normal_por_defecto_y_actualiza_conteos():
     assert parqueadero.estado_operativo == EstadoOperativo.LLENO
 
 
+def test_configuracion_muestra_tarifa_snapshot_de_la_estancia_activa():
+    cuenta, _, espacio = crear_parqueadero_configurado(610)
+    descuento = CategoriaTarifa.objects.get(
+        parqueadero=espacio.parqueadero,
+        codigo=TipoCategoriaTarifa.DESCUENTO,
+    )
+    EstanciaService.iniciar(cuenta, espacio.id, tarifa_id=descuento.id)
+    api = APIClient()
+    api.force_authenticate(cuenta)
+    response = api.get("/api/v1/owner/configuration/")
+    assert response.status_code == 200
+    espacio_data = response.data["espacios"][0]
+    assert espacio_data["tarifa_codigo"] == TipoCategoriaTarifa.NORMAL
+    assert espacio_data["estancia_tarifa_codigo"] == TipoCategoriaTarifa.DESCUENTO
+    assert espacio_data["estancia_precio_hora"] == Decimal("0.75")
+
+
 def test_tarifa_debe_ser_activa_y_del_mismo_parqueadero():
     cuenta, _, espacio = crear_parqueadero_configurado(602)
     _, otro_parqueadero, _ = crear_parqueadero_configurado(603)

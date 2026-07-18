@@ -6,8 +6,14 @@
 2. La aplicacion dirige a `/owner/configuration` mientras el estado sea
    `CONFIGURACION_PENDIENTE`.
 3. Activar al menos un dia y definir apertura anterior al cierre.
-4. Ingresar el precio por hora `NORMAL`; descuento e incremento son opcionales.
+4. Ingresar un precio por hora `NORMAL` mayor que cero, usando punto decimal;
+   descuento e incremento son opcionales y al desactivarlos se limpia su valor.
 5. Indicar la cantidad inicial y guardar.
+
+La vista solo admite enteros positivos para la cantidad. Al intentar guardar,
+cada horario inválido se marca en el día correspondiente. Tras completar la
+configuración, el propietario pasa a `/owner/dashboard` para gestionar sus
+espacios.
 
 Horarios, tarifas y espacios se guardan juntos. Si una parte falla, ninguna se
 conserva y el formulario puede reintentarse sin duplicar espacios.

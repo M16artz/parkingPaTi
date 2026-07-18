@@ -12,6 +12,7 @@ import { AdminApplicationDetailView } from '../views/admin/AdminApplicationDetai
 import { AdminAccountsView } from '../views/admin/AdminAccountsView';
 import { OwnerRoute } from '../views/components/owner/OwnerRoute';
 import { OwnerConfigurationView } from '../views/owner/OwnerConfigurationView';
+import { OwnerDashboardView } from '../views/owner/OwnerDashboardView';
 import { PublicParkingsView } from '../views/public/PublicParkingsView';
 
 export const router = createBrowserRouter([
@@ -25,7 +26,7 @@ export const router = createBrowserRouter([
     element: <OwnerRoute />,
     children: [
       { path: '/owner/configuration', element: <OwnerConfigurationView /> },
-      { path: '/owner/dashboard', element: <Navigate to="/owner/configuration" replace /> },
+      { path: '/owner/dashboard', element: <OwnerDashboardView /> },
     ],
   },
   {

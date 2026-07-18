@@ -4,6 +4,15 @@ export const DIAS = [
   ['DOMINGO', 'Domingo'],
 ];
 
+export const limpiarDecimalPositivo = (valor) => {
+  const limpio = String(valor).replace(/[^\d.]/g, '');
+  const [entero = '', ...decimales] = limpio.split('.');
+  if (!decimales.length) return entero;
+  return `${entero}.${decimales.join('').slice(0, 2)}`;
+};
+
+export const limpiarEnteroPositivo = (valor) => String(valor).replace(/\D/g, '');
+
 export const crearFormularioConfiguracion = (data) => {
   const horariosGuardados = Object.fromEntries((data?.horarios || []).map((item) => [item.dia, item]));
   const tarifasGuardadas = Object.fromEntries((data?.tarifas || []).map((item) => [item.codigo, item]));
@@ -47,21 +56,41 @@ export const crearPayloadConfiguracion = (formulario) => ({
     })),
 });
 
-export const validarConfiguracion = (formulario) => {
-  if (!Number.isInteger(Number(formulario.cantidad_espacios)) || Number(formulario.cantidad_espacios) < 1) {
-    return 'La cantidad de espacios debe ser un entero mayor que cero.';
+export const validarConfiguracionPorCampo = (formulario) => {
+  const errores = { formulario: '', cantidad_espacios: '', horarios: {}, tarifas: {} };
+  const cantidadTexto = String(formulario.cantidad_espacios);
+  const cantidad = Number(cantidadTexto);
+  if (!/^\d+$/.test(cantidadTexto) || !Number.isInteger(cantidad) || cantidad < 1 || cantidad > 500) {
+    errores.cantidad_espacios = 'Ingresa un entero entre 1 y 500.';
   }
-  const horarios = Object.values(formulario.horarios).filter((item) => item.activo);
-  if (!horarios.length) return 'Configura al menos un día de atención.';
-  if (horarios.some((item) => item.hora_apertura >= item.hora_cierre)) {
-    return 'La apertura debe ser anterior al cierre en todos los días activos.';
-  }
-  if (formulario.tarifas.NORMAL.precio_hora === '' || Number(formulario.tarifas.NORMAL.precio_hora) < 0) {
-    return 'La tarifa NORMAL es obligatoria y no puede ser negativa.';
-  }
-  const opcionalInvalida = ['DESCUENTO', 'INCREMENTO'].some((codigo) => {
-    const tarifa = formulario.tarifas[codigo];
-    return tarifa.activa && (tarifa.precio_hora === '' || Number(tarifa.precio_hora) < 0);
+
+  const horariosActivos = Object.values(formulario.horarios).filter((item) => item.activo);
+  if (!horariosActivos.length) errores.formulario = 'Configura al menos un día de atención.';
+  Object.entries(formulario.horarios).forEach(([codigo, horario]) => {
+    if (horario.activo && horario.hora_apertura >= horario.hora_cierre) {
+      const nombreDia = DIAS.find(([dia]) => dia === codigo)?.[1] || codigo;
+      errores.horarios[codigo] = `En ${nombreDia}, la apertura debe ser anterior al cierre.`;
+    }
   });
-  return opcionalInvalida ? 'Toda tarifa activa debe tener un precio no negativo.' : '';
+
+  const precioValido = (valor) => /^\d+(\.\d{1,2})?$/.test(valor) && Number(valor) > 0;
+  if (!precioValido(formulario.tarifas.NORMAL.precio_hora)) {
+    errores.tarifas.NORMAL = 'Ingresa un precio mayor que 0 usando punto decimal.';
+  }
+  ['DESCUENTO', 'INCREMENTO'].forEach((codigo) => {
+    const tarifa = formulario.tarifas[codigo];
+    if (tarifa.activa && !precioValido(tarifa.precio_hora)) {
+      errores.tarifas[codigo] = 'Ingresa un precio mayor que 0 usando punto decimal.';
+    }
+  });
+  return errores;
+};
+
+export const validarConfiguracion = (formulario) => {
+  const errores = validarConfiguracionPorCampo(formulario);
+  if (errores.cantidad_espacios) return errores.cantidad_espacios;
+  if (errores.formulario) return errores.formulario;
+  const primerHorario = Object.values(errores.horarios)[0];
+  if (primerHorario) return primerHorario;
+  return Object.values(errores.tarifas)[0] || '';
 };

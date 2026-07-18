@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 export const ConfirmDialog = ({
@@ -14,7 +15,7 @@ export const ConfirmDialog = ({
   onConfirm,
 }) => {
   if (!open) return null;
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/45 p-4" role="presentation">
       <section
         aria-labelledby="confirm-title"
@@ -43,6 +44,7 @@ export const ConfirmDialog = ({
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 };

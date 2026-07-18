@@ -37,7 +37,7 @@ no `drive_file_id` ni `drive_web_view_link`.
 ## Contratos base adicionales
 
 - Cuentas: `cuentas/` y `cuentas/{id}/`.
-- Parqueaderos: `parqueaderos/`, `parqueaderos/{id}/`, `validar/` y `mios/`.
+- Parqueaderos: `parqueaderos/`, `parqueaderos/{id}/`, `validar/` y `mios/`. El propietario puede actualizar por `PATCH parqueaderos/{id}/` únicamente `nombre` y `descripcion`; dirección y coordenadas aprobadas son de solo lectura.
 - Espacios: `espacios/` y `espacios/{id}/`.
 - Tarifas: `tarifas/` y `tarifas/{id}/`; un solo recurso con codigo
   `NORMAL`, `DESCUENTO` o `INCREMENTO`.
@@ -79,6 +79,8 @@ tambien en service.
 - `GET owner/configuration/`: devuelve configuracion, horarios, tarifas y
   espacios activos/eliminados para reanudar el flujo.
 - `PUT owner/configuration/`: recibe `{horarios, tarifas, cantidad_espacios}`;
+  `cantidad_espacios` es un entero entre 1 y 500, cada precio activo debe ser
+  mayor o igual a `0.01`, y cada apertura debe ser anterior a su cierre;
   reemplaza horarios, consolida tarifas y crea el lote inicial en una sola
   transaccion. `NORMAL` es obligatoria.
 - `POST owner/spaces/bulk/`: recibe `{cantidad}` entre 1 y 100 y crea un lote

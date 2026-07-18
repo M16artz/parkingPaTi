@@ -54,6 +54,28 @@ class ParqueaderoService:
         return ParqueaderoRepository.actualizar(parqueadero, **datos)
 
     @staticmethod
+    def actualizar_datos_generales(
+        parqueadero_id,
+        cuenta_solicitante,
+        parqueadero_datos,
+        direccion_datos,
+        ubicacion_datos,
+    ):
+        parqueadero = ParqueaderoService.obtener(parqueadero_id)
+        ParqueaderoService._verificar_propietario(parqueadero, cuenta_solicitante)
+        if ubicacion_datos:
+            validar_coordenadas_loja(
+                ubicacion_datos["latitud"],
+                ubicacion_datos["longitud"],
+            )
+        return ParqueaderoRepository.actualizar_datos_generales(
+            parqueadero,
+            parqueadero_datos,
+            direccion_datos,
+            ubicacion_datos,
+        )
+
+    @staticmethod
     def cambiar_habilitacion(parqueadero_id, nuevo_estado, motivo_rechazo=""):
         parqueadero = ParqueaderoService.obtener(parqueadero_id)
         permitidos = ParqueaderoService.TRANSICIONES_HABILITACION.get(parqueadero.habilitacion_estado, set())

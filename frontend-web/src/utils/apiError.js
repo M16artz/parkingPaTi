@@ -23,9 +23,7 @@ export function extraerErroresApi(error) {
   if (data.fields && typeof data.fields === 'object') {
     const errores = {};
     Object.entries(data.fields).forEach(([campo, mensajes]) => {
-      errores[campo === 'non_field_errors' ? 'formulario' : campo] = Array.isArray(mensajes)
-        ? mensajes.join(' ')
-        : String(mensajes);
+      errores[campo === 'non_field_errors' ? 'formulario' : campo] = aTextoError(mensajes);
     });
     return errores;
   }
@@ -41,7 +39,7 @@ export function extraerErroresApi(error) {
   if (typeof detail === 'object' && detail !== null) {
     const errores = {};
     Object.entries(detail).forEach(([campo, mensajes]) => {
-      const mensaje = Array.isArray(mensajes) ? mensajes.join(' ') : String(mensajes);
+      const mensaje = aTextoError(mensajes);
       if (campo === 'non_field_errors') {
         errores.formulario = mensaje;
       } else {
@@ -52,4 +50,12 @@ export function extraerErroresApi(error) {
   }
 
   return { formulario: 'Ocurrió un error inesperado. Intenta nuevamente más tarde.' };
+}
+
+function aTextoError(value) {
+  if (Array.isArray(value)) return value.map(aTextoError).filter(Boolean).join(' ');
+  if (typeof value === 'object' && value !== null) {
+    return Object.values(value).map(aTextoError).filter(Boolean).join(' ');
+  }
+  return value == null ? '' : String(value);
 }
