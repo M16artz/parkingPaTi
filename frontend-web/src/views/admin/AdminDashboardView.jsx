@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FileCheck, Users, Car, LogOut, User } from 'lucide-react'; 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLogoutController } from '../../controllers/useLogoutController';
+import { authService } from '../../services/authService';
 
 // Importación opcional de foto de usuario local (o fallback)
 import userPhoto from '../../assets/user.png';
@@ -23,6 +25,12 @@ export const AdminDashboardView = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const logout = useLogoutController();
+  const sessionQuery = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: authService.me,
+    retry: false,
+    staleTime: 30_000,
+  });
   const routeView = location.pathname === '/admin/accounts' ? 'cuentas' : 'solicitudes';
   const [activeView, setActiveView] = useState(routeView); // 'solicitudes' | 'detalle' | 'cuentas'
   const [selectedCuentaId, setSelectedCuentaId] = useState(null);
@@ -36,6 +44,13 @@ export const AdminDashboardView = () => {
   const activeIndex = NAV_ITEMS.find(item => item.key === activeNavKey)?.index ?? 0;
 
   const handleLogout = logout;
+  const session = sessionQuery.data;
+  const persona = session?.persona || {};
+  const administratorName = `${persona.nombre || ''} ${persona.apellido || ''}`.trim()
+    || session?.nombre_completo
+    || session?.username
+    || 'Administrador';
+  const administratorEmail = session?.correo || session?.email || 'Correo no disponible';
 
   return (
     <div className="w-screen h-screen flex p-6 bg-bg select-none overflow-hidden font-sans antialiased">
@@ -51,7 +66,7 @@ export const AdminDashboardView = () => {
             <div className="w-24 h-24 rounded-full border-2 border-teal-400 p-1 mb-4 overflow-hidden bg-white/10 shadow-lg flex items-center justify-center">
               <img 
                 src={userPhoto} 
-                alt="User Profile" 
+                alt={`Perfil de ${administratorName}`}
                 className="w-full h-full object-cover rounded-full"
                 onError={(e) => {
                   // Fallback por si la imagen local no existe
@@ -63,11 +78,11 @@ export const AdminDashboardView = () => {
             </div>
 
             <h3 className="text-2xl font-black tracking-wide font-headline uppercase shadow-sm">
-              María Buri
+              {administratorName}
             </h3>
             
             <span className="text-base font-semibold text-white/80 font-body mt-1.5">
-              maria.buri@gmail.com
+              {administratorEmail}
             </span>
           </div>
 
@@ -170,6 +185,11 @@ export const AdminDashboardView = () => {
               <AdminApplicationDetailView
                 cuentaId={selectedCuentaId}
                 onBack={() => setActiveView('solicitudes')}
+                onApproved={() => {
+                  setSelectedCuentaId(null);
+                  setActiveView('solicitudes');
+                  navigate('/admin/dashboard', { replace: true });
+                }}
               />
             )}
 

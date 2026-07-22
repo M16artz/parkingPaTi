@@ -52,6 +52,12 @@ class SesionService:
     def autenticar_por_correo(correo, password, request=None):
         correo_normalizado = correo.strip().lower()
         cuenta = CuentaRepository.obtener_por_correo(correo_normalizado)
+        if (
+            cuenta is not None
+            and (not cuenta.is_active or cuenta.onboarding_estado == EstadoOnboarding.DESHABILITADO)
+            and cuenta.check_password(password)
+        ):
+            raise AuthenticationFailed("Esta cuenta se encuentra deshabilitada.")
         username = cuenta.username if cuenta is not None else correo_normalizado
         cuenta_autenticada = authenticate(
             request=request,
@@ -65,6 +71,8 @@ class SesionService:
 
     @staticmethod
     def validar_login(cuenta):
+        if not cuenta.is_active or cuenta.onboarding_estado == EstadoOnboarding.DESHABILITADO:
+            raise AuthenticationFailed("Esta cuenta se encuentra deshabilitada.")
         if not SesionService.puede_autenticar(cuenta):
             raise AuthenticationFailed("No fue posible iniciar sesion con estas credenciales.")
 
@@ -276,6 +284,10 @@ class CuentaService:
     @staticmethod
     def listar_cuentas():
         return CuentaRepository.listar()
+
+    @staticmethod
+    def correo_disponible(correo):
+        return CuentaRepository.obtener_por_correo(correo.strip().lower()) is None
 
     @staticmethod
     def obtener_cuenta(cuenta_id):

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle2, XCircle, FileText, Building, User, Loader2 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 
-export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStatusChange }) => {
+export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStatusChange, onApproved }) => {
   const [detalle, setDetalle] = useState(solicitud || null);
   const [loading, setLoading] = useState(!solicitud);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +47,7 @@ export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStat
         }
         setDetalle((prev) => (prev ? { ...prev, estado: nuevoEstado } : null));
       }
+      if (nuevoEstado === 'APROBADO') onApproved?.();
     } catch (error) {
       console.error('Error al cambiar el estado de la solicitud:', error);
     } finally {

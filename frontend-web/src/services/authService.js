@@ -39,6 +39,13 @@ export const authService = {
     return data;
   },
 
+  async checkEmailAvailability(correo) {
+    const { data } = await apiClient.post('/auth/register/email-availability/', {
+      correo: correo.trim().toLowerCase(),
+    });
+    return data;
+  },
+
   async verifyEmail(token) {
     const { data } = await apiClient.post('/auth/verify-email/', { token });
     return data;

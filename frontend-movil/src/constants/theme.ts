@@ -1,12 +1,12 @@
 // src/constants/theme.ts
 export const COLORS = {
-    primary: '#176B57',
-    secondary: '#5D6368',
-    tertiary: '#17252A',
-    background: '#F4F6F5',
+    primary: '#1565F9',
+    secondary: '#526681',
+    tertiary: '#2F74F2',
+    background: '#F2F7FF',
     white: '#FFFFFF',
     textDark: '#1A1A1A',
-    success: '#218A62',
+    success: '#17865D',
     warning: '#B56B16',
     error: '#B53A3A',
     border: '#D8DEDB',

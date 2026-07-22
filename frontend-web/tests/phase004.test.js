@@ -59,3 +59,16 @@ test('las rutas de solicitudes y cuentas administrativas existen', async () => {
   assert.match(routes, /\/admin\/applications/);
   assert.match(routes, /\/admin\/accounts/);
 });
+
+test('aprobar una solicitud vuelve al dashboard y el perfil usa la sesion autenticada', async () => {
+  const [dashboard, detail] = await Promise.all([
+    readFile(new URL('../src/views/admin/AdminDashboardView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/admin/AdminApplicationDetailView.jsx', import.meta.url), 'utf8'),
+  ]);
+  assert.match(detail, /onApproved\?\.\(\)/);
+  assert.match(dashboard, /navigate\('\/admin\/dashboard', \{ replace: true \}\)/);
+  assert.match(dashboard, /queryKey: \['auth', 'me'\]/);
+  assert.match(dashboard, /persona\.nombre/);
+  assert.match(dashboard, /administratorEmail/);
+  assert.doesNotMatch(dashboard, /María Buri|maria\.buri@gmail\.com/);
+});

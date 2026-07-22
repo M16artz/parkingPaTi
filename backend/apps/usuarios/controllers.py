@@ -19,6 +19,8 @@ from apps.usuarios.serializers_dto import (
     CuentaDetalleDTO,
     CuentaResumenDTO,
     CookieTokenRefreshResponseDTO,
+    DisponibilidadCorreoDTO,
+    DisponibilidadCorreoResponseDTO,
     CustomTokenObtainPairSerializer,
     EmptyDTO,
     MensajeDTO,
@@ -124,6 +126,20 @@ class RegistroAPIView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
+class DisponibilidadCorreoAPIView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = DisponibilidadCorreoDTO
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
+
+    @extend_schema(request=DisponibilidadCorreoDTO, responses=DisponibilidadCorreoResponseDTO)
+    def post(self, request):
+        dto = DisponibilidadCorreoDTO(data=request.data)
+        dto.is_valid(raise_exception=True)
+        return Response({
+            "disponible": CuentaService.correo_disponible(dto.validated_data["correo"]),
+        })
 
 class RegistroCompletoAPIView(APIView):
     """Crea cuenta, parqueadero y documento al finalizar el stepper publico."""

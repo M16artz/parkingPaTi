@@ -7,6 +7,7 @@ from django.core.cache import cache
 from django.test import override_settings
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
+from rest_framework.test import APIClient
 
 from apps.usuarios.models import Cuenta, EstadoOnboarding, TipoIdentificacion, VerificacionCorreo
 from apps.usuarios.services import RegistroService, VerificacionCorreoService
@@ -29,6 +30,29 @@ def datos_registro(sufijo="1"):
             "password": "Prueba-segura-123",
         },
     )
+
+
+def test_disponibilidad_correo_bloquea_un_correo_registrado_antes_del_stepper():
+    cache.clear()
+    persona, cuenta_data = datos_registro("7")
+    RegistroService.registrar_cuenta(persona, cuenta_data)
+    api = APIClient()
+
+    ocupado = api.post(
+        "/api/v1/auth/register/email-availability/",
+        {"correo": " ANA7@EXAMPLE.INVALID "},
+        format="json",
+    )
+    disponible = api.post(
+        "/api/v1/auth/register/email-availability/",
+        {"correo": "nuevo@example.invalid"},
+        format="json",
+    )
+
+    assert ocupado.status_code == 200
+    assert ocupado.data == {"disponible": False}
+    assert disponible.status_code == 200
+    assert disponible.data == {"disponible": True}
 
 
 @override_settings(FRONTEND_BASE_URL="https://web.example.invalid")
@@ -137,6 +161,14 @@ def test_configuracion_pendiente_no_omite_bloqueo_is_active(client):
         {"correo": cuenta.correo, "password": cuenta_data["password"]},
     )
     assert response.status_code == 401
+    assert response.json()["detail"] == "Esta cuenta se encuentra deshabilitada."
+
+    wrong_password = client.post(
+        "/api/v1/auth/token/",
+        {"correo": cuenta.correo, "password": "incorrecta"},
+    )
+    assert wrong_password.status_code == 401
+    assert wrong_password.json()["detail"] == "No fue posible iniciar sesion con estas credenciales."
 
 
 def test_correo_pendiente_sin_verificar_no_puede_iniciar_sesion(client):

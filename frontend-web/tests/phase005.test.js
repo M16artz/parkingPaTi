@@ -60,6 +60,37 @@ test('login usa correo normalizado y dirige segun el estado de onboarding', () =
   );
 });
 
+test('login mantiene visibles los errores de credenciales y de campos', async () => {
+  const [loginView, authForms] = await Promise.all([
+    readFile(new URL('../src/views/auth/LoginView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/components/auth/AuthForms.jsx', import.meta.url), 'utf8'),
+  ]);
+  const errores = extraerErroresApi({
+    response: { data: { error: true, detail: 'No fue posible iniciar sesion con estas credenciales.' } },
+  });
+  assert.equal(errores.formulario, 'No fue posible iniciar sesion con estas credenciales.');
+  assert.equal(
+    extraerErroresApi({ response: { data: { detail: 'Esta cuenta se encuentra deshabilitada.' } } }).formulario,
+    'Esta cuenta se encuentra deshabilitada.',
+  );
+  assert.doesNotMatch(loginView, /\[&_p\]:hidden|\[&_span\]:hidden/);
+  assert.match(authForms, /errors\.formulario/);
+  assert.match(authForms, /role="alert"/);
+});
+
+test('registro verifica correo antes del segundo paso y desplaza al error superior', async () => {
+  const [controller, service, view] = await Promise.all([
+    readFile(new URL('../src/controllers/useRegisterController.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/services/authService.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/auth/RegisterView.jsx', import.meta.url), 'utf8'),
+  ]);
+  assert.match(service, /register\/email-availability/);
+  assert.match(controller, /await ensureEmailAvailable\(\)/);
+  assert.match(controller, /scrollIntoView/);
+  assert.match(view, /data-register-alert/);
+  assert.match(view, /No se puede continuar/);
+});
+
 test('payload compuesto omite dias y tarifas opcionales inactivos', () => {
   const form = crearFormularioConfiguracion(null);
   form.cantidad_espacios = 4;

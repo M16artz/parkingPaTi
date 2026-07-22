@@ -31,12 +31,19 @@ const focusFirstError = (errors) => {
   const first = Object.keys(errors)[0];
   if (!first) return;
   globalThis.setTimeout(() => {
+    const alert = globalThis.document?.querySelector('[data-register-alert]');
+    alert?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
     const element = globalThis.document?.querySelector(`[name="${first}"]`);
     if (!element) return;
-    element.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
     element.focus?.({ preventScroll: true });
   }, 0);
 };
+
+const scrollToRegisterAlert = () => globalThis.setTimeout(() => {
+  globalThis.document?.querySelector('[data-register-alert]')?.scrollIntoView?.({
+    behavior: 'smooth', block: 'start',
+  });
+}, 0);
 
 export const useRegisterController = () => {
   const [draft] = useState(leerBorrador);
@@ -49,6 +56,8 @@ export const useRegisterController = () => {
   const [recovered, setRecovered] = useState(Boolean(draft));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [validatedEmail, setValidatedEmail] = useState('');
   const mutation = useMutation({ mutationFn: () => authService.registerComplete(formData, file) });
 
   useEffect(() => {
@@ -69,6 +78,10 @@ export const useRegisterController = () => {
     }
     const nextData = { ...formData, [name]: next };
     setFormData(nextData);
+    if (name === 'correo' || name === 'confirmarCorreo') {
+      setValidatedEmail('');
+      setMaxStep(1);
+    }
     setErrors((current) => ({
       ...current,
       [name]: null,
@@ -96,18 +109,48 @@ export const useRegisterController = () => {
     return validation.isValid;
   };
 
-  const continueStep = (event) => {
+  const ensureEmailAvailable = async () => {
+    const normalizedEmail = formData.correo.trim().toLowerCase();
+    if (validatedEmail === normalizedEmail) return true;
+    setIsCheckingEmail(true);
+    try {
+      const result = await authService.checkEmailAvailability(normalizedEmail);
+      if (!result.disponible) {
+        const message = 'Este correo electrónico ya está registrado. Inicia sesión o utiliza otro correo.';
+        setErrors((current) => ({ ...current, correo: message, formulario: message }));
+        focusFirstError({ correo: message });
+        return false;
+      }
+      setValidatedEmail(normalizedEmail);
+      return true;
+    } catch (error) {
+      const apiErrors = extraerErroresApi(error);
+      setErrors((current) => ({
+        ...current,
+        ...apiErrors,
+        formulario: apiErrors.formulario || 'No pudimos verificar el correo. Intenta nuevamente.',
+      }));
+      scrollToRegisterAlert();
+      return false;
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  const continueStep = async (event) => {
     event?.preventDefault();
     if (!validateStep(step)) return;
+    if (step === 1 && !(await ensureEmailAvailable())) return;
     const next = Math.min(step + 1, 3);
     setErrors({});
     setStep(next);
     setMaxStep((current) => Math.max(current, next));
   };
 
-  const requestSubmit = (event) => {
+  const requestSubmit = async (event) => {
     event?.preventDefault();
     if (!validateStep(1)) { setStep(1); return; }
+    if (!(await ensureEmailAvailable())) { setStep(1); return; }
     if (!validateStep(2)) { setStep(2); return; }
     if (!validateStep(3)) { setStep(3); return; }
     setConfirmOpen(true);
@@ -142,6 +185,7 @@ export const useRegisterController = () => {
         archivo: apiErrors.archivo,
       });
       setConfirmOpen(false);
+      scrollToRegisterAlert();
     }
   };
 
@@ -158,7 +202,7 @@ export const useRegisterController = () => {
 
   return {
     formData, step, maxStep, file, errors, locationError, recovered, confirmOpen, success,
-    isSaving: mutation.isPending, handleChange, continueStep, requestSubmit, confirmSubmit,
+    isSaving: mutation.isPending || isCheckingEmail, isCheckingEmail, handleChange, continueStep, requestSubmit, confirmSubmit,
     closeConfirm: () => setConfirmOpen(false), previousStep: () => setStep((current) => Math.max(1, current - 1)),
     goToStep: (next) => { if (next <= maxStep) { setErrors({}); setStep(next); } },
     setLocation: (latitud, longitud) => { setFormData((current) => ({ ...current, latitud, longitud })); setErrors((current) => ({ ...current, ubicacion: null })); setLocationError(''); },

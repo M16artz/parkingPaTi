@@ -57,6 +57,14 @@ class CuentaActualizarDTO(serializers.ModelSerializer):
         return value
 
 
+class DisponibilidadCorreoDTO(serializers.Serializer):
+    correo = serializers.EmailField(max_length=254)
+
+
+class DisponibilidadCorreoResponseDTO(serializers.Serializer):
+    disponible = serializers.BooleanField()
+
+
 class AdminCrearCuentaDTO(serializers.Serializer):
     """
     DTO exclusivo del endpoint administrativo de creacion de cuentas

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNetInfo } from '@react-native-community/netinfo';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import MapView, { Callout, Marker, type Region, UrlTile } from 'react-native-maps';
+import MapView, { Marker, type Region, UrlTile } from 'react-native-maps';
 import QueryState from '../components/QueryState';
 import { getMobileEnvironment } from '../config/environment';
 import { COLORS } from '../constants/theme';
@@ -63,15 +63,10 @@ export default function MapScreen({ navigation }: Props) {
                         key={parking.id}
                         coordinate={{ latitude: parking.latitude, longitude: parking.longitude }}
                         pinColor={parking.status === 'OPEN' ? COLORS.success : COLORS.error}
-                    >
-                        <Callout onPress={() => navigation.navigate('ParkingDetail', { parkingId: parking.id })}>
-                            <View style={styles.callout}>
-                                <Text style={styles.calloutTitle}>{parking.name}</Text>
-                                <Text>{parking.available_spaces} de {parking.total_spaces} libres</Text>
-                                <Text style={styles.calloutAction}>Ver detalle</Text>
-                            </View>
-                        </Callout>
-                    </Marker>
+                        title={parking.name}
+                        description="Ver horario, tarifas y disponibilidad"
+                        onPress={() => navigation.navigate('ParkingDetail', { parkingId: parking.id })}
+                    />
                 ))}
             </MapView>
 
@@ -98,9 +93,6 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     map: { ...StyleSheet.absoluteFillObject },
     overlay: { position: 'absolute', left: 16, right: 16, top: 32, backgroundColor: COLORS.white, borderRadius: 8 },
-    callout: { minWidth: 180, padding: 4 },
-    calloutTitle: { color: COLORS.textDark, fontWeight: '700', marginBottom: 4 },
-    calloutAction: { color: COLORS.primary, fontWeight: '700', marginTop: 6 },
     attribution: { position: 'absolute', right: 6, bottom: 6, backgroundColor: 'rgba(255,255,255,0.9)', padding: 4 },
     attributionText: { color: COLORS.secondary, fontSize: 10 },
     offline: { position: 'absolute', left: 10, right: 10, top: 10, backgroundColor: '#FFF1D6', color: '#6D4700', padding: 8, textAlign: 'center' },

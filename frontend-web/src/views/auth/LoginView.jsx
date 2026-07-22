@@ -91,7 +91,7 @@ export const LoginView = () => {
           </h1>
 
           {/* Formulario de Login */}
-          <div className="w-full max-w-md [&>div>:first-child:not(form)]:hidden [&_h1]:hidden [&_h2]:hidden [&_span]:hidden [&_p]:hidden">
+          <div className="w-full max-w-md [&>form>div:first-child]:hidden">
             <LoginForm 
               controller={login} 
               onSubmit={(event) => 

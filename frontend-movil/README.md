@@ -1,16 +1,24 @@
 # Cliente móvil ParkingPaTi
 
-Cliente Expo SDK 54 para consulta pública anónima de parqueaderos de Loja. No
-incluye cuenta de conductor, autenticación ni operaciones de propietario.
+Cliente Expo SDK 54 para consultar parqueaderos de Loja e iniciar sesión como
+propietario.
+
+El panel propietario móvil incluye dashboard, edición de información, estado
+operativo, horarios, tarifas, espacios y control de estancias.
 
 ## Configuración
 
 Crear un archivo local ignorado a partir de `.env.example` y definir:
 
-- `EXPO_PUBLIC_API_BASE_URL`: base HTTPS de Django terminada en `/api/v1`.
+- `EXPO_PUBLIC_API_BASE_URL`: base de Django terminada en `/api/v1`. En producción exige HTTPS;
+  durante desarrollo admite HTTP únicamente para localhost o una IP privada de la red local.
+- `EXPO_PUBLIC_WEB_BASE_URL`: base HTTPS del frontend web para abrir el registro y la recuperación.
 - `EXPO_PUBLIC_MAP_TILE_URL`: plantilla HTTPS opcional con `{z}`, `{x}` y `{y}`.
 - `EXPO_PUBLIC_MAP_ATTRIBUTION`: atribución visible del proveedor configurado.
 
+La pantalla de bienvenida usa `assets/fondo.png`; buscar parqueaderos abre el
+mapa público nativo e Ingresar abre el acceso móvil sobre `assets/fondoL.png`.
+Las credenciales se validan con Django y el token se guarda en `expo-secure-store`.
 La app rechaza HTTP, localhost e IPs privadas. Las variables `EXPO_PUBLIC_*`
 son visibles en el bundle y no deben contener secretos. Sin URL de tiles se
 usa el mapa nativo de `react-native-maps`; DP-12 aún debe definir el proveedor

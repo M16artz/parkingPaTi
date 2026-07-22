@@ -68,8 +68,9 @@ export const RegisterView = () => {
         <section className="mt-8 min-w-0 rounded-[30px] border border-slate-100 bg-white p-5 shadow-[0_25px_60px_-15px_rgba(11,19,41,0.15)] sm:p-8 lg:p-12">
           <form className="mt-9" onSubmit={register.step === 3 ? register.requestSubmit : register.continueStep} noValidate>
             {register.errors.formulario && (
-              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
-                {register.errors.formulario}
+              <div data-register-alert role="alert" tabIndex="-1" className="mb-7 rounded-2xl border-2 border-red-500 bg-red-50 p-5 text-base font-black text-red-900 shadow-lg shadow-red-200/70 ring-4 ring-red-100">
+                <span className="block text-xs uppercase tracking-widest text-red-600">No se puede continuar</span>
+                <span className="mt-1 block">{register.errors.formulario}</span>
               </div>
             )}
             <div key={register.step} className="motion-safe:animate-[owner-view-enter_200ms_ease-out]">
@@ -85,7 +86,7 @@ export const RegisterView = () => {
                   Atrás
                 </Button>
               )}
-              <Button type="submit" className="w-full sm:w-auto" isLoading={register.isSaving} loadingLabel="Enviando solicitud...">
+              <Button type="submit" className="w-full sm:w-auto" isLoading={register.isSaving} loadingLabel={register.isCheckingEmail ? 'Verificando correo...' : 'Enviando solicitud...'}>
                 {register.step === 3 ? 'Enviar solicitud' : 'Continuar'}
               </Button>
             </footer>

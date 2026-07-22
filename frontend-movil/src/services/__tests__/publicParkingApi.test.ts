@@ -69,6 +69,11 @@ describe('public parking adapter', () => {
         expect(getMobileEnvironment).toThrow('IP privada');
     });
 
+    it('permite una API HTTP de la red local durante el desarrollo', () => {
+        process.env.EXPO_PUBLIC_API_BASE_URL = 'http://192.168.100.26:8000/api/v1';
+        expect(getMobileEnvironment().apiBaseUrl).toBe('http://192.168.100.26:8000/api/v1');
+    });
+
     it('exige atribución al configurar tiles personalizados', () => {
         process.env.EXPO_PUBLIC_MAP_TILE_URL = 'https://tiles.example.com/{z}/{x}/{y}.png';
         delete process.env.EXPO_PUBLIC_MAP_ATTRIBUTION;
