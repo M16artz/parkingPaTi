@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut } from 'lucide-react';
+import { LogOut, Car, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLogoutController } from '../../controllers/useLogoutController';
 import { ownerConfigurationService } from '../../services/ownerConfigurationService';
@@ -9,20 +9,37 @@ import { FinalConfigurationForm } from '../components/owner/FinalConfigurationFo
 import { SpaceGrid } from '../components/owner/SpaceGrid';
 import { StayDialog } from '../components/owner/StayDialog';
 
+// Datos de fallback en caso de error de red inicial
+const MOCK_DATA = {
+  configuracion_completa: false,
+  estado_operativo: 'CERRADO',
+  espacios_disponibles: 0,
+  total_espacios: 0,
+  espacios: [],
+  tarifas: [],
+  horarios: [],
+};
+
 export const OwnerConfigurationView = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const logout = useLogoutController();
   const [message, setMessage] = useState('');
   const [stayDialog, setStayDialog] = useState(null);
+
+  // Consulta de configuración general
   const configuration = useQuery({
     queryKey: ['owner', 'configuration'],
     queryFn: ownerConfigurationService.obtener,
+    retry: false,
   });
+
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['owner', 'configuration'] });
     await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
   };
+
+  // Mutación para Guardar Configuración / Modificar Espacios
   const mutation = useMutation({
     mutationFn: ({ type, payload }) => {
       if (type === 'configuration') return ownerConfigurationService.guardar(payload);
@@ -33,20 +50,29 @@ export const OwnerConfigurationView = () => {
       return Promise.reject(new Error('Operación no soportada'));
     },
     onSuccess: async (result, variables) => {
-      setMessage(variables.type === 'configuration' ? 'Configuración guardada.' : 'Espacios actualizados.');
+      setMessage(
+        variables.type === 'configuration'
+          ? 'Configuración guardada exitosamente.'
+          : 'Espacios actualizados correctamente.'
+      );
       if (variables.type === 'configuration') {
         queryClient.setQueryData(['owner', 'configuration'], result);
       }
       await refresh();
-      if (variables.type === 'configuration' && result.configuracion_completa) {
+
+      if (variables.type === 'configuration' && result?.configuracion_completa) {
         navigate('/owner/dashboard', { replace: true });
       }
     },
     onError: (error) => {
       const errores = extraerErroresApi(error);
-      setMessage(errores.formulario || Object.values(errores)[0] || 'No se pudo completar la operación.');
+      setMessage(
+        errores.formulario || Object.values(errores)[0] || 'No se pudo completar la operación.'
+      );
     },
   });
+
+  // Mutación para Control de Estancias
   const stayMutation = useMutation({
     mutationFn: ({ type, space, rateId }) => {
       if (type === 'start') return ownerConfigurationService.iniciarEstancia(space.id, rateId);
@@ -61,28 +87,147 @@ export const OwnerConfigurationView = () => {
       }
       if (variables.type === 'finish') {
         setStayDialog({ mode: 'final', space: variables.space, stay });
-        setMessage('Estancia finalizada. El espacio está libre.');
+        setMessage('Estancia finalizada. El espacio ha quedado libre.');
       } else {
         setStayDialog(null);
-        setMessage('Estancia iniciada. El espacio está ocupado.');
+        setMessage('Estancia iniciada. El espacio ha quedado ocupado.');
       }
       await refresh();
     },
-    onError: (error) => setMessage(extraerErroresApi(error).formulario || 'No se pudo completar la estancia.'),
+    onError: (error) =>
+      setMessage(extraerErroresApi(error).formulario || 'No se pudo procesar la estancia.'),
   });
 
-  if (configuration.isPending) return <main className="owner-configuration-copy min-h-screen grid place-items-center bg-slate-100"><span>Cargando configuración...</span></main>;
-  if (configuration.isError) return <main className="owner-configuration-copy min-h-screen grid place-items-center bg-slate-100"><div><p className="text-red-700">No se pudo cargar la configuración.</p><button className="mt-3 font-bold text-sky-700" type="button" onClick={() => configuration.refetch()}>Reintentar</button></div></main>;
-  const data = configuration.data;
-  return <div className="owner-configuration-copy min-h-screen bg-slate-100">
-    <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4"><div><p className="owner-configuration-title font-headline text-lg font-bold text-sky-800">ParkingPaTi</p><p className="text-xs text-slate-500">Gestión del parqueadero</p></div><button className="minimum-touch-target grid place-items-center" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" onClick={logout}><LogOut size={20} /></button></div></header>
-    <main className="mx-auto max-w-7xl space-y-6 px-5 py-7">
-      <div className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-bold">Configuración y espacios</h1><p className="mt-1 text-sm text-slate-600">{data.configuracion_completa ? 'Administra horarios, tarifas y distribución.' : 'Completa este paso obligatorio para activar el parqueadero.'}</p></div><dl className="flex gap-5 text-sm"><div><dt className="text-slate-500">Estado</dt><dd className="font-bold">{data.estado_operativo}</dd></div><div><dt className="text-slate-500">Disponibles</dt><dd className="font-bold">{data.espacios_disponibles} / {data.total_espacios}</dd></div></dl></div>
-      {message && <p className="border border-slate-200 bg-white p-3 text-sm" role="status">{message}</p>}
-      {!data.configuracion_completa && <p className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">El parqueadero permanece inactivo hasta guardar horarios, tarifa NORMAL y espacios iniciales.</p>}
-      <FinalConfigurationForm data={data} pending={mutation.isPending} onSave={(payload) => { setMessage(''); mutation.mutate({ type: 'configuration', payload }); }} />
-      {data.configuracion_completa && <SpaceGrid spaces={data.espacios} rates={data.tarifas} pending={mutation.isPending || stayMutation.isPending} onAdd={(cantidad) => mutation.mutate({ type: 'add', payload: cantidad })} onEdit={(space, payload) => mutation.mutate({ type: 'edit', payload: { id: space.id, data: payload } })} onDisable={(space) => mutation.mutate({ type: 'edit', payload: { id: space.id, data: { estado: 'INHABILITADO' } } })} onDelete={(space) => mutation.mutate({ type: 'delete', payload: space.id })} onReactivate={(space) => mutation.mutate({ type: 'reactivate', payload: space.id })} onStartStay={(space) => setStayDialog({ mode: 'start', space })} onViewStay={(space) => stayMutation.mutate({ type: 'current', space })} />}
-    </main>
-    <StayDialog mode={stayDialog?.mode} space={stayDialog?.space} rates={data.tarifas} stay={stayDialog?.stay} pending={stayMutation.isPending} onClose={() => setStayDialog(null)} onStart={(rateId) => stayMutation.mutate({ type: 'start', space: stayDialog.space, rateId })} onFinish={() => stayMutation.mutate({ type: 'finish', space: stayDialog.space })} />
-  </div>;
+  if (configuration.isPending) {
+    return (
+      <main className="min-h-screen grid place-items-center bg-white font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <span className="font-bold text-slate-600 text-sm">Cargando configuración...</span>
+        </div>
+      </main>
+    );
+  }
+
+  const data = configuration.isError ? MOCK_DATA : configuration.data || MOCK_DATA;
+
+  // Filtrado de espacios activos vs eliminados lógicamente
+  const activeSpaces = (data.espacios || []).filter(
+    (s) => s.is_active !== false && s.estado !== 'ELIMINADO'
+  );
+  const deletedSpaces = (data.espacios || [])
+    .filter((s) => s.is_active === false || s.estado === 'ELIMINADO')
+    .map((s) => ({
+      id: s.id,
+      code: s.code || `ESP-${s.id}`,
+      nota: 'Borrado lógico',
+    }));
+
+  return (
+    <div className="min-h-screen bg-white font-sans select-none">
+      {/* ENCABEZADO SUPERIOR */}
+      <header className="border-b border-slate-100 bg-white shadow-xs sticky top-0 z-10">
+        <div className="w-full flex items-center justify-between px-4 sm:px-8 py-4">
+          <div className="flex items-center gap-2.5 text-blue-600">
+            <Car size={28} strokeWidth={2.2} />
+            <span className="font-headline text-2xl font-black tracking-tight">
+              ParkingPaTi
+            </span>
+          </div>
+
+          <button
+            type="button"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            onClick={logout}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer text-sm"
+          >
+            <span>Salir</span>
+            <LogOut size={18} />
+          </button>
+        </div>
+      </header>
+
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 py-8">
+        {/* Banner de mensaje de estado */}
+        {message && (
+          <div
+            className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-900 shadow-xs flex items-center justify-between gap-2"
+            role="status"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-blue-600 shrink-0" />
+              <span>{message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMessage('')}
+              className="text-xs text-blue-600 hover:underline font-extrabold cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
+
+        {/* Formulario Principal de Configuración */}
+        <FinalConfigurationForm
+          data={data}
+          pending={mutation.isPending}
+          onSave={(payload) => {
+            setMessage('');
+            mutation.mutate({ type: 'configuration', payload });
+          }}
+        >
+          {/* Grilla de Espacios Integrada */}
+          {data.configuracion_completa && (
+            <div className="pt-2">
+              <SpaceGrid
+                spaces={activeSpaces}
+                deletedSpaces={deletedSpaces}
+                onAddSpaces={(cantidad) =>
+                  mutation.mutate({ type: 'add', payload: cantidad })
+                }
+                onToggleDisable={(spaceId) => {
+                  const targetSpace = activeSpaces.find((s) => s.id === spaceId);
+                  const nextEstado =
+                    targetSpace?.estado === 'INHABILITADO' ? 'LIBRE' : 'INHABILITADO';
+                  mutation.mutate({
+                    type: 'edit',
+                    payload: { id: spaceId, data: { estado: nextEstado } },
+                  });
+                }}
+                onDeleteSpace={(spaceId) =>
+                  mutation.mutate({ type: 'delete', payload: spaceId })
+                }
+                onReactivateSpace={(spaceId) =>
+                  mutation.mutate({ type: 'reactivate', payload: spaceId })
+                }
+                onStartSession={(space) => setStayDialog({ mode: 'start', space })}
+                onViewStay={(space) => stayMutation.mutate({ type: 'current', space })}
+              />
+            </div>
+          )}
+        </FinalConfigurationForm>
+      </main>
+
+      {/* Diálogo de Estancias */}
+      <StayDialog
+        mode={stayDialog?.mode}
+        space={stayDialog?.space}
+        rates={data.tarifas}
+        stay={stayDialog?.stay}
+        pending={stayMutation.isPending}
+        onClose={() => setStayDialog(null)}
+        onStart={(rateId) =>
+          stayMutation.mutate({ type: 'start', space: stayDialog.space, rateId })
+        }
+        onFinish={() =>
+          stayMutation.mutate({ type: 'finish', space: stayDialog.space })
+        }
+      />
+    </div>
+  );
 };
+
+export default OwnerConfigurationView;

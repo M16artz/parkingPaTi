@@ -6,10 +6,7 @@ import { RegisterView } from '../views/auth/RegisterView';
 import { VerifyEmailView } from '../views/auth/VerifyEmailView';
 import { OnboardingView } from '../views/owner/OnboardingView';
 import { AdminRoute } from '../views/components/admin/AdminRoute';
-import { AdminLayout } from '../views/admin/AdminLayout';
-import { AdminApplicationsView } from '../views/admin/AdminApplicationsView';
-import { AdminApplicationDetailView } from '../views/admin/AdminApplicationDetailView';
-import { AdminAccountsView } from '../views/admin/AdminAccountsView';
+import { AdminDashboardView } from '../views/admin/AdminDashboardView';
 import { OwnerRoute } from '../views/components/owner/OwnerRoute';
 import { OnboardingRoute } from '../views/components/owner/OnboardingRoute';
 import { OwnerConfigurationView } from '../views/owner/OwnerConfigurationView';
@@ -17,6 +14,7 @@ import { OwnerDashboardView } from '../views/owner/OwnerDashboardView';
 import { GhostDashboard } from '../views/public/GhostDashboard';
 
 export const router = createBrowserRouter([
+  // 🌐 RUTAS PÚBLICAS
   { path: '/', element: <HomeView /> },
   { path: '/home', element: <Navigate to="/" replace /> },
   { path: '/parqueaderos', element: <GhostDashboard /> },
@@ -24,27 +22,35 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginView /> },
   { path: '/register', element: <RegisterView /> },
   { path: '/verify-email', element: <VerifyEmailView /> },
+
+  // 🛡️ RUTAS PROTEGIDAS
+
+  // Onboarding (Propietarios pendientes de registro)
   {
     element: <OnboardingRoute />,
-    children: [{ path: '/owner/onboarding', element: <OnboardingView /> }],
+    children: [
+      { path: '/owner/onboarding', element: <OnboardingView /> },
+    ],
   },
+
+  // Panel de Propietario
   {
     element: <OwnerRoute />,
     children: [
-      { path: '/owner/configuration', element: <OwnerConfigurationView /> },
       { path: '/owner/dashboard', element: <OwnerDashboardView /> },
+      { path: '/owner/configuration', element: <OwnerConfigurationView /> },
     ],
   },
+
+  // Panel de Administración
   {
     element: <AdminRoute />,
-    children: [{
-      element: <AdminLayout />,
-      children: [
-        { path: '/admin/applications', element: <AdminApplicationsView /> },
-        { path: '/admin/applications/:cuentaId', element: <AdminApplicationDetailView /> },
-        { path: '/admin/accounts', element: <AdminAccountsView /> },
-      ],
-    }],
+    children: [
+      { path: '/admin', element: <AdminDashboardView /> },
+      { path: '/admin/dashboard', element: <AdminDashboardView /> },
+    ],
   },
+
+  // 🔄 REDIRECCIÓN RUTAS INEXISTENTES
   { path: '*', element: <Navigate to="/" replace /> },
 ]);
