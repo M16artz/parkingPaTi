@@ -113,7 +113,7 @@ test('inicio calcula ocupacion usando solamente espacios activos reales', () => 
 
 test('inicio obtiene horario del dia y detecta configuracion pendiente', () => {
   assert.equal(
-    obtenerHorarioHoy([{ dia: 'LUNES', hora_apertura: '08:00', hora_cierre: '18:00' }], new Date('2026-07-13T12:00:00')).dia,
+    obtenerHorarioHoy([{ dia: 'LUNES', hora_apertura: '08:00', hora_cierre: '18:00' }], new Date('2026-07-13T17:00:00Z')).dia,
     'LUNES',
   );
   const pendientes = pendientesConfiguracion(

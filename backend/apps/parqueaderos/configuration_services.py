@@ -5,6 +5,7 @@ from rest_framework.exceptions import APIException, NotFound, PermissionDenied, 
 from apps.estancias.repositories import EstanciaRepository
 from apps.horarios.repositories import HorarioAtencionRepository
 from apps.parqueaderos.models import EstadoEspacio, EstadoHabilitacion, EstadoOperativo, EstadoOperativoManual
+from apps.parqueaderos.operational_status import calcular_estado_actual, horario_abierto
 from apps.parqueaderos.repositories import EspacioRepository, ParqueaderoRepository
 from apps.parqueaderos.services import EspacioService
 from apps.tarifas.models import TipoCategoriaTarifa
@@ -129,15 +130,16 @@ class ConfiguracionFinalService:
 
     @staticmethod
     def _respuesta(cuenta, parqueadero):
+        horarios = list(HorarioAtencionRepository.listar_por_parqueadero(parqueadero.id))
         return {
             "parqueadero_id": parqueadero.id,
             "configuracion_completa": parqueadero.configuracion_completa,
             "onboarding_estado": cuenta.onboarding_estado,
-            "estado_operativo": parqueadero.estado_operativo,
+            "estado_operativo": calcular_estado_actual(parqueadero, horario_abierto(horarios)),
             "estado_operativo_manual": parqueadero.estado_operativo_manual,
             "total_espacios": parqueadero.total_espacios,
             "espacios_disponibles": parqueadero.espacios_disponibles,
-            "horarios": HorarioAtencionRepository.listar_por_parqueadero(parqueadero.id),
+            "horarios": horarios,
             "tarifas": CategoriaTarifaRepository.listar_por_parqueadero(parqueadero.id),
             "espacios": EspacioRepository.listar_por_parqueadero(
                 parqueadero.id,

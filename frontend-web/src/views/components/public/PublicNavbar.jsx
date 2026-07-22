@@ -18,7 +18,7 @@ export const PublicNavbar = ({ onParkings, onLogin, onRegister }) => {
   return <header className="sticky top-0 z-[1000] border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
     <div className="mx-auto flex min-h-16 max-w-[1800px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
       <a href="#inicio" onClick={close} className="flex items-center gap-2 rounded-lg text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-sky-700 text-white"><Car aria-hidden="true" size={24} /></span>
+        <span className="grid h-10 w-10 place-items-center"><Car aria-hidden="true" size={30} /></span>
         <span className="font-headline text-xl font-bold">ParkingPaTi</span>
       </a>
       <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegación principal">

@@ -186,7 +186,7 @@ export const SpaceGrid = ({
                             title: 'Inhabilitar espacio',
                             message: `¿Deseas inhabilitar ${space.nombre || space.code}? No podrá recibir vehículos hasta que lo reactives.`,
                             confirmLabel: 'Sí, inhabilitar',
-                            danger: true,
+                            tone: 'amber',
                             onConfirm: () => onToggleDisable(space.id),
                           })}
                           className="p-2 text-slate-400 hover:text-amber-600 rounded-xl hover:bg-amber-50 border border-slate-100 transition-all cursor-pointer"
@@ -226,7 +226,13 @@ export const SpaceGrid = ({
                       <>
                         <button
                           type="button"
-                          onClick={() => onToggleDisable(space.id)}
+                          onClick={() => requestConfirmation({
+                            title: 'Reactivar espacio',
+                            message: `¿Deseas reactivar ${space.nombre || space.code}? Volverá a estar disponible para recibir vehículos.`,
+                            confirmLabel: 'Sí, reactivar',
+                            tone: 'amber',
+                            onConfirm: () => onToggleDisable(space.id),
+                          })}
                           className="flex-1 bg-amber-100/70 hover:bg-amber-200/70 text-amber-800 text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                         >
                           <RotateCcw size={13} />
@@ -304,7 +310,13 @@ export const SpaceGrid = ({
           >
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-6">
               <div className="flex gap-3">
-                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${confirmation.danger ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${
+                  confirmation.tone === 'amber'
+                    ? 'bg-amber-100 text-amber-700'
+                    : confirmation.danger
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-blue-100 text-blue-700'
+                }`}>
                   <AlertTriangle size={21} />
                 </span>
                 <div>
@@ -322,7 +334,13 @@ export const SpaceGrid = ({
               <button type="button" onClick={() => setConfirmation(null)} className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-700">
                 Cancelar
               </button>
-              <button type="button" onClick={confirmAction} className={`min-h-11 rounded-xl px-5 font-bold text-white ${confirmation.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+              <button type="button" onClick={confirmAction} className={`min-h-11 rounded-xl px-5 font-bold text-white ${
+                confirmation.tone === 'amber'
+                  ? 'bg-amber-500 hover:bg-amber-600'
+                  : confirmation.danger
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+              }`}>
                 {confirmation.confirmLabel}
               </button>
             </div>

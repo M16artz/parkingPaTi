@@ -17,8 +17,8 @@ export const HomeView = () => {
   const timerRef = useRef(null);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  useEffect(() => () => { 
-    if (timerRef.current) clearTimeout(timerRef.current); 
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
   }, []);
 
   const goToAuth = (register = false) => {
@@ -34,27 +34,26 @@ export const HomeView = () => {
       {/* ========================================================= */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-md px-6 md:px-12 py-3 md:py-4 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
         <div className="max-w-[1800px] mx-auto w-full">
-          <PublicNavbar 
-            onParkings={() => navigate('/parqueaderos')} 
-            onLogin={() => goToAuth(false)} 
-            onRegister={() => goToAuth(true)} 
+          <PublicNavbar
+            onParkings={() => navigate('/parqueaderos')}
+            onLogin={() => goToAuth(false)}
+            onRegister={() => goToAuth(true)}
           />
         </div>
       </header>
 
       {/* CONTENEDOR DE PÁGINA CON ANIMACIÓN DE SALIDA */}
-      <div 
-        className={`min-h-screen flex flex-col relative transition-all duration-300 ${
-          isLeaving ? '-translate-x-1/2 opacity-0' : 'opacity-100'
-        }`}
+      <div
+        className={`min-h-screen flex flex-col relative transition-all duration-300 ${isLeaving ? '-translate-x-1/2 opacity-0' : 'opacity-100'
+          }`}
       >
         {/* CONTENEDOR PRINCIPAL */}
         <main className="mx-auto flex max-w-[1800px] w-full flex-col gap-6 p-6 pt-20 sm:pt-24 md:pt-28">
-          
+
           {/* ========================================================= */}
           {/* 1. HERO SECTION                                           */}
           {/* ========================================================= */}
-          <header 
+          <header
             id="inicio"
             className="
               relative 
@@ -71,7 +70,7 @@ export const HomeView = () => {
               alt="Acceso a un parqueadero urbano"
               className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none"
             />
-            
+
             {/* Capa de degradado oscuro */}
             <div className="absolute inset-0 bg-gradient-to-b from-sky-950/40 via-sky-900/60 to-slate-950/80 z-10" />
 
@@ -92,7 +91,7 @@ export const HomeView = () => {
               </p>
 
               {/* BOTÓN COMENZAR */}
-              <button 
+              <button
                 type="button"
                 disabled={isLeaving}
                 onClick={() => goToAuth(false)}
@@ -119,7 +118,7 @@ export const HomeView = () => {
           {/* ========================================================= */}
           {/* 2. SECCIÓN: QUIÉNES SOMOS                                 */}
           {/* ========================================================= */}
-          <section 
+          <section
             id="quienes-somos"
             className="
               bg-white 
@@ -149,7 +148,7 @@ export const HomeView = () => {
 
             <div className="md:col-span-8 grid grid-cols-3 gap-5 w-full">
               {[quienesSomos1, quienesSomos2, quienesSomos3].map((imgSrc, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="
                     rounded-[24px] overflow-hidden 
@@ -160,10 +159,10 @@ export const HomeView = () => {
                     p-2
                   "
                 >
-                  <img 
-                    src={imgSrc} 
-                    alt={`Quienes Somos ${idx + 1}`} 
-                    className="max-w-full max-h-full object-contain pointer-events-none select-none" 
+                  <img
+                    src={imgSrc}
+                    alt={`Quienes Somos ${idx + 1}`}
+                    className="max-w-full max-h-full object-contain pointer-events-none select-none"
                   />
                 </div>
               ))}
@@ -173,7 +172,7 @@ export const HomeView = () => {
           {/* ========================================================= */}
           {/* 3. PANEL INTERMEDIO: INFORMACIÓN ADICIONAL                */}
           {/* ========================================================= */}
-          <section 
+          <section
             className="
               w-full bg-slate-50 
               rounded-[32px] 
@@ -188,13 +187,13 @@ export const HomeView = () => {
                 <h4 className="text-xl font-bold text-slate-800">Puntos Estratégicos</h4>
                 <p className="text-sm text-slate-500 leading-relaxed">Ubicaciones clave en las zonas de mayor afluencia corporativa.</p>
               </div>
-              
+
               <div className="flex flex-col gap-2 p-4 rounded-2xl hover:bg-white transition-all duration-300 md:border-x md:border-slate-200 px-6">
                 <span className="text-xs font-bold text-sky-600 uppercase tracking-widest">Tecnología</span>
                 <h4 className="text-xl font-bold text-slate-800">Monitoreo 24/7</h4>
                 <p className="text-sm text-slate-500 leading-relaxed">Sistemas automatizados de lectura de patentes.</p>
               </div>
-              
+
               <div className="flex flex-col gap-2 p-4 rounded-2xl hover:bg-white transition-all duration-300">
                 <span className="text-xs font-bold text-sky-600 uppercase tracking-widest">Comunidad</span>
                 <h4 className="text-xl font-bold text-slate-800">Soporte Inmediato</h4>
@@ -230,7 +229,7 @@ export const HomeView = () => {
                     <p className="text-slate-600 text-base md:text-lg">Visualizar y localizar parqueaderos privados disponibles en tiempo real.</p>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row items-start gap-5 bg-sky-50/60 p-6 md:p-8 rounded-[24px] border border-sky-300">
                   <div className="p-4 bg-emerald-600 text-white rounded-2xl shrink-0">
                     <Shield size={26} />
@@ -244,13 +243,13 @@ export const HomeView = () => {
             </div>
 
             <div className="md:col-span-5 text-white rounded-[32px] p-12 text-center flex flex-col items-center justify-center gap-6 shadow-xl relative overflow-hidden min-h-[450px]">
-              <img 
-                src={nuestrosServiciosImg} 
-                alt="Nuestros Servicios" 
-                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none" 
+              <img
+                src={nuestrosServiciosImg}
+                alt="Nuestros Servicios"
+                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none"
               />
               <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px] z-10" />
-              
+
               <div className="relative z-20 flex flex-col items-center gap-4">
                 <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-black">
                   Innovación Urbana
@@ -267,7 +266,7 @@ export const HomeView = () => {
           {/* ========================================================= */}
           {/* 5. FOOTER CORPORATIVO                                     */}
           {/* ========================================================= */}
-          <footer 
+          <footer
             className="
               w-full bg-[#0b1329] text-white 
               rounded-[32px] pt-12 
@@ -279,7 +278,7 @@ export const HomeView = () => {
               <div className="md:col-span-7 flex flex-col gap-3">
                 <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">Grupo corporativo</span>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  Armas Ordoñes Miguel, Buri Camacho María, Chamba Santín Richard, Flores Gallardo Emilio, Rosillo Gaona Odalis, Orozco Guamán Marco.
+                  Armas Ordoñes Miguel, Buri Camacho María, Chamba Santín Richard, Flores Gallardo Emilio, Rosillo Gaona Odalis.
                 </p>
               </div>
               <div className="md:col-span-5 flex flex-col gap-3 text-sm text-slate-300 md:pl-4">
@@ -291,12 +290,12 @@ export const HomeView = () => {
                   </div>
                   <div className="flex items-center gap-2.5 bg-slate-800/40 px-4 py-2.5 rounded-xl border border-slate-700/50">
                     <Mail size={16} className="text-sky-400 shrink-0" />
-                    <span>parkingPaTi@gmail.com</span>
+                    <span>parkingpatiunl@gmail.com</span>
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <div className="w-full bg-[#050b18] py-5 text-center text-base font-bold text-white border-t border-slate-800/40">
               © ParkingPaTi.com - 2026
             </div>

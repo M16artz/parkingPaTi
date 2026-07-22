@@ -1,7 +1,10 @@
 from django.db import transaction
-from django.db.models import Count, DecimalField, OuterRef, Prefetch, Q, Subquery
+from django.db.models import Count, DecimalField, Exists, OuterRef, Prefetch, Q, Subquery
+from django.utils import timezone
 
 from apps.estancias.models import Estancia, EstadoEstancia
+from apps.horarios.models import HorarioAtencion
+from apps.parqueaderos.operational_status import DIAS_SEMANA
 from apps.parqueaderos.models import (
     Direccion,
     Espacio,
@@ -30,11 +33,19 @@ class ParqueaderoRepository:
             codigo=TipoCategoriaTarifa.NORMAL,
             activa=True,
         ).values("precio_hora")[:1]
+        local = timezone.localtime()
+        horario_vigente = HorarioAtencion.objects.filter(
+            parqueadero_id=OuterRef("pk"),
+            dia=DIAS_SEMANA[local.weekday()],
+            hora_apertura__lte=local.time(),
+            hora_cierre__gt=local.time(),
+        )
         return queryset.annotate(
             tarifa_normal_publica=Subquery(
                 tarifa_normal,
                 output_field=DecimalField(max_digits=8, decimal_places=2),
-            )
+            ),
+            horario_abierto_ahora=Exists(horario_vigente),
         )
 
     @staticmethod

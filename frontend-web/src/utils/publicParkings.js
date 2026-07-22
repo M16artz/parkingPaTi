@@ -138,16 +138,23 @@ export function obtenerHorarioHoy(schedules = [], status, date = new Date()) {
   }
   const current = partesFechaGuayaquil(date);
   const schedule = schedules.find((item) => item.day === current.day);
-  if (!schedule) return { title: 'Hoy no hay atención', detail: 'No existe un horario configurado para hoy.', schedule: null };
+  if (!schedule) {
+    if (status === 'OPEN') return { title: 'Abierto manualmente', detail: 'No existe un horario configurado para hoy.', schedule: null };
+    if (status === 'FULL') return { title: 'Lleno', detail: 'No existe un horario configurado para hoy.', schedule: null };
+    return { title: 'Hoy no hay atención', detail: 'No existe un horario configurado para hoy.', schedule: null };
+  }
   const opens = minutosHorario(schedule.opens_at);
   const closes = minutosHorario(schedule.closes_at);
   const range = `${String(schedule.opens_at).slice(0, 5)} – ${String(schedule.closes_at).slice(0, 5)}`;
-  if (status === 'CLOSED') return { title: 'Cerrado temporalmente', detail: `Horario de hoy: ${range}`, schedule };
-  if (current.minutes >= opens && current.minutes < closes) {
-    return { title: `Abierto ahora · Cierra a las ${String(schedule.closes_at).slice(0, 5)}`, detail: range, schedule };
+  const dentroDelHorario = current.minutes >= opens && current.minutes < closes;
+  if (status === 'CLOSED') {
+    if (dentroDelHorario) return { title: 'Cerrado temporalmente', detail: `Horario de hoy: ${range}`, schedule };
+    if (current.minutes < opens) return { title: `Cerrado · Abre hoy a las ${String(schedule.opens_at).slice(0, 5)}`, detail: range, schedule };
+    return { title: 'Cerrado por horario', detail: `La atención de hoy terminó a las ${String(schedule.closes_at).slice(0, 5)}`, schedule };
   }
-  if (current.minutes < opens) return { title: `Cerrado · Abre hoy a las ${String(schedule.opens_at).slice(0, 5)}`, detail: range, schedule };
-  return { title: 'Cerrado por horario', detail: `La atención de hoy terminó a las ${String(schedule.closes_at).slice(0, 5)}`, schedule };
+  if (status === 'FULL') return { title: 'Lleno', detail: dentroDelHorario ? range : `Fuera del horario configurado: ${range}`, schedule };
+  if (dentroDelHorario) return { title: `Abierto ahora · Cierra a las ${String(schedule.closes_at).slice(0, 5)}`, detail: range, schedule };
+  return { title: 'Abierto manualmente', detail: `Fuera del horario configurado: ${range}`, schedule };
 }
 
 export function ordenarHorarios(schedules = []) {

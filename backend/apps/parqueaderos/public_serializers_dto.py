@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from apps.horarios.models import HorarioAtencion
 from apps.parqueaderos.models import EstadoEspacio, Parqueadero
+from apps.parqueaderos.operational_status import calcular_estado_actual
 from apps.tarifas.models import CategoriaTarifa, TipoCategoriaTarifa
 
 
@@ -75,12 +76,17 @@ class PublicParkingSummaryDTO(serializers.ModelSerializer):
         return ", ".join(parte for parte in partes if parte)
 
     def get_status(self, parqueadero) -> str:
+        estado = calcular_estado_actual(
+            parqueadero,
+            getattr(parqueadero, "horario_abierto_ahora", False),
+        )
         return {
             "ABIERTO": "OPEN",
             "LLENO": "FULL",
             "CERRADO": "CLOSED",
             "FUERA_DE_SERVICIO": "OUT_OF_SERVICE",
-        }[parqueadero.estado_operativo]
+            "INACTIVO": "CLOSED",
+        }[estado]
 
 
 class PublicParkingListDTO(serializers.Serializer):

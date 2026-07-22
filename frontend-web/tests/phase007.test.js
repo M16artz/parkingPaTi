@@ -53,8 +53,14 @@ test('horario público se calcula en America/Guayaquil sin inventar atención', 
   const schedules = [{ day: 'LUNES', opens_at: '08:00:00', closes_at: '20:00:00' }];
   const open = obtenerHorarioHoy(schedules, 'OPEN', new Date('2026-07-20T15:00:00Z'));
   assert.match(open.title, /Abierto ahora/);
-  const noSchedule = obtenerHorarioHoy([], 'OPEN', new Date('2026-07-20T15:00:00Z'));
+  const noSchedule = obtenerHorarioHoy([], 'CLOSED', new Date('2026-07-20T15:00:00Z'));
   assert.equal(noSchedule.title, 'Hoy no hay atención');
+  const closedBeforeOpening = obtenerHorarioHoy(schedules, 'CLOSED', new Date('2026-07-20T12:00:00Z'));
+  assert.match(closedBeforeOpening.title, /Abre hoy a las 08:00/);
+  const manualOpen = obtenerHorarioHoy(schedules, 'OPEN', new Date('2026-07-20T12:00:00Z'));
+  assert.equal(manualOpen.title, 'Abierto manualmente');
+  const full = obtenerHorarioHoy(schedules, 'FULL', new Date('2026-07-20T15:00:00Z'));
+  assert.equal(full.title, 'Lleno');
 });
 
 test('resumen de espacios usa distribución real cuando está disponible', () => {

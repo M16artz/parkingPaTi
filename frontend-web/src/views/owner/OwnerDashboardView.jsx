@@ -62,6 +62,8 @@ export const OwnerDashboardView = () => {
     queryKey: ['owner', 'configuration'],
     queryFn: ownerConfigurationService.obtener,
     retry: false,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
   const metricsQuery = useQuery({
     queryKey: ['owner', 'dashboard-metrics'],

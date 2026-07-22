@@ -1,4 +1,7 @@
-const DIAS_JS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+const normalizarDia = (value = '') => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase();
 
 export const resumirEspacios = (espacios = []) => espacios
   .filter((espacio) => espacio.is_active)
@@ -14,8 +17,13 @@ export const calcularOcupacion = ({ total, ocupados }) => total > 0
   ? Math.round((ocupados / total) * 100)
   : 0;
 
-export const obtenerHorarioHoy = (horarios = [], fecha = new Date()) => horarios
-  .find((horario) => horario.dia === DIAS_JS[fecha.getDay()]) || null;
+export const obtenerHorarioHoy = (horarios = [], fecha = new Date()) => {
+  const dia = new Intl.DateTimeFormat('es-EC', {
+    timeZone: 'America/Guayaquil',
+    weekday: 'long',
+  }).format(fecha);
+  return horarios.find((horario) => horario.dia === normalizarDia(dia)) || null;
+};
 
 export const obtenerTarifa = (tarifas = [], codigo) => tarifas
   .find((tarifa) => tarifa.codigo === codigo && tarifa.activa) || null;
