@@ -8,6 +8,7 @@ from apps.estancias.serializers_dto import (
     EstanciaPaginaDTO,
     EstanciaRegistroDTO,
     EstanciaResponseDTO,
+    MetricasEstanciasHoyDTO,
 )
 from apps.estancias.services import EstanciaService
 from core.pagination import PaginacionManualMixin
@@ -73,6 +74,16 @@ class OwnerEstanciaRegistroAPIView(EstanciaRegistroBaseAPIView):
     @extend_schema(operation_id="owner_stays_history_list", responses=EstanciaPaginaDTO)
     def get(self, request):
         return self.responder(request)
+
+
+class OwnerMetricasEstanciasHoyAPIView(APIView):
+    permission_classes = [EsPropietario]
+    serializer_class = MetricasEstanciasHoyDTO
+
+    @extend_schema(operation_id="owner_stays_today_metrics", responses=MetricasEstanciasHoyDTO)
+    def get(self, request):
+        metricas = EstanciaService.metricas_hoy(request.user)
+        return Response(MetricasEstanciasHoyDTO(metricas).data)
 
 
 class AdminEstanciaRegistroAPIView(EstanciaRegistroBaseAPIView):

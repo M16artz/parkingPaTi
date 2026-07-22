@@ -6,6 +6,7 @@ from apps.estancias.controllers import (
     EstanciaFinalizarAPIView,
     EstanciaInicioAPIView,
     OwnerEstanciaRegistroAPIView,
+    OwnerMetricasEstanciasHoyAPIView,
 )
 
 
@@ -26,6 +27,7 @@ owner_urlpatterns = [
         name="owner_stay_finish",
     ),
     path("stays/", OwnerEstanciaRegistroAPIView.as_view(), name="owner_stay_history"),
+    path("stays/metrics/today/", OwnerMetricasEstanciasHoyAPIView.as_view(), name="owner_stay_metrics_today"),
 ]
 
 admin_urlpatterns = [

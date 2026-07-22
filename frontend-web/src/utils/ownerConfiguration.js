@@ -13,6 +13,27 @@ export const limpiarDecimalPositivo = (valor) => {
 
 export const limpiarEnteroPositivo = (valor) => String(valor).replace(/\D/g, '');
 
+export const aplicarHorarioRapido = (horarios, horarioRapido) => Object.fromEntries(
+  Object.entries(horarios || {}).map(([dia, horario]) => [dia, {
+    ...horario,
+    activo: true,
+    hora_apertura: horarioRapido.hora_apertura,
+    hora_cierre: horarioRapido.hora_cierre,
+  }]),
+);
+
+export const obtenerEspaciosReversibles = (espacios, ahora = Date.now(), limiteSegundos = 15) => (
+  (espacios || [])
+    .map((espacio) => {
+      const eliminadoEn = new Date(espacio.deletedAt || '').getTime();
+      const segundosRestantes = Number.isFinite(eliminadoEn)
+        ? Math.max(0, limiteSegundos - Math.floor((ahora - eliminadoEn) / 1000))
+        : 0;
+      return { ...espacio, remaining: segundosRestantes };
+    })
+    .filter((espacio) => espacio.remaining > 0)
+);
+
 export const crearFormularioConfiguracion = (data) => {
   const horariosGuardados = Object.fromEntries((data?.horarios || []).map((item) => [item.dia, item]));
   const tarifasGuardadas = Object.fromEntries((data?.tarifas || []).map((item) => [item.codigo, item]));

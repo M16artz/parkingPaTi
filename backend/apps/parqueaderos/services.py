@@ -189,7 +189,10 @@ class EspacioService:
         conteos = EspacioRepository.contar_estados(parqueadero.id)
         if not parqueadero.configuracion_completa or conteos["total"] == 0:
             estado_operativo = EstadoOperativo.INACTIVO
-        elif parqueadero.estado_operativo_manual:
+        elif parqueadero.estado_operativo_manual in {
+            EstadoOperativo.CERRADO,
+            EstadoOperativo.FUERA_DE_SERVICIO,
+        }:
             estado_operativo = parqueadero.estado_operativo_manual
         elif conteos["libres"] > 0:
             estado_operativo = EstadoOperativo.ABIERTO

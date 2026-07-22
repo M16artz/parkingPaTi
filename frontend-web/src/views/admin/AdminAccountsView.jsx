@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, SlidersHorizontal, UserX, UserCheck, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { adminService } from '../../services/adminService';
+
+const normalizarCuenta = (item) => ({
+  ...item,
+  nombre: `${item.persona?.nombre || ''} ${item.persona?.apellido || ''}`.trim(),
+  activa: item.is_active,
+  rol: 'PROPIETARIO',
+});
 
 // 🎨 COMBOBOX DE ROLES CON INDICADORES DE COLOR
 const RolCombobox = ({ value, onChange }) => {
@@ -82,17 +90,8 @@ export const AdminAccountsView = ({ accountsList, onToggleStatus }) => {
     const fetchCuentas = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/accounts', {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCuentas(data);
-        }
+        const data = await adminService.listarCuentas({});
+        setCuentas((data.results || data).map(normalizarCuenta));
       } catch (error) {
         console.error('Error al cargar cuentas:', error);
       } finally {
@@ -111,21 +110,11 @@ export const AdminAccountsView = ({ accountsList, onToggleStatus }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/accounts/${id}/toggle-status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ activa: !estadoActual })
-      });
-
-      if (response.ok) {
-        setCuentas((prev) =>
-          prev.map((acc) => (acc.id === id ? { ...acc, activa: !acc.activa } : acc))
-        );
-      }
+      if (estadoActual) await adminService.deshabilitar(id);
+      else await adminService.rehabilitar(id);
+      setCuentas((prev) =>
+        prev.map((acc) => (acc.id === id ? { ...acc, activa: !acc.activa } : acc))
+      );
     } catch (error) {
       console.error('Error al cambiar el estado de la cuenta:', error);
     }

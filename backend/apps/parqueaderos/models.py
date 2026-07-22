@@ -19,6 +19,7 @@ class EstadoOperativo(models.TextChoices):
 
 
 class EstadoOperativoManual(models.TextChoices):
+    ABIERTO = "ABIERTO", "Abierto"
     CERRADO = "CERRADO", "Cerrado"
     FUERA_DE_SERVICIO = "FUERA_DE_SERVICIO", "Fuera de servicio"
 

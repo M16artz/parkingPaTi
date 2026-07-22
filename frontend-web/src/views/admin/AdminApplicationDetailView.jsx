@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle2, XCircle, FileText, Building, User, Loader2 } from 'lucide-react';
+import { adminService } from '../../services/adminService';
 
 export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStatusChange }) => {
   const [detalle, setDetalle] = useState(solicitud || null);
@@ -17,17 +18,8 @@ export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStat
       if (!cuentaId) return;
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/admin/applications/${cuentaId}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setDetalle(data);
-        }
+        const data = await adminService.obtenerSolicitud(cuentaId);
+        setDetalle(data);
       } catch (error) {
         console.error('Error al obtener detalle de solicitud:', error);
       } finally {
@@ -46,18 +38,14 @@ export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStat
         await onStatusChange(cuentaId, nuevoEstado);
         setDetalle((prev) => (prev ? { ...prev, estado: nuevoEstado } : null));
       } else {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/admin/applications/${cuentaId}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ estado: nuevoEstado })
-        });
-        if (response.ok) {
-          setDetalle((prev) => (prev ? { ...prev, estado: nuevoEstado } : null));
+        if (nuevoEstado === 'APROBADO') {
+          await adminService.aprobar(cuentaId);
+        } else {
+          const motivo = window.prompt('Indica el motivo del rechazo:');
+          if (!motivo?.trim()) return;
+          await adminService.rechazar(cuentaId, motivo.trim());
         }
+        setDetalle((prev) => (prev ? { ...prev, estado: nuevoEstado } : null));
       }
     } catch (error) {
       console.error('Error al cambiar el estado de la solicitud:', error);
@@ -102,10 +90,13 @@ export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStat
     );
   }
 
-  const estadoActual = detalle.estado || 'PENDIENTE';
-  const propietario = detalle.propietario || {};
+  const estadoActual = detalle.estado || (
+    detalle.onboarding_estado === 'REVISION_PENDIENTE' ? 'PENDIENTE'
+      : detalle.onboarding_estado === 'RECHAZADO' ? 'RECHAZADO' : 'APROBADO'
+  );
+  const propietario = detalle.propietario || detalle.persona || {};
   const parqueadero = detalle.parqueadero || {};
-  const documentos = detalle.documentos || [];
+  const documentos = detalle.documentos || (detalle.documento ? [detalle.documento] : []);
 
   return (
     <div className="space-y-6 font-sans antialiased">

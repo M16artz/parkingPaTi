@@ -57,3 +57,13 @@ class EstanciaPaginaDTO(serializers.Serializer):
     next = serializers.URLField(allow_null=True)
     previous = serializers.URLField(allow_null=True)
     results = EstanciaRegistroDTO(many=True)
+
+
+class MetricasEstanciasHoyDTO(serializers.Serializer):
+    estancias_hoy = serializers.IntegerField()
+    ingresos_estimados = serializers.DecimalField(max_digits=12, decimal_places=2)
+    ingresos_finalizados = serializers.DecimalField(max_digits=12, decimal_places=2)
+    ingresos_en_curso = serializers.DecimalField(max_digits=12, decimal_places=2)
+    estancias_activas = serializers.IntegerField()
+    calculado_hasta = serializers.DateTimeField()
+    es_estimado = serializers.BooleanField()

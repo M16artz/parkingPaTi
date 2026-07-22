@@ -127,11 +127,12 @@ export const OwnerHome = ({
           </label>
           <select
             id="owner-operational-status"
-            value={configuration?.estado_operativo_manual || 'ABIERTO'}
+            value={configuration?.estado_operativo_manual || 'AUTOMATICO'}
             disabled={statusPending}
             onChange={(event) => onChangeStatus(event.target.value)}
             className="min-h-11 w-full rounded-xl border border-sky-300 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-200 disabled:cursor-wait disabled:opacity-60"
           >
+            <option value="AUTOMATICO">Automático</option>
             <option value="ABIERTO">Abierto</option>
             <option value="CERRADO">Cerrado</option>
             <option value="FUERA_DE_SERVICIO">Fuera de servicio</option>

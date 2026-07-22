@@ -42,6 +42,18 @@ class EstanciaRepository:
         return queryset.order_by("-fin", "-id")
 
     @staticmethod
+    def listar_iniciadas_en_rango(parqueadero_id, fecha_desde, fecha_hasta):
+        return Estancia.objects.select_related(
+            "espacio__parqueadero", "tarifa"
+        ).filter(
+            espacio__parqueadero_id=parqueadero_id,
+            inicio__gte=fecha_desde,
+            inicio__lte=fecha_hasta,
+        ).exclude(
+            estado=EstadoEstancia.CANCELADA,
+        ).order_by("inicio", "id")
+
+    @staticmethod
     def eliminar_vencidas(fecha_limite):
         eliminadas, _ = Estancia.objects.filter(
             estado__in=[EstadoEstancia.FINALIZADA, EstadoEstancia.CANCELADA],

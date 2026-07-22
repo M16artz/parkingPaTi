@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { LayoutGrid, Plus, Car, Play, Eye, RotateCcw, Trash2, Ban } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AlertTriangle, LayoutGrid, Plus, Car, Play, Eye, RotateCcw, Trash2, Ban, X } from 'lucide-react';
+import { obtenerEspaciosReversibles } from '../../../utils/ownerConfiguration';
 
 export const SpaceGrid = ({
   spaces = [],
@@ -12,14 +14,37 @@ export const SpaceGrid = ({
   onViewStay = () => {},
 }) => {
   const [quantityToAdd, setQuantityToAdd] = useState(1);
+  const [confirmation, setConfirmation] = useState(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!deletedSpaces.some((space) => space.deletedAt)) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [deletedSpaces]);
+
+  const requestConfirmation = (options) => setConfirmation(options);
+  const confirmAction = () => {
+    confirmation?.onConfirm();
+    setConfirmation(null);
+  };
 
   // Manejar adición de plazas enviando la cantidad al manejador padre/API
   const handleAddSpaces = () => {
     const qty = parseInt(quantityToAdd, 10);
     if (isNaN(qty) || qty <= 0) return;
-    onAddSpaces(qty);
-    setQuantityToAdd(1);
+    requestConfirmation({
+      title: 'Agregar espacios',
+      message: `¿Confirmas que deseas agregar ${qty} ${qty === 1 ? 'espacio' : 'espacios'}?`,
+      confirmLabel: 'Sí, agregar',
+      onConfirm: () => {
+        onAddSpaces(qty);
+        setQuantityToAdd(1);
+      },
+    });
   };
+
+  const visibleDeletedSpaces = obtenerEspaciosReversibles(deletedSpaces, now);
 
   // Contadores
   const countLibres = spaces.filter((s) => s?.estado === 'LIBRE').length;
@@ -135,9 +160,11 @@ export const SpaceGrid = ({
 
                   {/* Código y Tarifa */}
                   <div>
-                    <h3 className="text-xl font-black text-slate-800">{space.code}</h3>
+                    <h3 className="text-xl font-black text-slate-800">
+                      {space.nombre || space.code || `Espacio ${space.id}`}
+                    </h3>
                     <p className="text-xs font-bold text-slate-400 mt-0.5">
-                      {space.tarifa || 'NORMAL'}
+                      Tarifa: {space.tarifa_codigo || space.tarifa || 'NORMAL'}
                     </p>
                   </div>
 
@@ -155,7 +182,13 @@ export const SpaceGrid = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onToggleDisable(space.id)}
+                          onClick={() => requestConfirmation({
+                            title: 'Inhabilitar espacio',
+                            message: `¿Deseas inhabilitar ${space.nombre || space.code}? No podrá recibir vehículos hasta que lo reactives.`,
+                            confirmLabel: 'Sí, inhabilitar',
+                            danger: true,
+                            onConfirm: () => onToggleDisable(space.id),
+                          })}
                           className="p-2 text-slate-400 hover:text-amber-600 rounded-xl hover:bg-amber-50 border border-slate-100 transition-all cursor-pointer"
                           title="Inhabilitar espacio"
                         >
@@ -163,7 +196,13 @@ export const SpaceGrid = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDeleteSpace(space.id)}
+                          onClick={() => requestConfirmation({
+                            title: 'Marcar como no disponible',
+                            message: `¿Deseas retirar ${space.nombre || space.code}? Tendrás 15 segundos para revertir esta acción.`,
+                            confirmLabel: 'Sí, retirar',
+                            danger: true,
+                            onConfirm: () => onDeleteSpace(space.id),
+                          })}
                           className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 border border-slate-100 transition-all cursor-pointer"
                           title="Eliminar espacio"
                         >
@@ -195,7 +234,13 @@ export const SpaceGrid = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDeleteSpace(space.id)}
+                          onClick={() => requestConfirmation({
+                            title: 'Marcar como no disponible',
+                            message: `¿Deseas retirar ${space.nombre || space.code}? Tendrás 15 segundos para revertir esta acción.`,
+                            confirmLabel: 'Sí, retirar',
+                            danger: true,
+                            onConfirm: () => onDeleteSpace(space.id),
+                          })}
                           className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 border border-slate-100 transition-all cursor-pointer"
                           title="Eliminar espacio"
                         >
@@ -211,18 +256,18 @@ export const SpaceGrid = ({
         )}
 
         {/* ESPACIOS ELIMINADOS */}
-        {deletedSpaces.length > 0 && (
+        {visibleDeletedSpaces.length > 0 && (
           <div className="pt-4 border-t border-slate-100">
             <div className="flex items-center gap-2 mb-3">
               <Trash2 size={14} className="text-slate-400" />
-              <span className="text-xs font-extrabold text-slate-600">Espacios eliminados</span>
+              <span className="text-xs font-extrabold text-slate-600">Inoperativos</span>
               <span className="bg-slate-100 text-slate-600 text-[11px] font-black px-2 py-0.5 rounded-full">
-                {deletedSpaces.length}
+                {visibleDeletedSpaces.length}
               </span>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {deletedSpaces.map((delItem) => (
+              {visibleDeletedSpaces.map((delItem) => (
                 <div
                   key={delItem.id || delItem.code}
                   className="bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2.5 flex items-center gap-4"
@@ -230,7 +275,7 @@ export const SpaceGrid = ({
                   <div>
                     <span className="text-xs font-black text-slate-800 block">{delItem.code}</span>
                     <span className="text-[10px] text-slate-400 font-bold">
-                      {delItem.nota || 'Borrado lógico'}
+                      Espacio no disponible · {delItem.remaining}s para revertir
                     </span>
                   </div>
                   <button
@@ -239,7 +284,7 @@ export const SpaceGrid = ({
                     className="bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
                   >
                     <RotateCcw size={12} />
-                    Reactivar
+                    Revertir
                   </button>
                 </div>
               ))}
@@ -248,6 +293,43 @@ export const SpaceGrid = ({
         )}
 
       </div>
+
+      {confirmation && createPortal(
+        <div className="fixed inset-0 z-[1200] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm">
+          <section
+            className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="space-confirmation-title"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-6">
+              <div className="flex gap-3">
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${confirmation.danger ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
+                  <AlertTriangle size={21} />
+                </span>
+                <div>
+                  <h2 id="space-confirmation-title" className="text-lg font-black text-slate-900">
+                    {confirmation.title}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{confirmation.message}</p>
+                </div>
+              </div>
+              <button type="button" aria-label="Cerrar" onClick={() => setConfirmation(null)} className="text-slate-400 hover:text-slate-700">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex justify-end gap-3 bg-slate-50 px-6 py-4">
+              <button type="button" onClick={() => setConfirmation(null)} className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-700">
+                Cancelar
+              </button>
+              <button type="button" onClick={confirmAction} className={`min-h-11 rounded-xl px-5 font-bold text-white ${confirmation.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                {confirmation.confirmLabel}
+              </button>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
     </section>
   );
 };

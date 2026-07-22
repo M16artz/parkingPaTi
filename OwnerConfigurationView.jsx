@@ -50,14 +50,11 @@ export const OwnerConfigurationView = () => {
       return Promise.reject(new Error('Operación no soportada'));
     },
     onSuccess: async (result, variables) => {
-      const successMessages = {
-        configuration: 'Configuración guardada exitosamente.',
-        add: `Se agregaron ${variables.payload} ${variables.payload === 1 ? 'espacio' : 'espacios'} correctamente.`,
-        edit: 'El estado del espacio se actualizó correctamente.',
-        delete: 'Espacio no disponible. Puedes revertir esta acción durante 15 segundos.',
-        reactivate: 'La acción se revirtió y el espacio volvió a estar disponible.',
-      };
-      setMessage(successMessages[variables.type] || 'Espacios actualizados correctamente.');
+      setMessage(
+        variables.type === 'configuration'
+          ? 'Configuración guardada exitosamente.'
+          : 'Espacios actualizados correctamente.'
+      );
       if (variables.type === 'configuration') {
         queryClient.setQueryData(['owner', 'configuration'], result);
       }
@@ -122,8 +119,8 @@ export const OwnerConfigurationView = () => {
     .filter((s) => s.is_active === false || s.estado === 'ELIMINADO')
     .map((s) => ({
       id: s.id,
-      code: s.nombre || s.code || `ESP-${s.id}`,
-      deletedAt: s.deleted_at,
+      code: s.code || `ESP-${s.id}`,
+      nota: 'Borrado lógico',
     }));
 
   return (
@@ -156,7 +153,7 @@ export const OwnerConfigurationView = () => {
         {/* Banner de mensaje de estado */}
         {message && (
           <div
-            className="flex items-center justify-between gap-2 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-900 shadow-xs"
+            className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-900 shadow-xs flex items-center justify-between gap-2"
             role="status"
           >
             <div className="flex items-center gap-2">

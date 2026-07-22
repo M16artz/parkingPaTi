@@ -48,6 +48,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/admin', element: <AdminDashboardView /> },
       { path: '/admin/dashboard', element: <AdminDashboardView /> },
+      { path: '/admin/applications', element: <AdminDashboardView /> },
+      { path: '/admin/accounts', element: <AdminDashboardView /> },
     ],
   },
 

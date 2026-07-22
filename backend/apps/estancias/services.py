@@ -1,4 +1,5 @@
 from calendar import monthrange
+from datetime import datetime, time
 from decimal import Decimal, ROUND_HALF_UP
 from math import ceil
 
@@ -163,6 +164,52 @@ class EstanciaService:
         fecha_desde = EstanciaService._fecha_retencion(ahora or timezone.now())
         propietario_id = cuenta.id if cuenta.rol == TipoRol.PROPIETARIO else None
         return EstanciaRepository.listar_finalizadas_desde(fecha_desde, propietario_id=propietario_id)
+
+    @staticmethod
+    def metricas_hoy(cuenta, ahora=None):
+        calculado_hasta = ahora or timezone.now()
+        parqueadero = ParqueaderoRepository.obtener_por_propietario(cuenta.id)
+        if parqueadero is None:
+            raise NotFound("La cuenta no tiene un parqueadero.")
+        EstanciaService._verificar_propietario(cuenta, parqueadero)
+
+        fecha_local = timezone.localtime(calculado_hasta).date()
+        inicio_dia = timezone.make_aware(
+            datetime.combine(fecha_local, time.min),
+            timezone.get_current_timezone(),
+        )
+        estancias = EstanciaRepository.listar_iniciadas_en_rango(
+            parqueadero.id,
+            inicio_dia,
+            calculado_hasta,
+        )
+
+        ingresos_finalizados = Decimal("0.00")
+        ingresos_en_curso = Decimal("0.00")
+        estancias_activas = 0
+        total = 0
+        for estancia in estancias:
+            total += 1
+            if estancia.estado == EstadoEstancia.ACTIVA:
+                estancias_activas += 1
+                _, _, costo = EstanciaService._calcular(
+                    estancia.inicio,
+                    calculado_hasta,
+                    estancia.precio_hora_snapshot,
+                )
+                ingresos_en_curso += costo
+            elif estancia.estado == EstadoEstancia.FINALIZADA:
+                ingresos_finalizados += estancia.costo_total or Decimal("0.00")
+
+        return {
+            "estancias_hoy": total,
+            "ingresos_estimados": ingresos_finalizados + ingresos_en_curso,
+            "ingresos_finalizados": ingresos_finalizados,
+            "ingresos_en_curso": ingresos_en_curso,
+            "estancias_activas": estancias_activas,
+            "calculado_hasta": calculado_hasta,
+            "es_estimado": True,
+        }
 
     @staticmethod
     def serializar_registro(estancia):

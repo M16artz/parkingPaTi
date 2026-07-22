@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileCheck, Users, Car, LogOut, User } from 'lucide-react'; 
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useLogoutController } from '../../controllers/useLogoutController';
 
 // Importación opcional de foto de usuario local (o fallback)
 import userPhoto from '../../assets/user.png';
@@ -19,21 +20,22 @@ const NAV_ITEMS = [
 ];
 
 export const AdminDashboardView = () => {
-  const navigate = useNavigate ? useNavigate() : null;
-  const [activeView, setActiveView] = useState('solicitudes'); // 'solicitudes' | 'detalle' | 'cuentas'
+  const navigate = useNavigate();
+  const location = useLocation();
+  const logout = useLogoutController();
+  const routeView = location.pathname === '/admin/accounts' ? 'cuentas' : 'solicitudes';
+  const [activeView, setActiveView] = useState(routeView); // 'solicitudes' | 'detalle' | 'cuentas'
   const [selectedCuentaId, setSelectedCuentaId] = useState(null);
+
+  useEffect(() => {
+    if (activeView !== 'detalle') setActiveView(routeView);
+  }, [activeView, routeView]);
 
   // Mapear la vista 'detalle' al índice de 'solicitudes' para mantener la cápsula activa ahí
   const activeNavKey = activeView === 'detalle' ? 'solicitudes' : activeView;
   const activeIndex = NAV_ITEMS.find(item => item.key === activeNavKey)?.index ?? 0;
 
-  const handleLogout = () => {
-    if (navigate) {
-      navigate('/login');
-    } else {
-      window.location.href = '/login';
-    }
-  };
+  const handleLogout = logout;
 
   return (
     <div className="w-screen h-screen flex p-6 bg-bg select-none overflow-hidden font-sans antialiased">
@@ -99,6 +101,7 @@ export const AdminDashboardView = () => {
                   onClick={() => {
                     setActiveView(item.key);
                     if (item.key !== 'detalle') setSelectedCuentaId(null);
+                    navigate(item.key === 'cuentas' ? '/admin/accounts' : '/admin/applications');
                   }}
                   className={`z-10 flex items-center justify-between pl-8 pr-4 h-[64px] rounded-l-[32px] font-bold text-[13px] tracking-wider w-full text-left group transition-colors duration-300 border-none outline-none focus:outline-none cursor-pointer ${
                     isActive ? 'text-primary' : 'text-white/70 hover:text-white'

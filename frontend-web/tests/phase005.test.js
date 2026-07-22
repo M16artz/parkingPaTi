@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import {
+  aplicarHorarioRapido,
   crearFormularioConfiguracion,
   crearPayloadConfiguracion,
   limpiarDecimalPositivo,
   limpiarEnteroPositivo,
+  obtenerEspaciosReversibles,
   validarConfiguracion,
   validarConfiguracionPorCampo,
 } from '../src/utils/ownerConfiguration.js';
@@ -19,6 +21,26 @@ import {
   pendientesConfiguracion,
   resumirEspacios,
 } from '../src/utils/ownerDashboard.js';
+
+test('horario rapido activa y actualiza todos los dias', () => {
+  const form = crearFormularioConfiguracion(null);
+  form.horarios.LUNES.activo = true;
+  const horarios = aplicarHorarioRapido(form.horarios, {
+    hora_apertura: '07:30',
+    hora_cierre: '21:00',
+  });
+  assert.equal(Object.values(horarios).every((item) => item.activo), true);
+  assert.equal(Object.values(horarios).every((item) => (
+    item.hora_apertura === '07:30' && item.hora_cierre === '21:00'
+  )), true);
+});
+
+test('un espacio retirado solo puede revertirse durante quince segundos', () => {
+  const eliminadoEn = Date.parse('2026-07-21T12:00:00Z');
+  const espacios = [{ id: 8, deletedAt: new Date(eliminadoEn).toISOString() }];
+  assert.equal(obtenerEspaciosReversibles(espacios, eliminadoEn + 10_000)[0].remaining, 5);
+  assert.deepEqual(obtenerEspaciosReversibles(espacios, eliminadoEn + 15_000), []);
+});
 
 test('propietario aprobado entra a configuracion final obligatoria', () => {
   assert.equal(

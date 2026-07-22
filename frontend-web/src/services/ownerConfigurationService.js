@@ -42,4 +42,8 @@ export const ownerConfigurationService = {
     const { data } = await apiClient.post(`/owner/spaces/${espacioId}/stays/finish/`);
     return data;
   },
+  async obtenerMetricasHoy() {
+    const { data } = await apiClient.get('/owner/stays/metrics/today/');
+    return data;
+  },
 };

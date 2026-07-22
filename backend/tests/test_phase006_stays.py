@@ -103,6 +103,36 @@ def test_inicio_usa_normal_por_defecto_y_actualiza_conteos():
     assert parqueadero.estado_operativo == EstadoOperativo.LLENO
 
 
+def test_metricas_hoy_suman_finalizadas_y_estimacion_en_curso():
+    cuenta, parqueadero, primer_espacio = crear_parqueadero_configurado(611, cantidad=2)
+    segundo_espacio = Espacio.objects.filter(parqueadero=parqueadero).order_by("id")[1]
+    tarifa = CategoriaTarifa.objects.get(
+        parqueadero=parqueadero,
+        codigo=TipoCategoriaTarifa.NORMAL,
+    )
+    ahora = datetime(2026, 7, 21, 18, 0, tzinfo=UTC)
+    crear_finalizada(
+        primer_espacio,
+        tarifa,
+        ahora - timedelta(hours=3),
+        ahora - timedelta(hours=2),
+    )
+    EstanciaService.iniciar(
+        cuenta,
+        segundo_espacio.id,
+        ahora=ahora - timedelta(minutes=30),
+    )
+
+    metricas = EstanciaService.metricas_hoy(cuenta, ahora=ahora)
+
+    assert metricas["estancias_hoy"] == 2
+    assert metricas["estancias_activas"] == 1
+    assert metricas["ingresos_finalizados"] == Decimal("1.25")
+    assert metricas["ingresos_en_curso"] == Decimal("1.25")
+    assert metricas["ingresos_estimados"] == Decimal("2.50")
+    assert metricas["es_estimado"] is True
+
+
 def test_configuracion_muestra_tarifa_snapshot_de_la_estancia_activa():
     cuenta, _, espacio = crear_parqueadero_configurado(610)
     descuento = CategoriaTarifa.objects.get(

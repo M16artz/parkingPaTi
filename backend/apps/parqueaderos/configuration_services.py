@@ -157,17 +157,16 @@ class EstadoOperativoPropietarioService:
         if not parqueadero.configuracion_completa:
             raise ValidationError("Completa primero la configuracion final.")
 
-        if estado == EstadoOperativo.ABIERTO:
+        if estado == "AUTOMATICO":
             ParqueaderoRepository.actualizar(parqueadero, estado_operativo_manual=None)
-            EspacioService.recalcular_conteos(parqueadero)
         else:
             if estado not in EstadoOperativoManual.values:
                 raise ValidationError("El estado operativo manual no es valido.")
             ParqueaderoRepository.actualizar(
                 parqueadero,
                 estado_operativo_manual=estado,
-                estado_operativo=estado,
             )
+        EspacioService.recalcular_conteos(parqueadero)
         return ConfiguracionFinalService._respuesta(cuenta, parqueadero)
 
 

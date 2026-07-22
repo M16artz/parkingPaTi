@@ -3,7 +3,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from apps.horarios.models import DiasSemana, HorarioAtencion
-from apps.parqueaderos.models import Espacio, EstadoEspacio, EstadoOperativo, EstadoOperativoManual
+from apps.parqueaderos.models import Espacio, EstadoEspacio, EstadoOperativoManual
 from apps.tarifas.models import CategoriaTarifa, TipoCategoriaTarifa
 
 
@@ -108,7 +108,7 @@ class EspaciosLoteDTO(serializers.Serializer):
 
 class EstadoOperativoPropietarioDTO(serializers.Serializer):
     estado = serializers.ChoiceField(
-        choices=[EstadoOperativo.ABIERTO, *EstadoOperativoManual.values],
+        choices=["AUTOMATICO", *EstadoOperativoManual.values],
     )
 
 

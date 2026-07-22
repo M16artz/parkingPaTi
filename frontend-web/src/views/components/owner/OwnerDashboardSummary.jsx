@@ -16,6 +16,13 @@ import {
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
+  {
+    id: 'AUTOMATICO',
+    label: 'AUTOMÁTICO',
+    dotColor: 'bg-blue-500',
+    textColor: 'text-blue-700',
+    badgeBg: 'bg-blue-50 border-blue-200'
+  },
   { 
     id: 'ABIERTO', 
     label: 'ABIERTO', 
@@ -31,13 +38,6 @@ const STATUS_OPTIONS = [
     badgeBg: 'bg-rose-50 border-rose-200' 
   },
   { 
-    id: 'LLENO', 
-    label: 'LLENO', 
-    dotColor: 'bg-amber-500', 
-    textColor: 'text-amber-700',
-    badgeBg: 'bg-amber-50 border-amber-200' 
-  },
-  { 
     id: 'FUERA_DE_SERVICIO', 
     label: 'FUERA DE SERVICIO', 
     dotColor: 'bg-slate-700', 
@@ -45,6 +45,14 @@ const STATUS_OPTIONS = [
     badgeBg: 'bg-slate-100 border-slate-300' 
   },
 ];
+
+const LIVE_STATUS = {
+  ABIERTO: { label: 'ABIERTO', dotColor: 'bg-emerald-500', textColor: 'text-emerald-700', badgeBg: 'bg-emerald-50 border-emerald-200' },
+  CERRADO: { label: 'CERRADO', dotColor: 'bg-rose-500', textColor: 'text-rose-700', badgeBg: 'bg-rose-50 border-rose-200' },
+  LLENO: { label: 'LLENO', dotColor: 'bg-amber-500', textColor: 'text-amber-700', badgeBg: 'bg-amber-50 border-amber-200' },
+  FUERA_DE_SERVICIO: { label: 'FUERA DE SERVICIO', dotColor: 'bg-slate-600', textColor: 'text-slate-800', badgeBg: 'bg-slate-100 border-slate-300' },
+  INACTIVO: { label: 'INACTIVO', dotColor: 'bg-slate-400', textColor: 'text-slate-600', badgeBg: 'bg-slate-100 border-slate-200' },
+};
 
 export const OwnerDashboardSummary = ({ 
   parqueadero = {}, 
@@ -56,13 +64,14 @@ export const OwnerDashboardSummary = ({
 
   // Sincronizar el estado operativo si viene en las props
   useEffect(() => {
-    if (parqueadero?.estado_operativo) {
+    const selection = parqueadero?.estado_operativo_manual || 'AUTOMATICO';
+    if (selection) {
       const current = STATUS_OPTIONS.find(
-        (opt) => opt.id === parqueadero.estado_operativo
+        (opt) => opt.id === selection
       );
       if (current) setSelectedStatus(current);
     }
-  }, [parqueadero?.estado_operativo]);
+  }, [parqueadero?.estado_operativo_manual]);
 
   const handleSelectStatus = (option) => {
     setSelectedStatus(option);
@@ -94,8 +103,14 @@ export const OwnerDashboardSummary = ({
     libres: metrics?.libres ?? 0,
     ocupados: metrics?.ocupados ?? 0,
     estanciasHoy: metrics?.estanciasHoy ?? 0,
+    estanciasActivas: metrics?.estanciasActivas ?? 0,
     ingresosHoy: metrics?.ingresosHoy ?? '$0.00',
+    ingresosFinalizados: metrics?.ingresosFinalizados ?? '0.00',
+    ingresosEnCurso: metrics?.ingresosEnCurso ?? '0.00',
+    loading: Boolean(metrics?.loading),
+    error: Boolean(metrics?.error),
   };
+  const liveStatus = LIVE_STATUS[parqueadero?.estado_operativo] || LIVE_STATUS.INACTIVO;
 
   return (
     <div className="space-y-6 font-sans select-none pb-8">
@@ -117,10 +132,17 @@ export const OwnerDashboardSummary = ({
             <p className="text-xs font-semibold text-slate-400 mt-0.5">
               Los conductores verán este estado inmediatamente en el mapa de la app.
             </p>
+            <span className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black ${liveStatus.badgeBg} ${liveStatus.textColor}`}>
+              <span className={`h-2.5 w-2.5 rounded-full ${liveStatus.dotColor}`} />
+              ESTADO CALCULADO: {liveStatus.label}
+            </span>
           </div>
 
           {/* Selector de Estado */}
           <div className="relative">
+            <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Modo de disponibilidad
+            </p>
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -212,8 +234,10 @@ export const OwnerDashboardSummary = ({
                 <Users size={16} />
               </span>
             </div>
-            <p className="text-2xl font-black text-slate-800">{currentMetrics.estanciasHoy}</p>
-            <p className="text-[11px] font-semibold text-blue-600 mt-1">Servicios atendidos hoy</p>
+            <p className="text-2xl font-black text-slate-800">{currentMetrics.loading ? '...' : currentMetrics.estanciasHoy}</p>
+            <p className="text-[11px] font-semibold text-blue-600 mt-1">
+              {currentMetrics.error ? 'No se pudo actualizar' : `${currentMetrics.estanciasActivas} en curso · servicios iniciados hoy`}
+            </p>
           </div>
 
           <div className="bg-white rounded-2xl p-5 border border-slate-50 shadow-sm">
@@ -225,8 +249,12 @@ export const OwnerDashboardSummary = ({
                 <DollarSign size={16} />
               </span>
             </div>
-            <p className="text-2xl font-black text-slate-800">{currentMetrics.ingresosHoy}</p>
-            <p className="text-[11px] font-semibold text-amber-600 mt-1">Recaudado hoy</p>
+            <p className="text-2xl font-black text-slate-800">{currentMetrics.loading ? '...' : currentMetrics.ingresosHoy}</p>
+            <p className="text-[11px] font-semibold text-amber-600 mt-1">
+              {currentMetrics.error
+                ? 'No se pudo actualizar'
+                : `$${currentMetrics.ingresosFinalizados} finalizados + $${currentMetrics.ingresosEnCurso} en curso`}
+            </p>
           </div>
         </div>
       </section>

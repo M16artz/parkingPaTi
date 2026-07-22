@@ -1,5 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Eye, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { adminService } from '../../services/adminService';
+
+const normalizarSolicitud = (item) => ({
+  ...item,
+  estado: item.onboarding_estado === 'REVISION_PENDIENTE'
+    ? 'PENDIENTE'
+    : item.onboarding_estado === 'RECHAZADO' ? 'RECHAZADO' : 'APROBADO',
+  parqueadero: item.parqueadero_nombre,
+  fecha: item.actualizada_en ? new Date(item.actualizada_en).toLocaleDateString('es-EC') : 'N/A',
+  persona: { ...item.persona, correo: item.correo },
+});
 
 const EstadoCombobox = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -81,17 +92,8 @@ export const AdminApplicationsView = ({ applicationsList, onSelectSolicitud }) =
     const fetchSolicitudes = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/applications', {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSolicitudes(data);
-        }
+        const data = await adminService.listarSolicitudes({});
+        setSolicitudes((data.results || data).map(normalizarSolicitud));
       } catch (error) {
         console.error('Error al cargar las solicitudes:', error);
       } finally {

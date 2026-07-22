@@ -218,7 +218,7 @@ def test_matriz_conteos_y_estado_agregado():
     assert parqueadero.estado_operativo == EstadoOperativo.INACTIVO
 
 
-def test_propietario_controla_cierre_manual_y_retorna_a_estado_automatico():
+def test_propietario_controla_estados_manuales_y_retorna_a_automatico():
     cuenta, parqueadero = crear_propietario(11)
     configurar(cuenta, 2)
     api = APIClient()
@@ -238,9 +238,18 @@ def test_propietario_controla_cierre_manual_y_retorna_a_estado_automatico():
     parqueadero.refresh_from_db()
     assert parqueadero.estado_operativo == EstadoOperativo.CERRADO
 
-    automatico = api.patch(
+    abierto = api.patch(
         "/api/v1/owner/operational-status/",
         {"estado": "ABIERTO"},
+        format="json",
+    )
+    assert abierto.status_code == 200
+    assert abierto.data["estado_operativo"] == EstadoOperativo.ABIERTO
+    assert abierto.data["estado_operativo_manual"] == EstadoOperativo.ABIERTO
+
+    automatico = api.patch(
+        "/api/v1/owner/operational-status/",
+        {"estado": "AUTOMATICO"},
         format="json",
     )
     assert automatico.status_code == 200

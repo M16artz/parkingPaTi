@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CircleStop, Play, X } from 'lucide-react';
 import { formatearCostoInformativo, tarifaInicialEstancia } from '../../../utils/stay';
 
@@ -23,11 +24,11 @@ export const StayDialog = ({ mode, space, rates, stay, pending, onClose, onStart
   if (!mode || !space) return null;
   const starting = mode === 'start';
   const final = mode === 'final';
-  return <div className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/45 p-4" role="presentation">
-    <section className="w-full max-w-md border border-slate-200 bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="stay-title">
+  return createPortal(<div className="fixed inset-0 z-[1300] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation">
+    <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="stay-title">
       <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-sky-800">{space.nombre}</p><h2 className="mt-1 text-xl font-bold" id="stay-title">{starting ? 'Iniciar estancia' : final ? 'Estancia finalizada' : 'Estancia actual'}</h2></div><button className="minimum-touch-target grid place-items-center text-slate-500" type="button" onClick={onClose} aria-label="Cerrar"><X size={20} /></button></div>
       {starting ? <label className="mt-5 block text-sm font-semibold">Tarifa informativa<select className="mt-2 h-11 w-full border border-slate-300 bg-white px-3" value={rateId} onChange={(event) => setRateId(Number(event.target.value))}>{rates.filter((rate) => rate.activa).map((rate) => <option value={rate.id} key={rate.id}>{rate.nombre_visible} · {formatearCostoInformativo(rate.precio_hora)}/h</option>)}</select></label> : <Resumen stay={stay} />}
       <div className="mt-6 flex justify-end gap-3"><button className="minimum-touch-target border border-slate-300 px-4 font-semibold" type="button" onClick={onClose} disabled={pending}>{final ? 'Cerrar' : 'Cancelar'}</button>{starting && <button className="inline-flex minimum-touch-target items-center gap-2 bg-sky-700 px-4 font-bold text-white disabled:opacity-50" type="button" disabled={pending || !rateId} onClick={() => onStart(rateId)}><Play size={18} /> Confirmar inicio</button>}{mode === 'current' && <button className="inline-flex minimum-touch-target items-center gap-2 bg-red-600 px-4 font-bold text-white disabled:opacity-50" type="button" disabled={pending} onClick={onFinish}><CircleStop size={18} /> Finalizar estancia</button>}</div>
     </section>
-  </div>;
+  </div>, document.body);
 };

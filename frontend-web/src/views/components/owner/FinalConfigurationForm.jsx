@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, DollarSign, Save, Copy, Car } from 'lucide-react';
 import {
+  aplicarHorarioRapido,
   crearFormularioConfiguracion,
   crearPayloadConfiguracion,
   DIAS,
@@ -38,22 +39,13 @@ export const FinalConfigurationForm = ({
     setErrors(EMPTY_ERRORS);
   }, [data]);
 
-  // Aplicar Horario Rápido a todos los días activos
+  // Aplicar el Horario Rápido y activar todos los días de la semana.
   const handleApplyQuickTime = () => {
     setErrors((current) => ({ ...current, formulario: '', horarios: {} }));
-    setForm((current) => {
-      const updatedHorarios = { ...current.horarios };
-      Object.keys(updatedHorarios).forEach((code) => {
-        if (updatedHorarios[code]?.activo) {
-          updatedHorarios[code] = {
-            ...updatedHorarios[code],
-            hora_apertura: quickTime.hora_apertura,
-            hora_cierre: quickTime.hora_cierre,
-          };
-        }
-      });
-      return { ...current, horarios: updatedHorarios };
-    });
+    setForm((current) => ({
+      ...current,
+      horarios: aplicarHorarioRapido(current.horarios, quickTime),
+    }));
   };
 
   const changeSchedule = (day, field, value) => {

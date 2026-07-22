@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
   destinoSesion,
@@ -51,4 +52,10 @@ test('filtro Todas omite activo y los filtros específicos envían booleanos', (
   assert.equal(normalizarFiltroActivo(FILTRO_ACCESO.TODOS), undefined);
   assert.equal(normalizarFiltroActivo(FILTRO_ACCESO.HABILITADAS), true);
   assert.equal(normalizarFiltroActivo(FILTRO_ACCESO.DESHABILITADAS), false);
+});
+
+test('las rutas de solicitudes y cuentas administrativas existen', async () => {
+  const routes = await readFile(new URL('../src/config/routes.jsx', import.meta.url), 'utf8');
+  assert.match(routes, /\/admin\/applications/);
+  assert.match(routes, /\/admin\/accounts/);
 });
