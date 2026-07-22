@@ -1,38 +1,24 @@
 import React from 'react';
-import { FileCheck2, LogOut, Users } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { useLogoutController } from '../../controllers/useLogoutController';
-
-const enlaceClase = ({ isActive }) => `flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold ${
-  isActive ? 'border-sky-700 text-sky-800' : 'border-transparent text-slate-600 hover:text-slate-900'
-}`;
+import { Outlet } from 'react-router-dom';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 
 export const AdminLayout = () => {
-  const logout = useLogoutController();
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3">
-          <div>
-            <p className="font-headline text-lg font-bold text-sky-800">ParkingPaTi</p>
-            <p className="text-xs text-slate-500">Administración</p>
-          </div>
-          <button
-            className="minimum-touch-target grid place-items-center text-slate-600 hover:text-slate-950"
-            type="button"
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
-            onClick={logout}
-          >
-            <LogOut size={20} />
-          </button>
+    <div className="w-screen h-screen bg-[#e8f1fa] p-4 sm:p-6 flex items-center justify-center overflow-hidden font-sans antialiased">
+      {/* MARCO CONTENEDOR TIPO TARJETA */}
+      <div className="w-full h-full max-w-[1600px] bg-white rounded-[28px] shadow-lg flex overflow-hidden border border-slate-200/60">
+        
+        {/* BARRA LATERAL AZUL */}
+        <AdminSidebar />
+
+        {/* CONTENIDO DERECHO CON SCROLL INDEPENDIENTE */}
+        <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white p-6 sm:p-8">
+          <Outlet />
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-2 px-5" aria-label="Administración">
-          <NavLink className={enlaceClase} to="/admin/applications"><FileCheck2 size={18} /> Solicitudes</NavLink>
-          <NavLink className={enlaceClase} to="/admin/accounts"><Users size={18} /> Cuentas</NavLink>
-        </nav>
-      </header>
-      <Outlet />
+
+      </div>
     </div>
   );
 };
+
+export default AdminLayout;

@@ -1,92 +1,240 @@
-import React, { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink, FileText, MapPin, X } from 'lucide-react';
-import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import { Link, useParams } from 'react-router-dom';
-import { LOJA_BOUNDS } from '../../config/loja';
-import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../../config/env';
-import { adminService } from '../../services/adminService';
-import { extraerErroresApi } from '../../utils/apiError';
-import { ConfirmDialog } from '../components/admin/ConfirmDialog';
-import { EstadoBadge } from '../components/admin/AdminTableParts';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Building, User, Loader2 } from 'lucide-react';
 
-export const AdminApplicationDetailView = () => {
-  const { cuentaId } = useParams();
-  const queryClient = useQueryClient();
-  const [dialog, setDialog] = useState(null);
-  const [motivo, setMotivo] = useState('');
-  const [message, setMessage] = useState('');
-  const detail = useQuery({
-    queryKey: ['admin', 'applications', cuentaId],
-    queryFn: () => adminService.obtenerSolicitud(cuentaId),
-  });
-  const decision = useMutation({
-    mutationFn: ({ action }) => action === 'approve'
-      ? adminService.aprobar(cuentaId)
-      : adminService.rechazar(cuentaId, motivo),
-    onSuccess: async (data) => {
-      setMessage(data.email_enviado ? data.detail : `${data.detail} El correo no pudo enviarse.`);
-      setDialog(null);
-      setMotivo('');
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'applications'] });
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'accounts'] });
-    },
-    onError: (error) => {
-      setMessage(extraerErroresApi(error).formulario || 'No se pudo registrar la decisión.');
-      setDialog(null);
-    },
-  });
-  const documentAccess = useMutation({
-    mutationFn: () => adminService.abrirDocumento(cuentaId),
-    onSuccess: ({ url }) => window.open(url, '_blank', 'noopener,noreferrer'),
-    onError: (error) => setMessage(extraerErroresApi(error).formulario || 'No se pudo abrir el documento.'),
-  });
+export const AdminApplicationDetailView = ({ cuentaId, solicitud, onBack, onStatusChange }) => {
+  const [detalle, setDetalle] = useState(solicitud || null);
+  const [loading, setLoading] = useState(!solicitud);
+  const [submitting, setSubmitting] = useState(false);
 
-  if (detail.isPending) return <main className="mx-auto max-w-6xl p-6">Cargando solicitud...</main>;
-  if (detail.isError) return <main className="mx-auto max-w-6xl p-6"><p className="text-red-700">No se pudo cargar la solicitud.</p><button className="mt-3 font-bold text-sky-700" type="button" onClick={() => detail.refetch()}>Reintentar</button></main>;
+  // 🛡️ Petición protegida para cargar el detalle de la solicitud
+  useEffect(() => {
+    if (solicitud) {
+      setDetalle(solicitud);
+      return;
+    }
 
-  const item = detail.data;
-  const position = [Number(item.parqueadero.latitud), Number(item.parqueadero.longitud)];
-  const pendiente = item.onboarding_estado === 'REVISION_PENDIENTE';
-  return (
-    <main className="mx-auto max-w-6xl px-5 py-7">
-      <Link className="text-sm font-bold text-sky-700" to="/admin/applications">Volver a solicitudes</Link>
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="text-2xl font-bold">{item.persona.nombre} {item.persona.apellido}</h1><p className="mt-1 text-slate-600">{item.correo} · {item.persona.tipo_identificacion} {item.persona.identificacion}</p></div>
-        <EstadoBadge estado={item.onboarding_estado} />
-      </div>
-      {message && <p className="mt-4 border border-slate-200 bg-white p-3 text-sm" role="status">{message}</p>}
+    const fetchDetalle = async () => {
+      if (!cuentaId) return;
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/applications/${cuentaId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDetalle(data);
+        }
+      } catch (error) {
+        console.error('Error al obtener detalle de solicitud:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        <div className="space-y-6">
-          <section className="border border-slate-200 bg-white p-5">
-            <h2 className="text-lg font-bold">Parqueadero</h2>
-            <dl className="mt-4 grid gap-3 text-sm"><div><dt className="text-slate-500">Nombre</dt><dd className="font-semibold">{item.parqueadero.nombre}</dd></div><div><dt className="text-slate-500">Dirección</dt><dd>{item.parqueadero.calle_principal}{item.parqueadero.calle_secundaria ? ` y ${item.parqueadero.calle_secundaria}` : ''}{item.parqueadero.numero_lote ? `, lote ${item.parqueadero.numero_lote}` : ''}</dd></div><div><dt className="text-slate-500">Descripción</dt><dd>{item.parqueadero.descripcion || 'Sin descripción'}</dd></div></dl>
-          </section>
-          <section className="border border-slate-200 bg-white p-5">
-            <h2 className="flex items-center gap-2 text-lg font-bold"><FileText size={19} /> Documento</h2>
-            <dl className="mt-4 grid gap-3 text-sm"><div><dt className="text-slate-500">Archivo</dt><dd className="font-semibold">{item.documento.nombre_original}</dd></div><div><dt className="text-slate-500">Formato y tamaño</dt><dd>{item.documento.mime_type} · {Math.ceil(item.documento.size_bytes / 1024)} KB</dd></div><div><dt className="text-slate-500">Estado</dt><dd><EstadoBadge estado={item.documento.estado} /></dd></div></dl>
-            <button className="mt-5 inline-flex min-h-11 items-center gap-2 font-bold text-sky-700" type="button" disabled={documentAccess.isPending} onClick={() => documentAccess.mutate()}><ExternalLink size={18} /> {documentAccess.isPending ? 'Abriendo...' : 'Revisar documento privado'}</button>
-          </section>
-        </div>
-        <section className="border border-slate-200 bg-white p-5">
-          <h2 className="flex items-center gap-2 text-lg font-bold"><MapPin size={19} /> Ubicación declarada</h2>
-          <div className="mt-4 h-[420px] min-h-[320px] border border-slate-200">
-            <MapContainer center={position} zoom={16} maxBounds={LOJA_BOUNDS} maxBoundsViscosity={1} className="h-full w-full">
-              <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} />
-              <Marker position={position} />
-            </MapContainer>
+    fetchDetalle();
+  }, [cuentaId, solicitud]);
+
+  // 🛡️ Petición protegida para actualizar estado (Aprobar / Rechazar)
+  const handleUpdateStatus = async (nuevoEstado) => {
+    setSubmitting(true);
+    try {
+      if (onStatusChange) {
+        await onStatusChange(cuentaId, nuevoEstado);
+        setDetalle((prev) => (prev ? { ...prev, estado: nuevoEstado } : null));
+      } else {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/applications/${cuentaId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ estado: nuevoEstado })
+        });
+        if (response.ok) {
+          setDetalle((prev) => (prev ? { ...prev, estado: nuevoEstado } : null));
+        }
+      }
+    } catch (error) {
+      console.error('Error al cambiar el estado de la solicitud:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 font-sans antialiased">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-xs font-black uppercase text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
+        >
+          <ArrowLeft size={16} /> Volver a Solicitudes
+        </button>
+        <div className="bg-[#eef7ff] rounded-[24px] p-12 border border-blue-100/80 flex justify-center items-center">
+          <div className="inline-flex items-center gap-2 text-slate-600 font-bold text-xs">
+            <Loader2 size={18} className="animate-spin text-[#3262ec]" /> Cargando detalles de la solicitud...
           </div>
-          <p className="mt-3 text-xs text-slate-500">{item.parqueadero.latitud}, {item.parqueadero.longitud}</p>
-        </section>
+        </div>
+      </div>
+    );
+  }
+
+  if (!detalle) {
+    return (
+      <div className="space-y-6 font-sans antialiased">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-xs font-black uppercase text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
+        >
+          <ArrowLeft size={16} /> Volver a Solicitudes
+        </button>
+        <div className="bg-white p-8 rounded-[24px] text-center border border-slate-100 text-xs font-bold text-slate-500 uppercase">
+          No se encontró información de la solicitud.
+        </div>
+      </div>
+    );
+  }
+
+  const estadoActual = detalle.estado || 'PENDIENTE';
+  const propietario = detalle.propietario || {};
+  const parqueadero = detalle.parqueadero || {};
+  const documentos = detalle.documentos || [];
+
+  return (
+    <div className="space-y-6 font-sans antialiased">
+      {/* BOTÓN VOLVER */}
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 text-xs font-black uppercase text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
+      >
+        <ArrowLeft size={16} /> Volver a Solicitudes
+      </button>
+
+      {/* CABECERA RESUMEN */}
+      <div className="bg-[#eef7ff] rounded-[24px] p-6 border border-blue-100/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-base font-black text-slate-800 uppercase font-headline">
+            {parqueadero.nombre || 'Sin nombre'}
+          </h2>
+          <p className="text-xs text-slate-500 font-semibold mt-0.5">
+            Solicitante: {propietario.nombre || 'N/A'} ({propietario.cedula || propietario.identificacion || 'N/A'})
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className={`px-3 py-1.5 text-xs font-black uppercase rounded-full ${
+              estadoActual === 'PENDIENTE'
+                ? 'bg-amber-100 text-amber-700'
+                : estadoActual === 'APROBADO'
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-rose-100 text-rose-700'
+            }`}
+          >
+            {estadoActual}
+          </span>
+
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleUpdateStatus('APROBADO')}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
+          >
+            <CheckCircle2 size={15} /> Aprobar
+          </button>
+
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleUpdateStatus('RECHAZADO')}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
+          >
+            <XCircle size={15} /> Rechazar
+          </button>
+        </div>
       </div>
 
-      {pendiente && <section className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-300 pt-5"><button className="inline-flex min-h-11 items-center gap-2 border border-red-300 px-4 font-bold text-red-700" type="button" onClick={() => { setMessage(''); setDialog('reject'); }}><X size={18} /> Rechazar</button><button className="inline-flex min-h-11 items-center gap-2 bg-emerald-700 px-4 font-bold text-white" type="button" onClick={() => { setMessage(''); setDialog('approve'); }}><Check size={18} /> Aprobar</button></section>}
+      {/* DETALLES DIVIDIDOS EN TARJETAS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* DATOS PROPIETARIO */}
+        <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-xs space-y-4">
+          <div className="flex items-center gap-2.5 text-blue-600 font-bold text-xs uppercase">
+            <User size={18} />
+            <span>Información del Propietario</span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Nombre:</strong> {propietario.nombre || 'N/A'}
+            </p>
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Cédula/RUC:</strong> {propietario.cedula || propietario.identificacion || 'N/A'}
+            </p>
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Correo:</strong> {propietario.correo || 'N/A'}
+            </p>
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Teléfono:</strong> {propietario.telefono || 'N/A'}
+            </p>
+          </div>
+        </div>
 
-      <ConfirmDialog open={dialog === 'approve'} title="Aprobar solicitud" description="La cuenta podrá continuar con la configuración final del parqueadero." confirmLabel="Aprobar solicitud" pending={decision.isPending} onCancel={() => setDialog(null)} onConfirm={() => decision.mutate({ action: 'approve' })} />
-      <ConfirmDialog open={dialog === 'reject'} title="Rechazar solicitud" description="El propietario podrá corregir y reenviar todo el onboarding." confirmLabel="Rechazar solicitud" danger disabled={motivo.trim().length < 3} pending={decision.isPending} onCancel={() => setDialog(null)} onConfirm={() => decision.mutate({ action: 'reject' })}>
-        <label className="block text-sm font-semibold text-slate-700">Motivo<textarea className="mt-2 min-h-28 w-full border border-slate-300 p-3 font-normal" maxLength={1000} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Describe claramente qué debe corregirse" /></label>
-      </ConfirmDialog>
-    </main>
+        {/* DATOS PARQUEADERO */}
+        <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-xs space-y-4">
+          <div className="flex items-center gap-2.5 text-blue-600 font-bold text-xs uppercase">
+            <Building size={18} />
+            <span>Detalles del Establecimiento</span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Nombre:</strong> {parqueadero.nombre || 'N/A'}
+            </p>
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Dirección:</strong> {parqueadero.direccion || 'N/A'}
+            </p>
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Plazas Totales:</strong> {parqueadero.plazas ?? 'N/A'} plazas
+            </p>
+            <p className="text-slate-500">
+              <strong className="text-slate-700">Tarifa por Hora:</strong> {parqueadero.tarifaHora || 'N/A'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* DOCUMENTOS ADJUNTOS */}
+      <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-xs space-y-4">
+        <div className="flex items-center gap-2.5 text-blue-600 font-bold text-xs uppercase">
+          <FileText size={18} />
+          <span>Documentos de Respaldos</span>
+        </div>
+        {documentos.length === 0 ? (
+          <p className="text-xs font-semibold text-slate-400 py-2">No hay documentos adjuntos.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {documentos.map((doc, index) => (
+              <div
+                key={doc.id || index}
+                className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between"
+              >
+                <span className="text-xs font-semibold text-slate-700 truncate">
+                  {doc.nombre || `Documento ${index + 1}`}
+                </span>
+                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                  {doc.estado || 'Adjuntado'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
