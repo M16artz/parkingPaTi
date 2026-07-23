@@ -11,7 +11,6 @@ import {
   Users,
   Building2,
   MapPin,
-  Phone,
   ShieldCheck
 } from 'lucide-react';
 
@@ -93,7 +92,6 @@ export const OwnerDashboardSummary = ({
   const parkingInfo = {
     nombre: parqueadero?.nombre || 'Estacionamiento',
     direccion: getDireccionTexto(),
-    telefono: parqueadero?.telefono || 'No registrado',
     capacidad: parqueadero?.capacidad_total || 0,
     horario: parqueadero?.horario_atencion || 'Consultar horario',
     estadoAdmin: parqueadero?.habilitacion_estado || 'PENDIENTE',
@@ -311,17 +309,6 @@ export const OwnerDashboardSummary = ({
               </label>
               <p className="text-sm font-black text-blue-900 bg-blue-50/60 p-3 rounded-xl border border-blue-100">
                 {parkingInfo.capacidad} Espacios Totales
-              </p>
-            </div>
-
-            {/* Teléfono */}
-            <div>
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <Phone size={13} className="text-blue-500" />
-                Teléfono de Contacto
-              </label>
-              <p className="text-sm font-bold text-slate-800 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
-                {parkingInfo.telefono}
               </p>
             </div>
 

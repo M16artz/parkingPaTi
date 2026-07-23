@@ -4,6 +4,7 @@ import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 import { Building2, FileCheck2, LockKeyhole, MapPin, Save } from 'lucide-react';
 import { LOJA_CENTER } from '../../../config/loja';
 import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../../../config/env';
+import { defaultMarkerIcon } from '../../../config/leafletIcon';
 import { parqueaderoService } from '../../../services/parqueaderoService';
 import { extraerErroresApi } from '../../../utils/apiError';
 
@@ -198,11 +199,11 @@ export const OwnerInfoGeneral = ({ parqueadero }) => {
               className="h-full w-full"
             >
               <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} />
-              {hasPosition && <Marker position={position} interactive={false} />}
+              {hasPosition && <Marker icon={defaultMarkerIcon} position={position} interactive={false} />}
             </MapContainer>
 
-            <div className="pointer-events-none absolute inset-0 z-[500] grid place-items-center bg-slate-900/5">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-slate-700 shadow-md">
+            <div className="pointer-events-none absolute bottom-3 right-3 z-[500]">
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-black text-slate-700 shadow-md backdrop-blur-sm">
                 <LockKeyhole size={15} /> Ubicación bloqueada
               </span>
             </div>

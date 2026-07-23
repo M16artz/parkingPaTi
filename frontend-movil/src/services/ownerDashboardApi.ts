@@ -23,6 +23,8 @@ export interface OwnerSpace {
     tarifa_predeterminada: number | null;
     tarifa_codigo: string | null;
     tarifa_precio_hora: string | null;
+    estancia_tarifa_codigo: string | null;
+    estancia_precio_hora: string | null;
     is_active: boolean;
     deleted_at: string | null;
 }

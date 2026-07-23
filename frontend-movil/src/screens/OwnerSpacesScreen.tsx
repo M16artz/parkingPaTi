@@ -69,7 +69,9 @@ export default function OwnerSpacesScreen() {
             <View style={styles.addRow}><TextInput keyboardType="number-pad" style={styles.quantity} value={quantity} onChangeText={setQuantity} /><TouchableOpacity style={styles.addButton} onPress={confirmAdd}><Ionicons name="add" size={19} color="#FFFFFF" /><Text style={styles.addText}>Agregar espacios</Text></TouchableOpacity></View>
             {active.map((space) => <View key={space.id} style={[styles.card, space.estado === 'LIBRE' ? styles.cardFree : space.estado === 'OCUPADO' ? styles.cardOccupied : styles.cardDisabled]}>
                 <View style={styles.cardHeader}><Text style={styles.spaceName}>{space.nombre}</Text><Text style={styles.status}>{space.estado}</Text></View>
-                <Text style={styles.rateLabel}>Tarifa: {space.tarifa_codigo || 'NORMAL'}</Text>
+                <Text style={styles.rateLabel}>
+                    Tarifa: {(space.estado === 'OCUPADO' ? space.estancia_tarifa_codigo : null) || space.tarifa_codigo || 'Sin configurar'}
+                </Text>
                 <View style={styles.actions}>
                     {space.estado === 'LIBRE' ? <TouchableOpacity style={styles.primaryAction} onPress={() => openStart(space)}><Text style={styles.primaryActionText}>Iniciar</Text></TouchableOpacity> : null}
                     {space.estado === 'OCUPADO' ? <TouchableOpacity style={styles.stopAction} onPress={() => openStay(space)}><Text style={styles.stopText}>Ver estancia</Text></TouchableOpacity> : null}

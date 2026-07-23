@@ -16,6 +16,7 @@ import { OwnerDashboardSummary } from '../components/owner/OwnerDashboardSummary
 import { OwnerInfoGeneral } from '../components/owner/OwnerInfoGeneral';
 import { OwnerConfigGeneral } from '../components/owner/OwnerConfigGeneral';
 import { OwnerConfigEspacios } from '../components/owner/OwnerConfigEspacios';
+import { SpaceEditDialog } from '../components/owner/SpaceEditDialog';
 import { StayDialog } from '../components/owner/StayDialog';
 
 // ============================================================================
@@ -35,6 +36,7 @@ export const OwnerDashboardView = () => {
   const [imgError, setImgError] = useState(false);
   const [message, setMessage] = useState('');
   const [stayDialog, setStayDialog] = useState(null);
+  const [editSpace, setEditSpace] = useState(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -90,6 +92,7 @@ export const OwnerDashboardView = () => {
         'reactivate-space': 'La acción se revirtió y el espacio volvió a estar disponible.',
       };
       setMessage(successMessages[variables.type] || 'Cambios guardados correctamente.');
+      if (variables.type === 'edit-space') setEditSpace(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['owner', 'configuration'] }),
         queryClient.invalidateQueries({ queryKey: ['owner', 'parkings'] }),
@@ -349,6 +352,7 @@ export const OwnerDashboardView = () => {
                 }}
                 onDeleteSpace={(payload) => mutation.mutate({ type: 'delete-space', payload })}
                 onReactivateSpace={(payload) => mutation.mutate({ type: 'reactivate-space', payload })}
+                onEditSpace={setEditSpace}
                 onStartSession={(space) => setStayDialog({ mode: 'start', space })}
                 onViewStay={(space) => stayMutation.mutate({ type: 'current', space })}
               />
@@ -371,6 +375,17 @@ export const OwnerDashboardView = () => {
         })}
         onFinish={() => stayMutation.mutate({
           type: 'finish', space: stayDialog.space,
+        })}
+      />
+      <SpaceEditDialog
+        space={editSpace}
+        rates={configuration?.tarifas || []}
+        pending={mutation.isPending}
+        nameOnly
+        onClose={() => setEditSpace(null)}
+        onSave={(payload) => mutation.mutate({
+          type: 'edit-space',
+          payload: { id: editSpace.id, data: payload },
         })}
       />
     </div>

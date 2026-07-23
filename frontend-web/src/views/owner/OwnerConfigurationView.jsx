@@ -7,6 +7,7 @@ import { ownerConfigurationService } from '../../services/ownerConfigurationServ
 import { extraerErroresApi } from '../../utils/apiError';
 import { FinalConfigurationForm } from '../components/owner/FinalConfigurationForm';
 import { SpaceGrid } from '../components/owner/SpaceGrid';
+import { SpaceEditDialog } from '../components/owner/SpaceEditDialog';
 import { StayDialog } from '../components/owner/StayDialog';
 
 // Datos de fallback en caso de error de red inicial
@@ -26,6 +27,7 @@ export const OwnerConfigurationView = () => {
   const logout = useLogoutController();
   const [message, setMessage] = useState('');
   const [stayDialog, setStayDialog] = useState(null);
+  const [editSpace, setEditSpace] = useState(null);
 
   // Consulta de configuración general
   const configuration = useQuery({
@@ -58,6 +60,7 @@ export const OwnerConfigurationView = () => {
         reactivate: 'La acción se revirtió y el espacio volvió a estar disponible.',
       };
       setMessage(successMessages[variables.type] || 'Espacios actualizados correctamente.');
+      if (variables.type === 'edit') setEditSpace(null);
       if (variables.type === 'configuration') {
         queryClient.setQueryData(['owner', 'configuration'], result);
       }
@@ -206,6 +209,7 @@ export const OwnerConfigurationView = () => {
                 onReactivateSpace={(spaceId) =>
                   mutation.mutate({ type: 'reactivate', payload: spaceId })
                 }
+                onEditSpace={setEditSpace}
                 onStartSession={(space) => setStayDialog({ mode: 'start', space })}
                 onViewStay={(space) => stayMutation.mutate({ type: 'current', space })}
               />
@@ -228,6 +232,17 @@ export const OwnerConfigurationView = () => {
         onFinish={() =>
           stayMutation.mutate({ type: 'finish', space: stayDialog.space })
         }
+      />
+      <SpaceEditDialog
+        space={editSpace}
+        rates={data.tarifas}
+        pending={mutation.isPending}
+        nameOnly
+        onClose={() => setEditSpace(null)}
+        onSave={(payload) => mutation.mutate({
+          type: 'edit',
+          payload: { id: editSpace.id, data: payload },
+        })}
       />
     </div>
   );

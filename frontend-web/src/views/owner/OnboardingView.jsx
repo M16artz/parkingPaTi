@@ -5,6 +5,7 @@ import { Building2, Car, CheckCircle2, FileUp, LogOut, MapPin, Send, ShieldCheck
 import { Navigate } from 'react-router-dom';
 import { LOJA_BOUNDS, LOJA_CENTER, estaEnLoja } from '../../config/loja';
 import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../../config/env';
+import { defaultMarkerIcon } from '../../config/leafletIcon';
 import { onboardingService } from '../../services/onboardingService';
 import { useLogoutController } from '../../controllers/useLogoutController';
 import { extraerErroresApi } from '../../utils/apiError';
@@ -25,7 +26,7 @@ function LocationPicker({ position, onChange }) {
     },
   });
   return position.latitud && position.longitud
-    ? <Marker position={[Number(position.latitud), Number(position.longitud)]} />
+    ? <Marker icon={defaultMarkerIcon} position={[Number(position.latitud), Number(position.longitud)]} />
     : null;
 }
 

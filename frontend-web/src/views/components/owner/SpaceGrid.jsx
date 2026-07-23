@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertTriangle, LayoutGrid, Plus, Car, Play, Eye, RotateCcw, Trash2, Ban, X } from 'lucide-react';
+import { AlertTriangle, LayoutGrid, Plus, Car, Play, Eye, Pencil, RotateCcw, Trash2, Ban, X } from 'lucide-react';
 import { obtenerEspaciosReversibles } from '../../../utils/ownerConfiguration';
+import { tarifaAplicadaEspacio } from '../../../utils/stay';
 
 export const SpaceGrid = ({
   spaces = [],
@@ -10,6 +11,7 @@ export const SpaceGrid = ({
   onDeleteSpace = () => {},
   onReactivateSpace = () => {},
   onToggleDisable = () => {},
+  onEditSpace = () => {},
   onStartSession = () => {},
   onViewStay = () => {},
 }) => {
@@ -164,7 +166,7 @@ export const SpaceGrid = ({
                       {space.nombre || space.code || `Espacio ${space.id}`}
                     </h3>
                     <p className="text-xs font-bold text-slate-400 mt-0.5">
-                      Tarifa: {space.tarifa_codigo || space.tarifa || 'NORMAL'}
+                      Tarifa: {tarifaAplicadaEspacio(space) || 'Sin configurar'}
                     </p>
                   </div>
 
@@ -254,6 +256,16 @@ export const SpaceGrid = ({
                         </button>
                       </>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => onEditSpace(space)}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 transition-all hover:bg-blue-100 hover:text-blue-800 active:scale-95"
+                      title={`Editar nombre de ${space.nombre || space.code}`}
+                      aria-label={`Editar nombre de ${space.nombre || space.code}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
                   </div>
                 </div>
               );

@@ -3,13 +3,16 @@ import { LocateFixed } from 'lucide-react';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { LOJA_BOUNDS, LOJA_CENTER, estaEnLoja } from '../../../config/loja';
 import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../../../config/env';
+import { defaultMarkerIcon } from '../../../config/leafletIcon';
 
 const LocationEvents = ({ formData, onSelect, onReject }) => {
   useMapEvents({ click({ latlng }) {
     if (!estaEnLoja(latlng.lat, latlng.lng)) return onReject();
     onSelect(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
   } });
-  return formData.latitud && formData.longitud ? <Marker position={[Number(formData.latitud), Number(formData.longitud)]} /> : null;
+  return formData.latitud && formData.longitud
+    ? <Marker icon={defaultMarkerIcon} position={[Number(formData.latitud), Number(formData.longitud)]} />
+    : null;
 };
 
 const RecenterButton = () => {

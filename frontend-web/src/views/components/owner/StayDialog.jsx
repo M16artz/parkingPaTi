@@ -19,7 +19,9 @@ const Resumen = ({ stay }) => (
 export const StayDialog = ({ mode, space, rates, stay, pending, onClose, onStart, onFinish }) => {
   const [rateId, setRateId] = useState('');
   useEffect(() => {
-    if (mode === 'start') setRateId(tarifaInicialEstancia(rates));
+    if (mode === 'start') {
+      setRateId(tarifaInicialEstancia(rates, space?.tarifa_predeterminada));
+    }
   }, [mode, rates, space]);
   if (!mode || !space) return null;
   const starting = mode === 'start';
