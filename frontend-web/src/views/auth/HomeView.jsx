@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Shield, Phone, Mail } from 'lucide-react';
+import { Car, ChevronDown, CircleHelp, Shield, Phone, Mail } from 'lucide-react';
 
 // Assets e Imágenes
 import home01 from '../../assets/home01.png';
@@ -11,6 +11,33 @@ import nuestrosServiciosImg from '../../assets/nuestrosServicios.png';
 
 // Componente Navbar Público
 import { PublicNavbar } from '../components/public/PublicNavbar';
+
+const FAQS = [
+  {
+    question: '¿Cómo encuentro un parqueadero disponible?',
+    answer: 'Selecciona “Parqueaderos” en el menú para consultar el mapa y la lista de espacios disponibles cerca de tu destino.',
+  },
+  {
+    question: '¿Necesito crear una cuenta para consultar parqueaderos?',
+    answer: 'No. Puedes explorar los parqueaderos, revisar su ubicación y consultar su disponibilidad sin iniciar sesión.',
+  },
+  {
+    question: '¿La disponibilidad se actualiza en tiempo real?',
+    answer: 'Sí. La plataforma muestra la información más reciente reportada por cada parqueadero para ayudarte a elegir antes de llegar.',
+  },
+  {
+    question: '¿Cómo verifican que los parqueaderos sean confiables?',
+    answer: 'Cada establecimiento pasa por un proceso de revisión de su información y de su permiso de funcionamiento antes de publicarse.',
+  },
+  {
+    question: '¿Puedo registrar mi parqueadero en ParkingPaTi?',
+    answer: 'Sí. Crea una cuenta desde “Registrarse”, completa los datos de tu establecimiento y envía la documentación solicitada para su revisión.',
+  },
+  {
+    question: '¿Qué tipos de vehículos puedo estacionar?',
+    answer: 'Los tipos de espacios dependen de cada establecimiento. Consulta el detalle del parqueadero para conocer las opciones disponibles.',
+  },
+];
 
 export const HomeView = () => {
   const navigate = useNavigate();
@@ -264,7 +291,55 @@ export const HomeView = () => {
           </section>
 
           {/* ========================================================= */}
-          {/* 5. FOOTER CORPORATIVO                                     */}
+          {/* 5. PREGUNTAS FRECUENTES                                   */}
+          {/* ========================================================= */}
+          <section
+            id="faq"
+            aria-labelledby="faq-title"
+            className="scroll-mt-28 rounded-[32px] bg-white p-8 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] md:p-14"
+          >
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+              <div className="lg:col-span-4">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+                  <CircleHelp aria-hidden="true" size={26} />
+                </div>
+                <span className="block text-xs font-black uppercase tracking-widest text-sky-600">
+                  Resolvemos tus dudas
+                </span>
+                <h2 id="faq-title" className="mt-3 text-4xl font-extrabold font-headline tracking-tight text-slate-900 md:text-5xl">
+                  Preguntas frecuentes
+                </h2>
+                <p className="mt-4 max-w-md text-base leading-relaxed text-slate-500">
+                  Todo lo que necesitas saber para encontrar o registrar un parqueadero con ParkingPaTi.
+                </p>
+              </div>
+
+              <div className="grid gap-3 lg:col-span-8">
+                {FAQS.map(({ question, answer }, index) => (
+                  <details
+                    key={question}
+                    className="group rounded-2xl border border-slate-200 bg-slate-50/70 transition-colors open:border-sky-300 open:bg-sky-50/60"
+                    open={index === 0}
+                  >
+                    <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none transition-colors hover:text-sky-800 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-600 [&::-webkit-details-marker]:hidden md:px-6">
+                      <span>{question}</span>
+                      <ChevronDown
+                        aria-hidden="true"
+                        size={20}
+                        className="shrink-0 text-sky-600 transition-transform duration-200 group-open:rotate-180"
+                      />
+                    </summary>
+                    <p className="px-5 pb-5 pr-12 leading-relaxed text-slate-600 md:px-6 md:pb-6 md:pr-14">
+                      {answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ========================================================= */}
+          {/* 6. FOOTER CORPORATIVO                                     */}
           {/* ========================================================= */}
           <footer
             className="

@@ -3,7 +3,7 @@ import { Car, Menu, X } from 'lucide-react';
 
 const LINKS = [
   ['inicio', 'Inicio'], ['quienes-somos', 'Quiénes somos'],
-  ['servicios', 'Servicios'], ['contacto', 'Contacto'],
+  ['servicios', 'Servicios'], ['faq', 'FAQ'],
 ];
 
 export const PublicNavbar = ({ onParkings, onLogin, onRegister }) => {
