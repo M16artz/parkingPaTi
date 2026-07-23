@@ -131,7 +131,7 @@ class DisponibilidadCorreoAPIView(APIView):
     permission_classes = [AllowAny]
     serializer_class = DisponibilidadCorreoDTO
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "register"
+    throttle_scope = "register_email_availability"
 
     @extend_schema(request=DisponibilidadCorreoDTO, responses=DisponibilidadCorreoResponseDTO)
     def post(self, request):

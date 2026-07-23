@@ -3,6 +3,7 @@ services:
     name: parkingpati-api-staging
     runtime: python
     plan: free
+    region: ohio
     rootDir: backend
     buildCommand: pip install -r requirements/prod.txt && python manage.py migrate --noinput
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
@@ -16,14 +17,34 @@ services:
         sync: false
       - key: DJANGO_LOG_LEVEL
         value: INFO
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: JWT_COOKIE_SECURE
+        value: "True"
+      - key: JWT_COOKIE_SAMESITE
+        value: None
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: EMAIL_VERIFICATION_PROVIDER
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: RESEND_TO_EMAIL
+        value: marmasordonez@gmail.com
+      - key: PRIVATE_DOCUMENT_STORAGE
+        value: local
       - key: DB_NAME
-        sync: false
+        value: postgres
       - key: DB_USER
-        sync: false
+        value: postgres.wmikjzfzydqdqapxdtpz
       - key: DB_PASSWORD
         sync: false
       - key: DB_HOST
-        sync: false
+        value: aws-0-ca-central-1.pooler.supabase.com
       - key: DB_PORT
         value: "5432"
       - key: DB_CONN_MAX_AGE

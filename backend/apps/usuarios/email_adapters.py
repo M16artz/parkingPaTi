@@ -1,6 +1,39 @@
+from html import escape
+
+import resend
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail
+
+
+class ResendEmailAdapter:
+    def enviar_verificacion(self, cuenta, token):
+        if not settings.RESEND_API_KEY:
+            raise ImproperlyConfigured("RESEND_API_KEY no esta configurado.")
+        if not settings.RESEND_FROM_EMAIL:
+            raise ImproperlyConfigured("RESEND_FROM_EMAIL no esta configurado.")
+        if not settings.RESEND_TO_EMAIL:
+            raise ImproperlyConfigured("RESEND_TO_EMAIL no esta configurado.")
+        if not settings.FRONTEND_BASE_URL:
+            raise ImproperlyConfigured("FRONTEND_BASE_URL no esta configurado.")
+
+        url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/verify-email?token={token}"
+        nombre = escape(cuenta.persona.nombre)
+        url_segura = escape(url, quote=True)
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send(
+            {
+                "from": settings.RESEND_FROM_EMAIL,
+                "to": settings.RESEND_TO_EMAIL,
+                "subject": "Verifica tu correo en ParkingPaTi",
+                "html": (
+                    f"<p>Hola {nombre}.</p>"
+                    "<p>Confirma tu correo para continuar con tu registro en ParkingPaTi.</p>"
+                    f'<p><a href="{url_segura}">Verificar mi correo</a></p>'
+                    "<p>Si no solicitaste esta cuenta, puedes ignorar este mensaje.</p>"
+                ),
+            }
+        )
 
 
 class GmailSmtpEmailAdapter:
@@ -43,3 +76,13 @@ class GmailSmtpEmailAdapter:
             recipient_list=[cuenta.correo],
             fail_silently=False,
         )
+
+
+def get_verification_email_adapter():
+    if settings.EMAIL_VERIFICATION_PROVIDER == "resend":
+        return ResendEmailAdapter()
+    if settings.EMAIL_VERIFICATION_PROVIDER == "django":
+        return GmailSmtpEmailAdapter()
+    raise ImproperlyConfigured(
+        "EMAIL_VERIFICATION_PROVIDER debe ser 'resend' o 'django'."
+    )

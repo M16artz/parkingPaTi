@@ -84,6 +84,9 @@ REST_FRAMEWORK = {
 
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     "register": os.getenv("THROTTLE_REGISTER_RATE", "5/hour"),
+    "register_email_availability": os.getenv(
+        "THROTTLE_EMAIL_AVAILABILITY_RATE", "30/minute"
+    ),
     "login": os.getenv("THROTTLE_LOGIN_RATE", "10/minute"),
     "verify_email": os.getenv("THROTTLE_VERIFY_EMAIL_RATE", "10/minute"),
     "resend_verification": os.getenv("THROTTLE_RESEND_RATE", "3/hour"),
@@ -126,6 +129,10 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in {"1", "true", "yes
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "")
 EMAIL_VERIFICATION_TTL_SECONDS = int(os.getenv("EMAIL_VERIFICATION_TTL_SECONDS", "86400"))
+EMAIL_VERIFICATION_PROVIDER = os.getenv("EMAIL_VERIFICATION_PROVIDER", "resend").strip().lower()
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+RESEND_TO_EMAIL = os.getenv("RESEND_TO_EMAIL", "marmasordonez@gmail.com")
 
 _default_document_storage = "local" if os.getenv("DJANGO_SETTINGS_MODULE", "").endswith(".development") else "drive"
 PRIVATE_DOCUMENT_STORAGE = os.getenv("PRIVATE_DOCUMENT_STORAGE", _default_document_storage)

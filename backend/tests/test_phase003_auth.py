@@ -55,6 +55,13 @@ def test_disponibilidad_correo_bloquea_un_correo_registrado_antes_del_stepper():
     assert disponible.data == {"disponible": True}
 
 
+def test_disponibilidad_y_registro_usan_limites_independientes():
+    from apps.usuarios.controllers import DisponibilidadCorreoAPIView, RegistroCompletoAPIView
+
+    assert DisponibilidadCorreoAPIView.throttle_scope == "register_email_availability"
+    assert RegistroCompletoAPIView.throttle_scope == "register"
+
+
 @override_settings(FRONTEND_BASE_URL="https://web.example.invalid")
 def test_registro_envia_token_hash_expirable_y_de_un_solo_uso():
     persona, cuenta_data = datos_registro()
@@ -101,6 +108,29 @@ def test_fallo_de_correo_conserva_la_cuenta():
     assert cuenta.pk is not None
     assert enviado is False
     assert VerificacionCorreo.objects.filter(cuenta=cuenta).exists()
+
+
+@override_settings(
+    EMAIL_VERIFICATION_PROVIDER="resend",
+    FRONTEND_BASE_URL="https://web.example.invalid",
+    RESEND_API_KEY="re_test",
+    RESEND_FROM_EMAIL="ParkingPaTi <onboarding@resend.dev>",
+    RESEND_TO_EMAIL="marmasordonez@gmail.com",
+)
+def test_resend_envia_confirmacion_al_correo_registrado(monkeypatch):
+    persona, cuenta_data = datos_registro("8")
+    envios = []
+    monkeypatch.setattr("resend.Emails.send", lambda payload: envios.append(payload))
+
+    cuenta, enviado = RegistroService.registrar_cuenta(persona, cuenta_data)
+
+    assert enviado is True
+    assert len(envios) == 1
+    assert cuenta.correo == "ana8@example.invalid"
+    assert envios[0]["to"] == "marmasordonez@gmail.com"
+    assert envios[0]["from"] == "ParkingPaTi <onboarding@resend.dev>"
+    assert envios[0]["subject"] == "Verifica tu correo en ParkingPaTi"
+    assert "https://web.example.invalid/verify-email?token=" in envios[0]["html"]
 
 
 @override_settings(FRONTEND_BASE_URL="https://web.example.invalid")

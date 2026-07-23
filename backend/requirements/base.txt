@@ -10,6 +10,9 @@ psycopg[binary]==3.3.4
 # Variables de entorno
 python-dotenv==1.2.2
 
+# Correo transaccional
+resend==2.34.0
+
 # Django REST Framework y Seguridad
 djangorestframework==3.17.1
 djangorestframework-simplejwt==5.3.1

@@ -20,7 +20,7 @@ from apps.documentos.services import nombre_drive_privado
 from apps.documentos.storage_backends import get_document_storage
 from apps.parqueaderos.models import EstadoHabilitacion
 from apps.parqueaderos.repositories import ParqueaderoRepository
-from apps.usuarios.email_adapters import GmailSmtpEmailAdapter
+from apps.usuarios.email_adapters import get_verification_email_adapter
 from apps.usuarios.models import EstadoOnboarding, TipoRol
 from apps.usuarios.repositories import (
     CuentaRepository,
@@ -216,7 +216,7 @@ class VerificacionCorreoService:
             )
 
         try:
-            (email_adapter or GmailSmtpEmailAdapter()).enviar_verificacion(cuenta, token)
+            (email_adapter or get_verification_email_adapter()).enviar_verificacion(cuenta, token)
             return True
         except Exception:
             logger.exception("No se pudo enviar el correo de verificacion para cuenta_id=%s", cuenta.id)

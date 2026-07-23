@@ -49,8 +49,14 @@ La API se publica bajo `/api/v1/`; OpenAPI esta disponible en
 - `config.settings.test`: PostgreSQL de pruebas configurable por `DB_*`.
 - `config.settings.production`: exige secretos y hosts desde el entorno.
 - `DJANGO_LOG_LEVEL`: controla el nivel del logging tecnico a consola.
-- SMTP Gmail/Workspace usa `EMAIL_HOST*`, `DEFAULT_FROM_EMAIL` y
-  `FRONTEND_BASE_URL`; no registrar credenciales.
+- La verificacion de cuentas usa Resend mediante `RESEND_API_KEY`,
+  `RESEND_FROM_EMAIL`, `RESEND_TO_EMAIL` y `FRONTEND_BASE_URL`; no registrar
+  credenciales. En pruebas, todas las verificaciones se redirigen al correo
+  configurado en `RESEND_TO_EMAIL`.
+- `onboarding@resend.dev` sirve para pruebas limitadas. Para enviar a cualquier
+  usuario, configurar `RESEND_FROM_EMAIL` con un dominio verificado en Resend.
+- Los avisos administrativos conservan SMTP mediante `EMAIL_HOST*` y
+  `DEFAULT_FROM_EMAIL`.
 - Drive usa una cuenta de servicio, `GOOGLE_DRIVE_CREDENTIALS_PATH` y una
   carpeta exclusiva indicada por `GOOGLE_DRIVE_FOLDER_ID`.
 - El refresh web reside en cookie HttpOnly; nombre, `Secure` y `SameSite` se
