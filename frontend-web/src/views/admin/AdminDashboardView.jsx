@@ -53,13 +53,55 @@ export const AdminDashboardView = () => {
   const administratorEmail = session?.correo || session?.email || 'Correo no disponible';
 
   return (
-    <div className="w-screen h-screen flex p-6 bg-bg select-none overflow-hidden font-sans antialiased">
+    <div className="min-h-screen w-full bg-bg font-sans antialiased select-none lg:h-screen lg:overflow-hidden lg:p-6">
       
       {/* CONTENEDOR PRINCIPAL */}
-      <div className="w-full h-full flex bg-white rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden">
+      <div className="flex min-h-screen w-full flex-col bg-white shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden lg:rounded-[32px]">
+
+        <header className="sticky top-0 z-[1200] border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur-xl lg:hidden">
+          <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+            <div className="flex min-w-0 items-center gap-2 text-primary">
+              <Car size={27} className="shrink-0" />
+              <div className="min-w-0">
+                <p className="font-headline text-lg font-black">ParkingPaTi</p>
+                <p className="truncate text-[11px] font-semibold text-slate-500">{administratorName}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="grid min-h-11 min-w-11 place-items-center rounded-xl bg-blue-50 text-primary"
+              aria-label="Cerrar sesión"
+            >
+              <LogOut size={19} />
+            </button>
+          </div>
+          <nav className="grid grid-cols-2 gap-2 px-4 pb-3" aria-label="Panel de administración">
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeNavKey === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    setActiveView(item.key);
+                    setSelectedCuentaId(null);
+                    navigate(item.key === 'cuentas' ? '/admin/accounts' : '/admin/applications');
+                  }}
+                  className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl text-xs font-black ${
+                    isActive ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <item.icon size={17} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        </header>
         
         {/* BARRA LATERAL AZUL */}
-        <aside className="w-[290px] bg-primary bg-gradient-to-b from-primary to-[#466fd3] flex flex-col pt-12 pb-8 px-0 text-white relative transform-gpu z-10 overflow-hidden shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)]">
+        <aside className="relative z-10 hidden w-[290px] shrink-0 flex-col overflow-hidden bg-primary bg-gradient-to-b from-primary to-[#466fd3] pb-8 pt-12 text-white shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)] transform-gpu lg:flex">
           
           {/* SECCIÓN DEL USUARIO */}
           <div className="flex flex-col items-center px-6 mb-10 text-center">
@@ -151,18 +193,18 @@ export const AdminDashboardView = () => {
         </aside>
 
         {/* ÁREA CENTRAL DE CONTENIDO */}
-        <main className="flex-1 pt-6 pb-12 px-12 flex flex-col overflow-y-auto bg-white transform-gpu z-0">
+        <main className="z-0 flex min-w-0 flex-1 flex-col bg-white px-4 pb-10 pt-5 transform-gpu sm:px-6 lg:overflow-y-auto lg:px-12 lg:pb-12 lg:pt-6">
           
           {/* ENCABEZADO */}
-          <header className="w-full flex items-center justify-between mb-8 transform-gpu">
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight font-headline mt-4">
+          <header className="mb-5 flex w-full items-center justify-between transform-gpu sm:mb-8">
+            <h1 className="font-headline text-xl font-black tracking-tight text-slate-800 sm:text-3xl lg:mt-4">
               {activeView === 'solicitudes' && "Solicitudes de Habilitación"}
               {activeView === 'detalle' && "Revisión de Solicitud"}
               {activeView === 'cuentas' && "Gestión y Baja de Cuentas"}
             </h1>
 
             {/* LOGO PARKINGPATI */}
-            <div className="flex items-center gap-3 pointer-events-none select-none text-primary mt-2">
+            <div className="mt-2 hidden items-center gap-3 text-primary pointer-events-none select-none lg:flex">
               <Car size={36} className="text-primary" />
               <span className="text-2xl font-black tracking-wide font-headline">
                 ParkingPaTi

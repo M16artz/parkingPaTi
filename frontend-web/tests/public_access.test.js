@@ -45,10 +45,10 @@ test('rutas públicas separan login y registro sin alertas ni enlaces ficticios'
   assert.match(routes, /path: '\/register'[^\n]*<RegisterView/);
   assert.match(routes, /path: '\*'[^\n]*<Navigate to="\/"/);
   assert.match(login, /searchParams\.get\('mode'\) === 'register'/);
-  assert.match(login, /<RegisterAccessView/);
   assert.match(login, /Continuar al registro/);
   assert.match(login, /navigate\('\/register'\)/);
-  assert.match(login, /navigate\('\/login\?mode=register'\)/);
+  assert.match(login, /setSearchParams\(\{ mode: 'register' \}\)/);
+  assert.match(login, /hidden lg:flex/);
   assert.doesNotMatch(login, /useRegisterController|RegisterForm|MapContainer|FileDropzone/);
   assert.doesNotMatch(`${home}\n${login}\n${register}`, /alert\s*\(/);
   assert.doesNotMatch(login, /href=["']#forgot/);
@@ -59,6 +59,25 @@ test('rutas públicas separan login y registro sin alertas ni enlaces ficticios'
   assert.equal((personalStep.match(/<select/g) || []).length, 1);
   assert.match(dialog, /createPortal/);
   assert.doesNotMatch(authService, /confirmarCorreo|confirmarPassword/);
+});
+
+test('login y dashboards ofrecen composiciones específicas para móvil', async () => {
+  const [login, owner, admin, applications, accounts] = await Promise.all([
+    readFile(new URL('../src/views/auth/LoginView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/owner/OwnerDashboardView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/admin/AdminDashboardView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/admin/AdminApplicationsView.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/admin/AdminAccountsView.jsx', import.meta.url), 'utf8'),
+  ]);
+  assert.match(login, /isSignUp[\s\S]*hidden lg:flex/);
+  assert.match(owner, /aria-label="Panel del propietario"/);
+  assert.match(owner, /lg:hidden/);
+  assert.match(admin, /aria-label="Panel de administración"/);
+  assert.match(admin, /lg:hidden/);
+  assert.match(applications, /md:hidden/);
+  assert.match(applications, /Revisar solicitud/);
+  assert.match(accounts, /md:hidden/);
+  assert.match(accounts, /Dar de baja/);
 });
 
 test('vista fantasma usa ruta pública canónica, API real y navegación pública', async () => {

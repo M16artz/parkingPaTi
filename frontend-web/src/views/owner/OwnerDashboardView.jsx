@@ -179,15 +179,54 @@ export const OwnerDashboardView = () => {
   const activeIndex = NAV_ITEMS.find((item) => item.key === activeView)?.index ?? 0;
 
   return (
-    <div className="w-screen h-screen flex p-4 sm:p-6 bg-slate-100 select-none overflow-hidden font-sans antialiased">
+    <div className="min-h-screen w-full bg-slate-100 font-sans antialiased select-none lg:h-screen lg:overflow-hidden lg:p-6">
       
       {/* CONTENEDOR PRINCIPAL CON SOMBRA Y BORDES REDONDEADOS */}
-      <div className="w-full h-full flex bg-white rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden">
+      <div className="flex min-h-screen w-full flex-col bg-white shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden lg:rounded-[32px]">
+
+        <header className="sticky top-0 z-[1200] border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur-xl lg:hidden">
+          <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+            <div className="flex min-w-0 items-center gap-2 text-[#2b62d9]">
+              <Car size={27} className="shrink-0" />
+              <div className="min-w-0">
+                <p className="font-headline text-lg font-black">ParkingPaTi</p>
+                <p className="truncate text-[11px] font-semibold text-slate-500">{userData.nombre}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="grid min-h-11 min-w-11 place-items-center rounded-xl bg-blue-50 text-[#2b62d9]"
+              aria-label="Cerrar sesión"
+            >
+              <LogOut size={19} />
+            </button>
+          </div>
+          <nav className="flex gap-2 overflow-x-auto px-4 pb-3" aria-label="Panel del propietario">
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeView === item.key;
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveView(item.key)}
+                  className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-[11px] font-black transition ${
+                    isActive ? 'bg-[#2b62d9] text-white shadow-sm' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <IconComponent size={16} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        </header>
         
         {/* ================================================================== */}
         {/* BARRA LATERAL (SIDEBAR)                                            */}
         {/* ================================================================== */}
-        <aside className="w-[290px] bg-[#2b62d9] bg-gradient-to-b from-[#2b62d9] to-[#466fd3] flex flex-col pt-10 pb-8 text-white relative transform-gpu z-10 overflow-hidden shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)] shrink-0">
+        <aside className="relative z-10 hidden w-[290px] shrink-0 flex-col overflow-hidden bg-[#2b62d9] bg-gradient-to-b from-[#2b62d9] to-[#466fd3] pb-8 pt-10 text-white shadow-[8px_0_24px_-4px_rgba(0,0,0,0.15)] transform-gpu lg:flex">
           
           {/* SECCIÓN DE PERFIL DE USUARIO */}
           <div className="flex flex-col items-center px-6 mb-8 text-center">
@@ -279,11 +318,11 @@ export const OwnerDashboardView = () => {
         {/* ================================================================== */}
         {/* ÁREA CENTRAL DE CONTENIDO                                          */}
         {/* ================================================================== */}
-        <main ref={contentRef} className="flex-1 pt-6 pb-10 px-8 sm:px-12 flex flex-col overflow-y-auto bg-white transform-gpu z-0">
+        <main ref={contentRef} className="z-0 flex min-w-0 flex-1 flex-col bg-white px-4 pb-10 pt-5 transform-gpu sm:px-6 lg:overflow-y-auto lg:px-12 lg:pt-6">
           
           {/* ENCABEZADO SUPERIOR */}
-          <header className="w-full flex items-center justify-between mb-8 transform-gpu border-b border-slate-100 pb-4">
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight font-headline">
+          <header className="mb-5 flex w-full items-center justify-between border-b border-slate-100 pb-4 transform-gpu sm:mb-8">
+            <h1 className="font-headline text-xl font-black tracking-tight text-slate-800 sm:text-3xl">
               {activeView === 'dashboard' && "Panel General"}
               {activeView === 'infoGeneral' && "Información del Establecimiento"}
               {activeView === 'configGeneral' && "Configuración General"}
@@ -291,7 +330,7 @@ export const OwnerDashboardView = () => {
             </h1>
 
             {/* LOGO PARKINGPATI */}
-            <div className="flex items-center gap-2.5 pointer-events-none select-none text-[#2b62d9]">
+            <div className="hidden items-center gap-2.5 text-[#2b62d9] pointer-events-none select-none lg:flex">
               <Car size={32} className="text-[#2b62d9]" />
               <span className="text-xl sm:text-2xl font-black tracking-wide font-headline">
                 ParkingPaTi

@@ -36,11 +36,11 @@ const EstadoCombobox = ({ value, onChange }) => {
   }, []);
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
+    <div className="relative w-full sm:w-auto" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 bg-white border border-slate-200 px-4 py-2 rounded-full shadow-xs hover:shadow-sm transition-all cursor-pointer select-none"
+        className="flex w-full items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-xs transition-all hover:shadow-sm cursor-pointer select-none sm:w-auto sm:rounded-full"
       >
         <span className={`w-3 h-3 rounded-full ${seleccionada.dotBg} shrink-0`} />
         <span className={`text-xs font-extrabold tracking-wider uppercase ${seleccionada.textColor}`}>
@@ -164,19 +164,19 @@ export const AdminApplicationsView = ({ applicationsList, onSelectSolicitud }) =
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end md:w-auto">
           {/* ESTADO COMBOBOX */}
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-1.5 sm:w-auto">
             <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">ESTADO</span>
             <EstadoCombobox value={estado} onChange={setEstado} />
           </div>
 
           {/* BUSCADOR */}
-          <div className="flex items-center gap-2 flex-1 md:flex-initial">
+          <div className="flex w-full flex-col gap-1.5 sm:flex-1 md:w-72 md:flex-initial">
             <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-1">
               <Search size={12} /> BUSCAR
             </span>
-            <div className="relative flex-1 md:w-64">
+            <div className="relative w-full">
               <input
                 type="text"
                 value={q}
@@ -192,8 +192,43 @@ export const AdminApplicationsView = ({ applicationsList, onSelectSolicitud }) =
 
       {/* CONTENEDOR DE LA TABLA */}
       <div className="bg-[#edf4fc] rounded-[28px] p-4 sm:p-6 border border-blue-100/60">
-        <div className="bg-white rounded-[20px] p-4 sm:p-6 shadow-xs overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+        <div className="overflow-hidden rounded-[20px] bg-white p-3 shadow-xs sm:p-6">
+          <div className="space-y-3 md:hidden">
+            {loading ? (
+              <div className="flex min-h-32 items-center justify-center gap-2 text-sm font-bold text-slate-500">
+                <Loader2 size={18} className="animate-spin text-[#3262ec]" /> Cargando solicitudes...
+              </div>
+            ) : filtrados.length === 0 ? (
+              <p className="py-10 text-center text-xs font-bold uppercase text-slate-500">
+                No se encontraron solicitudes
+              </p>
+            ) : filtrados.map((item) => (
+              <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate font-black text-slate-900">{item.persona?.nombre || 'N/A'}</h3>
+                    <p className="truncate text-xs font-semibold text-slate-500">{item.persona?.correo || 'N/A'}</p>
+                  </div>
+                  {renderStatusBadge(item.estado)}
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div><dt className="font-bold uppercase text-slate-400">Identificación</dt><dd className="mt-1 font-bold text-slate-700">{item.persona?.identificacion || 'N/A'}</dd></div>
+                  <div><dt className="font-bold uppercase text-slate-400">Fecha</dt><dd className="mt-1 font-bold text-slate-700">{item.fecha || 'N/A'}</dd></div>
+                  <div className="col-span-2"><dt className="font-bold uppercase text-slate-400">Parqueadero</dt><dd className="mt-1 font-black text-slate-800">{item.parqueadero || 'N/A'}</dd></div>
+                </dl>
+                <button
+                  type="button"
+                  onClick={() => onSelectSolicitud(item.id)}
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3262ec] px-4 text-sm font-black text-white"
+                >
+                  <Eye size={16} /> Revisar solicitud
+                </button>
+              </article>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[700px] border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-100 text-[11px] font-black uppercase tracking-wider text-slate-500">
                 <th className="pb-4 pl-2">PROPIETARIO</th>
@@ -257,9 +292,10 @@ export const AdminApplicationsView = ({ applicationsList, onSelectSolicitud }) =
               )}
             </tbody>
           </table>
+          </div>
 
           {/* PAGINACIÓN CON MAYOR VISIBILIDAD */}
-          <div className="pt-6 mt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-600">
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
             <span>
               Mostrando <strong className="text-slate-900 font-black">{filtrados.length}</strong> registros
             </span>

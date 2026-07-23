@@ -54,14 +54,14 @@ export const LoginView = () => {
   }
 
   return (
-    <main className="w-full min-h-screen overflow-x-hidden bg-sky-100 font-body text-slate-800 flex items-center justify-center p-4 sm:p-6 select-none">
-      <div className="relative bg-white w-full max-w-[1400px] h-[85vh] min-h-[650px] rounded-[32px] overflow-hidden border-none flex shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)]">
+    <main className="flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-sky-100 p-0 font-body text-slate-800 sm:p-6 select-none">
+      <div className="relative flex min-h-screen w-full max-w-[1400px] overflow-hidden bg-white shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] sm:min-h-[650px] sm:rounded-[32px] lg:h-[85vh]">
         
         {/* Botón Volver al Inicio (Fijo) */}
         <button 
           type="button" 
           onClick={() => navigate('/')} 
-          className="absolute left-6 top-6 z-30 inline-flex items-center gap-2 rounded-2xl bg-white/90 px-4 py-2.5 text-sm font-bold text-slate-800 shadow-md backdrop-blur-md hover:bg-white hover:scale-105 active:scale-95 transition-all duration-200"
+          className="absolute left-4 top-4 z-30 inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white/95 px-3.5 py-2 text-sm font-bold text-slate-800 shadow-md backdrop-blur-md transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 sm:left-6 sm:top-6 sm:px-4"
         >
           <ArrowLeft aria-hidden="true" size={18} /> Volver al inicio
         </button>
@@ -71,11 +71,13 @@ export const LoginView = () => {
         {/* ========================================================= */}
         <div 
           className={`
-            w-full lg:w-1/2 h-full bg-white 
-            flex flex-col items-center justify-center 
-            px-8 sm:px-12 md:px-16 py-12 z-10 overflow-y-auto
+            w-full lg:w-1/2 min-h-screen lg:min-h-0 lg:h-full bg-white
+            flex-col items-center justify-center
+            px-5 pt-24 pb-10 sm:px-12 md:px-16 lg:py-12 z-10 overflow-y-auto
             transition-all duration-500 ease-in-out
-            ${isSignUp ? 'lg:translate-x-full lg:opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}
+            ${isSignUp
+              ? 'hidden lg:flex lg:translate-x-full lg:opacity-0 lg:pointer-events-none'
+              : 'flex translate-x-0 opacity-100'}
           `}
         >
           {/* Logo y Branding */}
@@ -86,7 +88,7 @@ export const LoginView = () => {
             </span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-slate-900 mb-8 tracking-tight text-center">
+          <h1 className="mb-7 text-center font-headline text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
             Iniciar sesión
           </h1>
 
@@ -109,11 +111,13 @@ export const LoginView = () => {
         {/* ========================================================= */}
         <div 
           className={`
-            w-full lg:w-1/2 h-full bg-white 
-            flex flex-col items-center justify-center 
-            px-8 sm:px-12 md:px-16 py-12 z-10 overflow-y-auto
+            w-full lg:w-1/2 min-h-screen lg:min-h-0 lg:h-full bg-white
+            flex-col items-center justify-center
+            px-5 pt-24 pb-10 sm:px-12 md:px-16 lg:py-12 z-10 overflow-y-auto
             transition-all duration-500 ease-in-out
-            ${isSignUp ? 'translate-x-0 opacity-100' : 'lg:-translate-x-full lg:opacity-0 pointer-events-none'}
+            ${isSignUp
+              ? 'flex translate-x-0 opacity-100'
+              : 'hidden lg:flex lg:-translate-x-full lg:opacity-0 lg:pointer-events-none'}
           `}
         >
           {/* Logo y Branding */}
@@ -124,7 +128,7 @@ export const LoginView = () => {
             </span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-slate-900 mb-6 tracking-tight text-center">
+          <h1 className="mb-5 text-center font-headline text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
             Comienza tu registro
           </h1>
 
@@ -136,7 +140,7 @@ export const LoginView = () => {
           <button 
             type="button" 
             onClick={() => navigate('/register')} 
-            className="w-full max-w-md py-4 px-8 bg-primary hover:opacity-90 text-white font-bold text-base rounded-2xl shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            className="flex min-h-12 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-base font-bold text-white shadow-md shadow-primary/20 transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-95"
           >
             Continuar al registro <ArrowRight size={20} />
           </button>
